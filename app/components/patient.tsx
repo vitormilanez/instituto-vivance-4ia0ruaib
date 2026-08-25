@@ -11,6 +11,8 @@ export default function PatientWorkspace() {
   const [view, setView] = useState<PatientView>('Hoje');
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [checkinDone, setCheckinDone] = useState(false);
+  const [preVisitOpen, setPreVisitOpen] = useState(false);
+  const [preVisitDone, setPreVisitDone] = useState(false);
   const [mealAnalyzed, setMealAnalyzed] = useState(false);
   const [watchConnected, setWatchConnected] = useState(false);
   const [tasks, setTasks] = useState([true, false, false]);
@@ -43,8 +45,10 @@ export default function PatientWorkspace() {
         {view === 'Hoje' && (
           <Today
             checkinDone={checkinDone}
+            preVisitDone={preVisitDone}
             watchConnected={watchConnected}
             onCheckin={() => setCheckinOpen(true)}
+            onPreVisit={() => setPreVisitOpen(true)}
             onConnectWatch={() => {
               setWatchConnected(true);
               notify('Relógio demonstrativo conectado.');
@@ -61,7 +65,7 @@ export default function PatientWorkspace() {
         {view === 'Diário' && <Diary analyzed={mealAnalyzed} onAnalyze={() => setMealAnalyzed(true)} />}
         {view === 'Evolução' && <Evolution />}
         {view === 'Mensagens' && <Messages onNotify={notify} />}
-        {view === 'Consultas' && <Appointments />}
+        {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={() => setPreVisitOpen(true)} />}
       </main>
 
       <nav aria-label="Navegação do paciente" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#dfe8e3] bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 lg:hidden">
@@ -93,6 +97,17 @@ export default function PatientWorkspace() {
           }}
         />
       )}
+      {preVisitOpen && (
+        <PreVisitInterview
+          initiallyComplete={preVisitDone}
+          onClose={() => setPreVisitOpen(false)}
+          onComplete={() => {
+            setPreVisitOpen(false);
+            setPreVisitDone(true);
+            notify('Pré-consulta enviada ao Dr. Guilherme.');
+          }}
+        />
+      )}
       <Toast text={toast} patient />
     </>
   );
@@ -100,14 +115,18 @@ export default function PatientWorkspace() {
 
 function Today({
   checkinDone,
+  preVisitDone,
   watchConnected,
   onCheckin,
+  onPreVisit,
   onConnectWatch,
   onNavigate,
 }: {
   checkinDone: boolean;
+  preVisitDone: boolean;
   watchConnected: boolean;
   onCheckin: () => void;
+  onPreVisit: () => void;
   onConnectWatch: () => void;
   onNavigate: (view: PatientView) => void;
 }) {
@@ -123,6 +142,32 @@ function Today({
           {checkinDone ? 'Check-in concluído' : 'Fazer check-in de hoje'}
         </button>
       </section>
+
+      <article className="mt-7 overflow-hidden rounded-3xl border border-[#9fc9bd] bg-white shadow-[0_12px_34px_rgba(28,55,47,0.07)]">
+        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+          <div className="grid size-14 place-items-center rounded-full bg-[#17372f] text-xs font-bold uppercase tracking-[0.08em] text-white">
+            Voz
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Conversa de pré-consulta</p>
+              <Status tone={preVisitDone ? 'green' : 'amber'}>{preVisitDone ? 'Enviada ao médico' : '5–7 minutos'}</Status>
+            </div>
+            <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em]">
+              {preVisitDone ? 'Seu objetivo já está no preparo da consulta' : 'Conte com sua voz o que você quer melhorar'}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">
+              A Lume conversa com você, faz perguntas básicas e monta um resumo que você revisa antes de enviar.
+            </p>
+          </div>
+          <button type="button" onClick={onPreVisit} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">
+            {preVisitDone ? 'Ver resumo enviado' : 'Começar conversa'}
+          </button>
+        </div>
+        <div className="border-t border-[#e2ece8] bg-[#f7faf8] px-5 py-3 text-xs leading-5 text-[#698078] sm:px-6">
+          Link seguro · consentimento antes do microfone · transcrição e resumo revisáveis
+        </div>
+      </article>
 
       <section className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="overflow-hidden rounded-3xl bg-[#17372f] text-white shadow-[0_16px_40px_rgba(23,55,47,0.16)]">
@@ -308,10 +353,24 @@ function Messages({ onNotify }: { onNotify: (text: string) => void }) {
   );
 }
 
-function Appointments() {
+function Appointments({ preVisitDone, onPreVisit }: { preVisitDone: boolean; onPreVisit: () => void }) {
   return (
     <section className="mt-0 lg:mt-8">
       <Heading eyebrow="Antes, durante e depois" title="Suas consultas" description="Tudo o que você precisa para chegar preparado e continuar depois do encontro." />
+      <article className="mt-7 rounded-3xl border border-[#9fc9bd] bg-[#edf7f4] p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#17372f] text-xs font-bold uppercase text-white">Voz</span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2"><p className="font-bold">Pré-consulta conversacional</p><Status>{preVisitDone ? 'Concluída' : 'Pendente'}</Status></div>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[#60766f]">Responda falando, confira a transcrição e envie seu principal objetivo ao Dr. Guilherme.</p>
+            </div>
+          </div>
+          <button type="button" onClick={onPreVisit} className="min-h-11 shrink-0 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">
+            {preVisitDone ? 'Revisar resumo' : 'Responder por voz'}
+          </button>
+        </div>
+      </article>
       <article className="mt-7 overflow-hidden rounded-3xl border border-[#8bbcaf] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.06)]">
         <div className="bg-[#edf7f4] p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Hoje · próxima consulta</p><h2 className="mt-2 text-2xl font-semibold">10:30 com Dr. Guilherme</h2><p className="mt-2 text-sm text-[#60766f]">Retorno de emagrecimento e saúde do sono · 30 min</p></div><Status>Confirmada</Status></div><button type="button" className="mt-6 min-h-12 rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white">Entrar na sala de vídeo</button></div>
         <div className="grid sm:grid-cols-3">
@@ -324,6 +383,130 @@ function Appointments() {
       </article>
       <div className="mt-5 rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Consulta anterior</p><div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="font-bold">27 de julho de 2026</p><p className="mt-1 text-sm text-[#698078]">Plano iniciado · relatório disponível</p></div><button type="button" className="min-h-11 rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b]">Ver resumo</button></div></div>
     </section>
+  );
+}
+
+function PreVisitInterview({
+  initiallyComplete,
+  onClose,
+  onComplete,
+}: {
+  initiallyComplete: boolean;
+  onClose: () => void;
+  onComplete: () => void;
+}) {
+  const questions = [
+    'O que você mais gostaria de melhorar com esta consulta?',
+    'O que mudou desde a sua última conversa com o Dr. Guilherme?',
+    'Você teve algum sintoma novo ou algo que te preocupou?',
+    'Como ficaram sua alimentação, seu sono e sua atividade física?',
+  ];
+  const answers = [
+    'Quero continuar perdendo peso, mas sem ficar cansada, e gostaria de voltar a dormir melhor.',
+    'Senti mais saciedade e consegui seguir o plano na maior parte dos dias. O sono piorou nesta semana.',
+    'Não tive sintoma novo. Minha preocupação é acordar várias vezes durante a noite.',
+    'A alimentação ficou organizada, caminhei quase todos os dias e dormi menos de seis horas em quatro noites.',
+  ];
+  const [stage, setStage] = useState<'intro' | 'chat' | 'review'>(initiallyComplete ? 'review' : 'intro');
+  const [consent, setConsent] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [listening, setListening] = useState(false);
+  const [captured, setCaptured] = useState<string[]>(initiallyComplete ? answers : []);
+
+  const captureAnswer = () => {
+    const current = questionIndex;
+    setListening(true);
+    window.setTimeout(() => {
+      setCaptured((items) => items.concat(answers[current]));
+      setListening(false);
+      if (current === questions.length - 1) {
+        setStage('review');
+      } else {
+        setQuestionIndex(current + 1);
+      }
+    }, 900);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102a24]/60 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="previsit-title">
+      <div className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e2ebe7] bg-white px-5 py-4 sm:px-7">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta por voz</p>
+            <h2 id="previsit-title" className="mt-1 text-xl font-semibold">Conversa com a Lume</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 place-items-center rounded-full border border-[#d7e3df] text-xl">×</button>
+        </div>
+
+        {stage === 'intro' && (
+          <div className="p-5 sm:p-7">
+            <div className="grid size-20 place-items-center rounded-full bg-[#17372f] text-sm font-bold uppercase tracking-[0.08em] text-white">Voz</div>
+            <Status tone="green">Cerca de 5 minutos</Status>
+            <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Fale naturalmente. Não precisa preencher formulário.</h3>
+            <p className="mt-3 text-sm leading-6 text-[#60766f]">Vou fazer quatro perguntas para entender seu objetivo, mudanças recentes e possíveis preocupações. Você poderá revisar tudo antes de enviar.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                ['1', 'Você fala'],
+                ['2', 'A IA organiza'],
+                ['3', 'Você revisa'],
+              ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><span className="grid size-7 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item[0]}</span><p className="mt-3 text-sm font-bold">{item[1]}</p></div>)}
+            </div>
+            <label className="mt-6 flex items-start gap-3 rounded-2xl border border-[#d7e3df] p-4 text-sm leading-6 text-[#526a62]">
+              <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[#0b7b68]" />
+              Autorizo o uso do áudio para criar a transcrição e o resumo desta pré-consulta. Sei que poderei revisar antes do envio.
+            </label>
+            <button type="button" disabled={!consent} onClick={() => setStage('chat')} className="mt-5 min-h-12 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white disabled:bg-[#9aaca7]">Permitir microfone e começar</button>
+            <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">Simulação: nenhum áudio é gravado neste protótipo. No produto real, o áudio seria descartado após a transcrição por padrão.</p>
+          </div>
+        )}
+
+        {stage === 'chat' && (
+          <div className="bg-[#f4f7f5] p-5 sm:p-7">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-[#60766f]">Pergunta {questionIndex + 1} de {questions.length}</p>
+              <button type="button" onClick={() => setStage('review')} className="text-xs font-bold text-[#0b6a5b]">Encerrar e revisar</button>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#dfe8e3]"><div className="h-full rounded-full bg-[#0b7b68] transition-[width]" style={{ width: String(((questionIndex + 1) / questions.length) * 100) + '%' }} /></div>
+            <div className="mt-6 space-y-4">
+              {captured.map((answer, index) => (
+                <div key={String(index)}>
+                  <div className="max-w-[84%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">{questions[index]}</div>
+                  <div className="ml-auto mt-2 max-w-[84%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white">{answer}</div>
+                </div>
+              ))}
+              <div className="max-w-[88%] rounded-2xl rounded-tl-md bg-white p-4 shadow-sm">
+                <p className="text-sm font-bold text-[#17372f]">{questions[questionIndex]}</p>
+                <p className="mt-2 text-xs leading-5 text-[#698078]">Pode responder do seu jeito. Eu perguntarei se algo não ficar claro.</p>
+              </div>
+            </div>
+            <div className="mt-8 text-center">
+              <button type="button" disabled={listening} onClick={captureAnswer} className={cn('mx-auto grid size-24 place-items-center rounded-full border-8 text-sm font-bold text-white shadow-[0_12px_32px_rgba(11,123,104,0.25)]', listening ? 'animate-pulse border-[#b9d8cf] bg-[#b04f49]' : 'border-[#d9eee8] bg-[#0b7b68]')}>
+                {listening ? 'Ouvindo' : 'Falar'}
+              </button>
+              <p className="mt-3 text-xs text-[#698078]">{listening ? 'Pode falar. Toque novamente para parar.' : 'Toque para simular uma resposta por voz'}</p>
+            </div>
+          </div>
+        )}
+
+        {stage === 'review' && (
+          <div className="p-5 sm:p-7">
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Revisão antes do envio</p><h3 className="mt-2 text-2xl font-semibold">Este é o seu objetivo para a consulta</h3></div><Status>Você está no controle</Status></div>
+            <label className="mt-6 block text-sm font-bold">Em suas palavras<textarea defaultValue="Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor." className="mt-2 min-h-24 w-full rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4 font-normal leading-6 outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></label>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#698078]">Relatado por você</p><p className="mt-2 text-sm leading-6">Mais saciedade, boa adesão, sono pior nesta semana e nenhum sintoma novo.</p></div>
+              <div className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#698078]">Organizado pela IA</p><p className="mt-2 text-sm leading-6">Priorizar sono e energia antes de aumentar metas do plano.</p></div>
+            </div>
+            <div className="mt-4 rounded-2xl border-l-4 border-[#e49d45] bg-[#fff8e9] p-4"><p className="text-sm font-bold text-[#6f4b0d]">Ponto para conversar</p><p className="mt-1 text-sm leading-6 text-[#805f24]">Despertares noturnos em quatro dias. Isto é um relato, não um diagnóstico.</p></div>
+            <details className="mt-5 rounded-2xl border border-[#dfe8e3] p-4"><summary className="cursor-pointer text-sm font-bold">Ver transcrição completa</summary><div className="mt-4 space-y-3 text-sm leading-6 text-[#60766f]">{questions.map((question, index) => <div key={question}><p className="font-bold text-[#17372f]">Lume: {question}</p><p>Marina: {answers[index]}</p></div>)}</div></details>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setStage('intro')} className="min-h-12 rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b]">Refazer conversa</button>
+              <button type="button" onClick={onComplete} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar para o Dr. Guilherme</button>
+            </div>
+            <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">A IA resume; o médico lê o contexto completo e continua responsável pela avaliação.</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

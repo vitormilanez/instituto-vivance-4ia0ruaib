@@ -114,7 +114,7 @@ export default function DoctorWorkspace() {
               onAlert={setSelectedAlert}
             />
           )}
-          {view === 'Agenda' && <Agenda onStart={() => setConsultationOpen(true)} />}
+          {view === 'Agenda' && <Agenda onStart={() => setConsultationOpen(true)} onNotify={notify} />}
           {view === 'Pacientes' && <Patients onStart={() => setConsultationOpen(true)} />}
           {view === 'Mensagens' && <Messages onNotify={notify} />}
           {view === 'Relatórios' && (
@@ -212,8 +212,14 @@ function Overview({
             <div>
               <div className="flex flex-wrap gap-2">
                 {['Emagrecimento', 'Saúde do sono', 'Retorno 30 dias'].map((tag) => <Status key={tag} tone="gray">{tag}</Status>)}
+                <Status>Pré-consulta por voz concluída</Status>
               </div>
-              <h3 className="mt-6 text-sm font-bold">Resumo preparado pela IA</h3>
+              <div className="mt-6 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b6a5b]">Objetivo nas palavras da paciente</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-[#17372f]">“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”</p>
+                <p className="mt-2 text-xs text-[#698078]">Conversa concluída às 09:02 · consentimento registrado · transcrição disponível</p>
+              </div>
+              <h3 className="mt-5 text-sm font-bold">Síntese com dados do acompanhamento</h3>
               <p className="mt-2 text-sm leading-6 text-[#60766f]">
                 Peso reduziu 1,8 kg desde a última consulta. Adesão consistente, mas o sono ficou abaixo do padrão pessoal em quatro dos últimos sete dias.
               </p>
@@ -224,9 +230,9 @@ function Overview({
             <div className="rounded-2xl bg-[#f4f7f5] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#698078]">Antes da consulta</p>
               <ol className="mt-4 space-y-3 text-sm text-[#405d54]">
-                <li><strong className="mr-2 text-[#0b7b68]">01</strong>Revisar diário de sono</li>
-                <li><strong className="mr-2 text-[#0b7b68]">02</strong>Confirmar tolerância</li>
-                <li><strong className="mr-2 text-[#0b7b68]">03</strong>Atualizar plano</li>
+                <li><strong className="mr-2 text-[#0b7b68]">01</strong>Ouvir objetivo relatado</li>
+                <li><strong className="mr-2 text-[#0b7b68]">02</strong>Revisar diário de sono</li>
+                <li><strong className="mr-2 text-[#0b7b68]">03</strong>Confirmar tolerância</li>
               </ol>
             </div>
           </div>
@@ -260,7 +266,7 @@ function Overview({
   );
 }
 
-function Agenda({ onStart }: { onStart: () => void }) {
+function Agenda({ onStart, onNotify }: { onStart: () => void; onNotify: (text: string) => void }) {
   return (
     <>
       <Heading
@@ -279,10 +285,18 @@ function Agenda({ onStart }: { onStart: () => void }) {
                 <Status tone={appointment[3] === 'A confirmar' ? 'amber' : 'green'}>{appointment[3]}</Status>
               </div>
               <p className="mt-1 text-sm text-[#698078]">{appointment[2]}</p>
+              <p className={cn('mt-2 text-xs font-semibold', index === 0 ? 'text-[#0b7b68]' : 'text-[#a06117]')}>
+                {index === 0 ? 'Pré-consulta por voz concluída · objetivo e transcrição prontos' : 'Link de pré-consulta ainda não enviado'}
+              </p>
             </div>
-            <button type="button" onClick={onStart} className="min-h-11 rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white">
-              {index === 0 ? 'Abrir consulta' : 'Ver preparo'}
-            </button>
+            <div className="flex flex-col gap-2 xl:flex-row">
+              <button type="button" onClick={() => index === 0 ? onStart() : onNotify('Link seguro de pré-consulta enviado para ' + appointment[1] + '.')} className="min-h-11 rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b]">
+                {index === 0 ? 'Ver respostas' : 'Enviar link'}
+              </button>
+              <button type="button" onClick={onStart} className="min-h-11 rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white">
+                {index === 0 ? 'Abrir consulta' : 'Ver preparo'}
+              </button>
+            </div>
           </article>
         ))}
       </section>
@@ -454,6 +468,18 @@ function Consultation({ onClose, onComplete }: { onClose: () => void; onComplete
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Briefing longitudinal</p><h3 className="mt-2 text-2xl font-semibold">O que mudou desde a última consulta</h3></div>
                   <Status tone="amber">1 ponto de atenção</Status>
+                </div>
+                <div className="mt-6 rounded-3xl bg-[#17372f] p-5 text-white">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Entrevista de pré-consulta por voz</p>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d6e8e2]">Consentimento registrado</span>
+                  </div>
+                  <p className="mt-4 text-lg font-semibold leading-7">“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”</p>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Relatado pela paciente</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">Mais saciedade, sono pior nesta semana e nenhum sintoma novo.</p></div>
+                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Organizado pela IA</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">Priorizar sono e energia antes de ampliar metas.</p></div>
+                  </div>
+                  <details className="mt-4 rounded-2xl border border-white/15 p-3"><summary className="cursor-pointer text-xs font-bold text-[#c9e4dd]">Abrir transcrição revisada</summary><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">A paciente respondeu quatro perguntas básicas, revisou o objetivo e autorizou o envio do resumo. O áudio foi descartado após a transcrição demonstrativa.</p></details>
                 </div>
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   {[
