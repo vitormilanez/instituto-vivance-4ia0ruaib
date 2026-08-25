@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://lume-saude-prototipo.sites.openai.com'),
+  metadataBase: new URL('https://lume-saude-prototipo.vitormilanez.chatgpt.site'),
   title: 'Lume Saúde — Cuidado contínuo',
   description: 'Protótipo de acompanhamento longitudinal assistido por IA para emagrecimento e envelhecimento saudável.',
   openGraph: {
