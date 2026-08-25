@@ -14,10 +14,10 @@ export function RoleHeader({ role, onRoleChange }: { role: Role; onRoleChange: (
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#0b7b68] text-sm font-bold text-white shadow-[0_8px_24px_rgba(11,123,104,0.2)]">
-            L
+            IV
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[17px] font-bold tracking-[-0.02em]">Lume Saúde</p>
+            <p className="truncate text-[17px] font-bold tracking-[-0.02em]">Instituto Vivance</p>
             <p className="hidden text-xs font-medium text-[#698078] sm:block">Cuidado contínuo</p>
           </div>
         </div>

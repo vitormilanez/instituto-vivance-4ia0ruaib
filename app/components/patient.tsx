@@ -157,7 +157,7 @@ function Today({
               {preVisitDone ? 'Seu objetivo já está no preparo da consulta' : 'Conte com sua voz o que você quer melhorar'}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">
-              A Lume conversa com você, faz perguntas básicas e monta um resumo que você revisa antes de enviar.
+              A assistente do Instituto Vivance conversa com você, faz perguntas básicas e monta um resumo que você revisa antes de enviar.
             </p>
           </div>
           <button type="button" onClick={onPreVisit} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">
@@ -433,7 +433,7 @@ function PreVisitInterview({
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e2ebe7] bg-white px-5 py-4 sm:px-7">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta por voz</p>
-            <h2 id="previsit-title" className="mt-1 text-xl font-semibold">Conversa com a Lume</h2>
+            <h2 id="previsit-title" className="mt-1 text-xl font-semibold">Conversa com a assistente Vivance</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 place-items-center rounded-full border border-[#d7e3df] text-xl">×</button>
         </div>
@@ -497,7 +497,7 @@ function PreVisitInterview({
               <div className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#698078]">Organizado pela IA</p><p className="mt-2 text-sm leading-6">Priorizar sono e energia antes de aumentar metas do plano.</p></div>
             </div>
             <div className="mt-4 rounded-2xl border-l-4 border-[#e49d45] bg-[#fff8e9] p-4"><p className="text-sm font-bold text-[#6f4b0d]">Ponto para conversar</p><p className="mt-1 text-sm leading-6 text-[#805f24]">Despertares noturnos em quatro dias. Isto é um relato, não um diagnóstico.</p></div>
-            <details className="mt-5 rounded-2xl border border-[#dfe8e3] p-4"><summary className="cursor-pointer text-sm font-bold">Ver transcrição completa</summary><div className="mt-4 space-y-3 text-sm leading-6 text-[#60766f]">{questions.map((question, index) => <div key={question}><p className="font-bold text-[#17372f]">Lume: {question}</p><p>Marina: {answers[index]}</p></div>)}</div></details>
+            <details className="mt-5 rounded-2xl border border-[#dfe8e3] p-4"><summary className="cursor-pointer text-sm font-bold">Ver transcrição completa</summary><div className="mt-4 space-y-3 text-sm leading-6 text-[#60766f]">{questions.map((question, index) => <div key={question}><p className="font-bold text-[#17372f]">Assistente Vivance: {question}</p><p>Marina: {answers[index]}</p></div>)}</div></details>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button type="button" onClick={() => setStage('intro')} className="min-h-12 rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b]">Refazer conversa</button>
               <button type="button" onClick={onComplete} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar para o Dr. Guilherme</button>
