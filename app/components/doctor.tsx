@@ -39,10 +39,158 @@ const appointments = [
 ];
 
 const patients = [
-  ['MC', 'Marina Costa', 'Emagrecimento · sono', '−1,8 kg', 'Sono'],
-  ['AR', 'Ana Ribeiro', 'Longevidade · força', '+8% adesão', 'Relatório'],
-  ['PM', 'Paulo Mendes', 'Emagrecimento · rotina', '72% plano', 'Sintoma'],
-  ['RL', 'Rafael Lima', 'Avaliação inicial', 'Novo', 'Anamnese'],
+  {
+    initials: 'MC',
+    name: 'Marina Costa',
+    focus: 'Emagrecimento · sono',
+    progress: '−1,8 kg',
+    attention: 'Sono',
+    tone: 'amber' as const,
+    reportCount: '2',
+    prescriptionCount: '1 ativa',
+    cycle: 'Dia 29 de 90',
+    lastContact: 'Hoje · 09:18',
+    nextConsultation: 'Hoje · 10:30',
+    adherence: '82%',
+    report: {
+      title: 'Relatório quinzenal',
+      period: '11–25 de agosto',
+      status: 'Revisado em 24 ago',
+      summary: 'Evolução consistente de peso e boa adesão. O sono permaneceu abaixo do padrão pessoal em quatro noites.',
+      metrics: [['Peso', '−1,8 kg'], ['Adesão', '82%'], ['Sono médio', '6h12']],
+    },
+    prescription: {
+      title: 'Receita digital #RX-1042',
+      status: 'Ativa',
+      detail: '1 item prescrito · validade até 26 de setembro',
+      note: 'Emitida na última consulta e disponibilizada à paciente.',
+    },
+    insight: {
+      title: 'Priorizar sono antes de ampliar metas',
+      detail: 'Quatro noites abaixo de seis horas coincidem com menor energia nos check-ins.',
+      basis: 'Baseado em 14 dias de dados demonstrativos.',
+    },
+    activity: [
+      ['Hoje · 09:18', 'Pré-consulta por voz concluída'],
+      ['Ontem · 20:08', 'Jantar e saciedade registrados'],
+      ['24 ago · 16:42', 'Relatório quinzenal revisado'],
+    ],
+    nextSteps: ['Investigar despertares noturnos', 'Confirmar tolerância ao plano atual', 'Definir meta da próxima quinzena'],
+  },
+  {
+    initials: 'AR',
+    name: 'Ana Ribeiro',
+    focus: 'Longevidade · força',
+    progress: '+8% adesão',
+    attention: 'Relatório',
+    tone: 'blue' as const,
+    reportCount: '3',
+    prescriptionCount: 'Nenhuma',
+    cycle: 'Dia 61 de 90',
+    lastContact: 'Ontem · 18:40',
+    nextConsultation: '28 ago · 14:00',
+    adherence: '88%',
+    report: {
+      title: 'Relatório mensal',
+      period: '25 jul–25 ago',
+      status: 'Pronto para aprovação',
+      summary: 'Aumento de consistência nos exercícios de força, com melhora de energia e manutenção do peso.',
+      metrics: [['Adesão', '88%'], ['Força', '+12%'], ['Passos', '7.140']],
+    },
+    prescription: {
+      title: 'Nenhuma receita ativa',
+      status: 'Sem pendências',
+      detail: 'Não há documentos de prescrição vigentes neste ciclo.',
+      note: 'O histórico permanece disponível no prontuário demonstrativo.',
+    },
+    insight: {
+      title: 'Boa resposta à rotina de força',
+      detail: 'A adesão aumentou após a troca dos treinos para o período da manhã.',
+      basis: 'Padrão observado em quatro semanas demonstrativas.',
+    },
+    activity: [
+      ['Ontem · 18:40', 'Check-in semanal concluído'],
+      ['23 ago · 07:32', 'Meta de força registrada'],
+      ['20 ago · 15:10', 'Relatório mensal preparado'],
+    ],
+    nextSteps: ['Aprovar relatório mensal', 'Revisar progressão de força', 'Manter acompanhamento de energia'],
+  },
+  {
+    initials: 'PM',
+    name: 'Paulo Mendes',
+    focus: 'Emagrecimento · rotina',
+    progress: '72% plano',
+    attention: 'Sintoma',
+    tone: 'rose' as const,
+    reportCount: '1',
+    prescriptionCount: '1 ativa',
+    cycle: 'Dia 18 de 60',
+    lastContact: 'Hoje · 08:12',
+    nextConsultation: 'Hoje · 16:30',
+    adherence: '72%',
+    report: {
+      title: 'Relatório semanal',
+      period: '18–25 de agosto',
+      status: 'Processando',
+      summary: 'Adesão moderada, com queda nos registros após relato de enjoo no check-in de hoje.',
+      metrics: [['Adesão', '72%'], ['Peso', '−0,6 kg'], ['Check-ins', '5 de 7']],
+    },
+    prescription: {
+      title: 'Receita digital #RX-1051',
+      status: 'Requer revisão',
+      detail: '1 item prescrito · emitida em 18 de agosto',
+      note: 'Novo sintoma relatado após a emissão; documento sinalizado ao médico.',
+    },
+    insight: {
+      title: 'Revisar enjoo antes de manter o plano',
+      detail: 'O relato de hoje deve ser avaliado pelo médico antes de qualquer ajuste.',
+      basis: 'Alerta criado a partir do relato do paciente, sem diagnóstico.',
+    },
+    activity: [
+      ['Hoje · 08:12', 'Novo sintoma relatado'],
+      ['Ontem · 19:26', 'Check-in não concluído'],
+      ['22 ago · 12:18', 'Receita acessada pelo paciente'],
+    ],
+    nextSteps: ['Responder ao relato de enjoo', 'Revisar receita vigente', 'Decidir continuidade do plano'],
+  },
+  {
+    initials: 'RL',
+    name: 'Rafael Lima',
+    focus: 'Avaliação inicial',
+    progress: 'Novo',
+    attention: 'Anamnese',
+    tone: 'gray' as const,
+    reportCount: '0',
+    prescriptionCount: 'Nenhuma',
+    cycle: 'Pré-cuidado',
+    lastContact: 'Ontem · 11:05',
+    nextConsultation: 'Hoje · 11:30',
+    adherence: 'Ainda não',
+    report: {
+      title: 'Sem relatório disponível',
+      period: 'Primeira consulta',
+      status: 'Aguardando dados',
+      summary: 'Os primeiros relatórios serão criados após a avaliação inicial e a definição do plano.',
+      metrics: [['Anamnese', '68%'], ['Exames', '2 anexos'], ['Check-ins', 'Ainda não']],
+    },
+    prescription: {
+      title: 'Nenhuma receita emitida',
+      status: 'Avaliação inicial',
+      detail: 'Prescrições somente poderão ser registradas após avaliação médica.',
+      note: 'Nenhuma ação necessária neste momento.',
+    },
+    insight: {
+      title: 'Dados insuficientes para gerar insight',
+      detail: 'Concluir anamnese e consulta inicial antes de identificar padrões.',
+      basis: 'A IA não deve inferir recomendações sem contexto suficiente.',
+    },
+    activity: [
+      ['Ontem · 11:05', 'Link de anamnese aberto'],
+      ['24 ago · 17:20', 'Consulta inicial confirmada'],
+      ['24 ago · 17:18', 'Cadastro demonstrativo criado'],
+    ],
+    nextSteps: ['Concluir anamnese', 'Revisar exames anexados', 'Realizar avaliação inicial'],
+  },
 ];
 
 export default function DoctorWorkspace() {
@@ -115,7 +263,13 @@ export default function DoctorWorkspace() {
             />
           )}
           {view === 'Agenda' && <Agenda onStart={() => setConsultationOpen(true)} onNotify={notify} />}
-          {view === 'Pacientes' && <Patients onStart={() => setConsultationOpen(true)} />}
+          {view === 'Pacientes' && (
+            <Patients
+              onStart={() => setConsultationOpen(true)}
+              onMessage={() => setView('Mensagens')}
+              onNotify={notify}
+            />
+          )}
           {view === 'Mensagens' && <Messages onNotify={notify} />}
           {view === 'Relatórios' && (
             <Reports
@@ -304,7 +458,29 @@ function Agenda({ onStart, onNotify }: { onStart: () => void; onNotify: (text: s
   );
 }
 
-function Patients({ onStart }: { onStart: () => void }) {
+function Patients({
+  onStart,
+  onMessage,
+  onNotify,
+}: {
+  onStart: () => void;
+  onMessage: () => void;
+  onNotify: (text: string) => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selected = patients[selectedIndex] ?? patients[0];
+
+  if (!selected) return null;
+
+  const openConsultation = () => {
+    if (selected.name === 'Marina Costa') {
+      onStart();
+      return;
+    }
+
+    onNotify(`Preparo demonstrativo de ${selected.name} aberto.`);
+  };
+
   return (
     <>
       <Heading
@@ -314,26 +490,171 @@ function Patients({ onStart }: { onStart: () => void }) {
         action={
           <label className="flex min-h-11 items-center rounded-xl border border-[#d7e3df] bg-white px-4 text-sm text-[#698078]">
             <span className="sr-only">Buscar paciente</span>
-            <input className="w-44 bg-transparent outline-none" placeholder="Buscar paciente" />
+            <input type="search" className="w-44 bg-transparent outline-none" placeholder="Buscar paciente" />
           </label>
         }
       />
       <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {patients.map((patient, index) => (
-          <article key={patient[1]} className={cn('rounded-3xl border bg-white p-5 shadow-[0_8px_28px_rgba(28,55,47,0.04)]', index === 0 ? 'border-[#8bbcaf] ring-2 ring-[#dceee9]' : 'border-[#dfe8e3]')}>
-            <div className="flex items-start justify-between">
-              <span className="grid size-11 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b]">{patient[0]}</span>
-              <Status tone={patient[4] === 'Sintoma' ? 'rose' : patient[4] === 'Sono' ? 'amber' : 'gray'}>{patient[4]}</Status>
+          <button
+            type="button"
+            key={patient.name}
+            aria-pressed={selectedIndex === index}
+            onClick={() => setSelectedIndex(index)}
+            className={cn(
+              'cursor-pointer rounded-3xl border bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc8bd] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
+              selectedIndex === index ? 'border-[#8bbcaf] ring-2 ring-[#dceee9]' : 'border-[#dfe8e3]',
+            )}
+          >
+            <span className="flex items-start justify-between gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b]">{patient.initials}</span>
+              <Status tone={patient.tone}>{patient.attention}</Status>
+            </span>
+            <strong className="mt-5 block text-base">{patient.name}</strong>
+            <span className="mt-1 block text-sm text-[#698078]">{patient.focus}</span>
+            <span className="mt-5 block text-2xl font-semibold tracking-[-0.04em]">{patient.progress}</span>
+            <span className="mt-1 block text-xs text-[#8a9c96]">desde o último ciclo</span>
+            <span className="mt-5 grid grid-cols-2 gap-2 border-t border-[#e7eeea] pt-4">
+              <span>
+                <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a9c96]">Relatórios</span>
+                <span className="mt-1 block text-sm font-bold text-[#405d54]">{patient.reportCount}</span>
+              </span>
+              <span>
+                <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a9c96]">Receitas</span>
+                <span className="mt-1 block text-sm font-bold text-[#405d54]">{patient.prescriptionCount}</span>
+              </span>
+            </span>
+            <span className="mt-4 block min-h-11 rounded-xl border border-[#c9ddd6] px-4 py-3 text-center text-sm font-bold text-[#0b6a5b]">
+              {selectedIndex === index ? 'Paciente selecionado' : 'Ver detalhes'}
+            </span>
+          </button>
+        ))}
+      </section>
+
+      <section aria-labelledby="selected-patient-title" className="mt-6 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
+        <div className="flex flex-col gap-5 border-b border-[#e7eeea] p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-base font-bold text-[#0b6a5b]">{selected.initials}</span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 id="selected-patient-title" className="text-2xl font-semibold tracking-[-0.03em]">{selected.name}</h2>
+                <Status tone="gray">Dados demonstrativos</Status>
+              </div>
+              <p className="mt-1 text-sm text-[#698078]">{selected.focus} · {selected.cycle}</p>
             </div>
-            <h2 className="mt-5 font-bold">{patient[1]}</h2>
-            <p className="mt-1 text-sm text-[#698078]">{patient[2]}</p>
-            <p className="mt-5 text-2xl font-semibold tracking-[-0.04em]">{patient[3]}</p>
-            <p className="mt-1 text-xs text-[#8a9c96]">desde o último ciclo</p>
-            <button type="button" onClick={index === 0 ? onStart : undefined} className="mt-5 min-h-11 w-full rounded-xl border border-[#c9ddd6] text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4]">
-              {index === 0 ? 'Abrir consulta' : 'Ver perfil'}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={onMessage} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+              Enviar mensagem
+            </button>
+            <button type="button" onClick={openConsultation} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white hover:bg-[#24483e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+              {selected.name === 'Marina Costa' ? 'Abrir consulta' : 'Ver preparo'}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-px bg-[#e7eeea] sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            ['Ciclo de cuidado', selected.cycle],
+            ['Último contato', selected.lastContact],
+            ['Próxima consulta', selected.nextConsultation],
+            ['Adesão atual', selected.adherence],
+          ].map((item) => (
+            <div key={item[0]} className="bg-[#f8faf9] px-5 py-4 sm:px-6">
+              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#789087]">{item[0]}</p>
+              <p className="mt-1.5 text-sm font-bold text-[#2d4d44]">{item[1]}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)_minmax(280px,0.9fr)]">
+          <article className="rounded-2xl border border-[#dfe8e3] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Relatório mais recente</p>
+                <h3 className="mt-2 text-lg font-semibold">{selected.report.title}</h3>
+                <p className="mt-1 text-xs text-[#789087]">{selected.report.period}</p>
+              </div>
+              <Status tone={selected.report.status.includes('aprovação') ? 'amber' : selected.report.status === 'Processando' ? 'blue' : selected.report.status === 'Aguardando dados' ? 'gray' : 'green'}>
+                {selected.report.status}
+              </Status>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-[#526a62]">{selected.report.summary}</p>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {selected.report.metrics.map((metric) => (
+                <div key={metric[0]} className="rounded-xl bg-[#f4f7f5] p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[#789087]">{metric[0]}</p>
+                  <p className="mt-1 text-sm font-bold text-[#2d4d44]">{metric[1]}</p>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => onNotify(`Relatório demonstrativo de ${selected.name} aberto para revisão.`)} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+              Abrir relatório completo
             </button>
           </article>
-        ))}
+
+          <article className="rounded-2xl border border-[#dfe8e3] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Receitas</p>
+              <Status tone={selected.prescription.status === 'Ativa' ? 'green' : selected.prescription.status === 'Requer revisão' ? 'rose' : 'gray'}>
+                {selected.prescription.status}
+              </Status>
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">{selected.prescription.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-[#526a62]">{selected.prescription.detail}</p>
+            <div className="mt-4 rounded-xl bg-[#f4f7f5] p-4">
+              <p className="text-xs leading-5 text-[#60766f]">{selected.prescription.note}</p>
+            </div>
+            <button type="button" onClick={() => onNotify(`Histórico demonstrativo de receitas de ${selected.name} aberto.`)} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+              Ver receitas e histórico
+            </button>
+          </article>
+
+          <article className="rounded-2xl bg-[#17372f] p-5 text-white">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#9fd6c8]">Insight assistido por IA</p>
+              <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#d9eee8]">Revisão médica</span>
+            </div>
+            <h3 className="mt-5 text-lg font-semibold leading-6">{selected.insight.title}</h3>
+            <p className="mt-3 text-sm leading-6 text-[#d3e4df]">{selected.insight.detail}</p>
+            <p className="mt-4 border-t border-white/15 pt-4 text-xs leading-5 text-[#a9c6be]">{selected.insight.basis}</p>
+            <button type="button" onClick={() => onNotify('Insight marcado para discutir na próxima consulta.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
+              Marcar para próxima consulta
+            </button>
+          </article>
+        </div>
+
+        <div className="grid gap-5 border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6 lg:grid-cols-2">
+          <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+            <h3 className="text-sm font-bold">Atividade recente</h3>
+            <div className="mt-4 space-y-4">
+              {selected.activity.map((item) => (
+                <div key={item[0]} className="flex gap-3">
+                  <span aria-hidden="true" className="mt-1.5 size-2.5 shrink-0 rounded-full bg-[#3da58f]" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#405d54]">{item[1]}</p>
+                    <p className="mt-0.5 text-xs text-[#8a9c96]">{item[0]}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+          <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+            <h3 className="text-sm font-bold">Próximos passos sugeridos</h3>
+            <ol className="mt-4 space-y-3">
+              {selected.nextSteps.map((step, index) => (
+                <li key={step} className="flex items-start gap-3 text-sm text-[#526a62]">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8f4f0] text-xs font-bold text-[#0b6a5b]">{index + 1}</span>
+                  <span className="pt-1">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </article>
+        </div>
+
+        <p className="border-t border-[#e7eeea] bg-[#f4f7f5] px-5 py-4 text-xs leading-5 text-[#789087] sm:px-6">
+          Conteúdo demonstrativo. Relatórios, receitas e insights exigem revisão médica e não representam prontuário real.
+        </p>
       </section>
     </>
   );
