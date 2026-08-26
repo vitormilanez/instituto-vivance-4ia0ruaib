@@ -4,6 +4,24 @@ import { FormEvent, useState } from 'react';
 import { cn, Heading, Status, Toast } from './shared';
 
 type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
+type AppointmentTone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
+type Appointment = {
+  time: string;
+  patient: string;
+  initials: string;
+  type: string;
+  status: string;
+  statusTone: AppointmentTone;
+  preVisit: string;
+  preVisitTone: AppointmentTone;
+  objective: string;
+  reported: string;
+  aiFocus: string;
+  metrics: Array<[string, string, string]>;
+  attentionTitle: string;
+  attentionDetail: string;
+  checklist: string[];
+};
 
 const nav: DoctorView[] = ['Visão geral', 'Agenda', 'Pacientes', 'Mensagens', 'Relatórios'];
 
@@ -31,11 +49,92 @@ const alerts = [
   },
 ];
 
-const appointments = [
-  ['10:30', 'Marina Costa', 'Retorno · 30 min', 'Próxima'],
-  ['11:30', 'Rafael Lima', 'Primeira consulta · 50 min', 'Confirmada'],
-  ['14:00', 'Ana Ribeiro', 'Retorno · 30 min', 'Confirmada'],
-  ['16:30', 'Paulo Mendes', 'Acompanhamento · 25 min', 'A confirmar'],
+const appointments: Appointment[] = [
+  {
+    time: '09:00',
+    patient: 'Lúcia Barbosa',
+    initials: 'LB',
+    type: 'Retorno longevidade · 30 min',
+    status: 'Concluída',
+    statusTone: 'gray',
+    preVisit: 'Pré-consulta revisada',
+    preVisitTone: 'green',
+    objective: '“Quero manter minha energia ao longo do dia e recuperar segurança nos exercícios.”',
+    reported: 'Boa disposição pela manhã, uma queda de energia à tarde e nenhum sintoma novo.',
+    aiFocus: 'Revisar distribuição das atividades e percepção de esforço, sem ampliar metas automaticamente.',
+    metrics: [['Energia', '4 de 5', '+1 ponto'], ['Passos', '7.280', '+6%'], ['Sono', '7h04', 'regular']],
+    attentionTitle: 'Sem alerta clínico novo',
+    attentionDetail: 'A variação de energia foi registrada para contextualização médica, sem inferência diagnóstica.',
+    checklist: ['Validar energia à tarde', 'Revisar percepção de esforço', 'Definir próximo acompanhamento'],
+  },
+  {
+    time: '10:30',
+    patient: 'Marina Costa',
+    initials: 'MC',
+    type: 'Retorno · 30 min',
+    status: 'Próxima',
+    statusTone: 'green',
+    preVisit: 'Voz concluída · resumo pronto',
+    preVisitTone: 'green',
+    objective: '“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”',
+    reported: 'Mais saciedade, sono pior nesta semana e nenhum sintoma novo.',
+    aiFocus: 'Priorizar sono e energia antes de ampliar metas.',
+    metrics: [['Peso', '78,2 kg', '−1,8 kg'], ['Adesão', '82%', '+6 p.p.'], ['Sono', '5h42', 'abaixo do padrão']],
+    attentionTitle: 'Sono fora do padrão pessoal',
+    attentionDetail: 'Quatro noites abaixo de seis horas. Dados do relógio são demonstrativos e não equivalem a diagnóstico.',
+    checklist: ['Validar sono', 'Confirmar tolerância', 'Decidir próximo passo'],
+  },
+  {
+    time: '11:30',
+    patient: 'Rafael Lima',
+    initials: 'RL',
+    type: 'Primeira consulta · 50 min',
+    status: 'Confirmada',
+    statusTone: 'green',
+    preVisit: 'Anamnese 68% concluída',
+    preVisitTone: 'amber',
+    objective: '“Quero entender por que estou cansado e começar uma rotina que eu consiga manter.”',
+    reported: 'Cansaço ao fim do dia, rotina irregular e dois exames anexados para revisão.',
+    aiFocus: 'Completar lacunas da anamnese e organizar perguntas para a avaliação inicial.',
+    metrics: [['Anamnese', '68%', '3 lacunas'], ['Exames', '2', 'anexados'], ['Sono', '6h18', 'relatado']],
+    attentionTitle: 'Anamnese ainda incompleta',
+    attentionDetail: 'Faltam histórico familiar, uso atual de suplementos e contexto do cansaço relatado.',
+    checklist: ['Completar histórico', 'Revisar exames anexados', 'Definir objetivo inicial'],
+  },
+  {
+    time: '14:00',
+    patient: 'Ana Ribeiro',
+    initials: 'AR',
+    type: 'Retorno força · 30 min',
+    status: 'Confirmada',
+    statusTone: 'green',
+    preVisit: 'Voz concluída · relatório pronto',
+    preVisitTone: 'blue',
+    objective: '“Quero continuar ganhando força sem perder energia para o restante da semana.”',
+    reported: 'Treinos pela manhã facilitaram a rotina e a energia permaneceu estável.',
+    aiFocus: 'Validar progressão de força e revisar o relatório mensal antes de qualquer ajuste.',
+    metrics: [['Adesão', '88%', '+8 p.p.'], ['Força', '+12%', '4 semanas'], ['Passos', '7.140', 'estável']],
+    attentionTitle: 'Relatório mensal aguarda aprovação',
+    attentionDetail: 'A síntese foi organizada pela IA e ainda requer interpretação e aprovação médica.',
+    checklist: ['Aprovar relatório', 'Revisar progressão de força', 'Confirmar energia semanal'],
+  },
+  {
+    time: '16:30',
+    patient: 'Paulo Mendes',
+    initials: 'PM',
+    type: 'Acompanhamento · 25 min',
+    status: 'A confirmar',
+    statusTone: 'amber',
+    preVisit: 'Novo sintoma no check-in',
+    preVisitTone: 'rose',
+    objective: '“Quero ajustar minha rotina sem continuar sentindo enjoo.”',
+    reported: 'Enjoo após atualização do plano e redução dos registros desde ontem.',
+    aiFocus: 'Levar o novo relato ao médico antes de manter ou alterar qualquer orientação.',
+    metrics: [['Sintoma', 'Enjoo', 'novo relato'], ['Adesão', '72%', '−8 p.p.'], ['Check-ins', '5 de 7', '2 ausentes']],
+    attentionTitle: 'Novo sintoma requer avaliação médica',
+    attentionDetail: 'O app apenas destacou o relato. Nenhum diagnóstico ou ajuste de conduta foi realizado.',
+    checklist: ['Ouvir relato do enjoo', 'Revisar receita vigente', 'Decidir continuidade do plano'],
+  },
 ];
 
 const patients = [
@@ -299,9 +398,10 @@ const marinaTimeline = [
 
 export default function DoctorWorkspace() {
   const [view, setView] = useState<DoctorView>('Visão geral');
-  const [consultationOpen, setConsultationOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<(typeof alerts)[number] | null>(null);
   const [approved, setApproved] = useState(false);
+  const [nudged, setNudged] = useState(false);
   const [toast, setToast] = useState('');
 
   const notify = (text: string) => {
@@ -332,9 +432,15 @@ export default function DoctorWorkspace() {
             ))}
           </nav>
           <div className="mt-10 rounded-2xl bg-[#17372f] p-4 text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#9cc7ba]">Ciclos de cuidado</p>
-            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">86%</p>
-            <p className="mt-1 text-sm leading-5 text-[#d6e8e2]">19 de 22 pacientes com próximo passo definido.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#9cc7ba]">Pacientes ativos</p>
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between rounded-xl bg-white/8 px-3 py-2.5"><span className="text-xs text-[#c7ddd6]">Total</span><strong className="text-lg">22</strong></div>
+              <div className="flex items-center justify-between rounded-xl bg-white/8 px-3 py-2.5"><span className="text-xs text-[#c7ddd6]">Regulares</span><strong className="text-lg text-[#9fe0ce]">17</strong></div>
+              <div className="flex items-center justify-between rounded-xl bg-[#fff3df] px-3 py-2.5 text-[#70480e]"><span className="text-xs font-bold">Check-in atrasado</span><strong className="text-lg">5</strong></div>
+            </div>
+            <button type="button" disabled={nudged} onClick={() => { setNudged(true); notify('Cutucão enviado para 5 pacientes com check-in atrasado.'); }} className="mt-3 min-h-11 w-full cursor-pointer rounded-xl bg-white px-3 text-xs font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f] disabled:cursor-default disabled:bg-[#b9d0c9]">
+              {nudged ? 'Lembrete enviado' : 'Dar um cutucão nos 5'}
+            </button>
           </div>
           <div className="mt-4 rounded-2xl border border-[#dfe8e3] bg-[#f8faf9] p-4">
             <p className="text-xs font-bold text-[#45655c]">IA com revisão médica</p>
@@ -361,15 +467,16 @@ export default function DoctorWorkspace() {
 
           {view === 'Visão geral' && (
             <Overview
-              onStart={() => setConsultationOpen(true)}
+              onOpenAppointment={setSelectedAppointment}
               onPatient={() => setView('Pacientes')}
               onAlert={setSelectedAlert}
+              onReports={() => setView('Relatórios')}
             />
           )}
-          {view === 'Agenda' && <Agenda onStart={() => setConsultationOpen(true)} onNotify={notify} />}
+          {view === 'Agenda' && <Agenda onOpenAppointment={setSelectedAppointment} onNotify={notify} />}
           {view === 'Pacientes' && (
             <Patients
-              onStart={() => setConsultationOpen(true)}
+              onStart={() => setSelectedAppointment(appointments[1])}
               onMessage={() => setView('Mensagens')}
               onNotify={notify}
             />
@@ -387,12 +494,14 @@ export default function DoctorWorkspace() {
         </main>
       </div>
 
-      {consultationOpen && (
+      {selectedAppointment && (
         <Consultation
-          onClose={() => setConsultationOpen(false)}
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
           onComplete={() => {
-            setConsultationOpen(false);
-            notify('Consulta concluída. Plano e relatório ficaram salvos como rascunho.');
+            const patientName = selectedAppointment.patient;
+            setSelectedAppointment(null);
+            notify(`Consulta de ${patientName} concluída. Plano e relatório ficaram salvos como rascunho.`);
           }}
         />
       )}
@@ -412,14 +521,29 @@ export default function DoctorWorkspace() {
 }
 
 function Overview({
-  onStart,
+  onOpenAppointment,
   onPatient,
   onAlert,
+  onReports,
 }: {
-  onStart: () => void;
+  onOpenAppointment: (appointment: Appointment) => void;
   onPatient: () => void;
   onAlert: (item: (typeof alerts)[number]) => void;
+  onReports: () => void;
 }) {
+  const summaryCards = [
+    { label: 'Consultas hoje', value: '5', detail: 'Próxima às 10:30', action: 'Ver agenda do dia', target: 'agenda-do-dia', dot: 'bg-[#3da58f]' },
+    { label: 'Precisam de atenção', value: '3', detail: '1 novo sintoma relatado', action: 'Ver prioridades', target: 'atencao-do-dia', dot: 'bg-[#e49d45]' },
+    { label: 'Relatórios pendentes', value: '4', detail: '2 prontos para revisar', action: 'Ver fila de revisão', target: 'relatorios-do-dia', dot: 'bg-[#6997d4]' },
+  ];
+  const reportQueue = [
+    ['Ana Ribeiro', 'Relatório mensal', 'Pronto para aprovação', 'blue'] as const,
+    ['Marina Costa', 'Relatório quinzenal', '2 observações para revisar', 'amber'] as const,
+    ['Paulo Mendes', 'Relatório semanal', 'Aguardando decisão sobre sintoma', 'rose'] as const,
+    ['Lúcia Barbosa', 'Resumo pós-consulta', 'Rascunho criado hoje', 'gray'] as const,
+  ];
+  const scrollTo = (target: string) => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   return (
     <>
       <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -435,27 +559,26 @@ function Overview({
             Sua agenda está organizada. Três pacientes merecem uma revisão antes do próximo contato.
           </p>
         </div>
-        <button type="button" onClick={onStart} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] hover:bg-[#096b5b]">
+        <button type="button" onClick={() => onOpenAppointment(appointments[1])} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
           Iniciar próxima consulta
         </button>
       </section>
 
       <section aria-label="Resumo do dia" className="mt-8 grid gap-4 sm:grid-cols-3">
-        {[
-          ['Consultas hoje', '5', 'Próxima às 10:30'],
-          ['Precisam de atenção', '3', '1 novo sintoma relatado'],
-          ['Relatórios pendentes', '4', '2 prontos para revisar'],
-        ].map((item, index) => (
-          <article key={item[0]} className="rounded-2xl border border-[#dfe8e3] bg-white p-5 shadow-[0_8px_28px_rgba(28,55,47,0.04)]">
+        {summaryCards.map((item) => (
+          <button type="button" key={item.label} aria-controls={item.target} onClick={() => scrollTo(item.target)} className="group cursor-pointer rounded-2xl border border-[#dfe8e3] bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc9be] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[#60766f]">{item[0]}</p>
-              <span aria-hidden="true" className={cn('size-2.5 rounded-full', index === 0 ? 'bg-[#3da58f]' : index === 1 ? 'bg-[#e49d45]' : 'bg-[#6997d4]')} />
+              <p className="text-sm font-semibold text-[#60766f]">{item.label}</p>
+              <span aria-hidden="true" className={cn('size-2.5 rounded-full', item.dot)} />
             </div>
-            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{item[1]}</p>
-            <p className="mt-1 text-xs font-medium text-[#789087]">{item[2]}</p>
-          </article>
+            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{item.value}</p>
+            <p className="mt-1 text-xs font-medium text-[#789087]">{item.detail}</p>
+            <p className="mt-4 text-xs font-bold text-[#0b6a5b] group-hover:underline group-hover:underline-offset-4">{item.action} →</p>
+          </button>
         ))}
       </section>
+
+      <DayAgendaTimeline onOpenAppointment={onOpenAppointment} />
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
         <article className="overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
@@ -481,9 +604,10 @@ function Overview({
               <p className="mt-2 text-sm leading-6 text-[#60766f]">
                 Peso reduziu 1,8 kg desde a última consulta. Adesão consistente, mas o sono ficou abaixo do padrão pessoal em quatro dos últimos sete dias.
               </p>
-              <button type="button" onClick={onPatient} className="mt-4 min-h-11 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4">
-                Abrir visão completa da paciente
-              </button>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button type="button" onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Abrir pré-consulta</button>
+                <button type="button" onClick={onPatient} className="min-h-11 cursor-pointer px-2 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prontuário completo</button>
+              </div>
             </div>
             <div className="rounded-2xl bg-[#f4f7f5] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#698078]">Antes da consulta</p>
@@ -496,7 +620,7 @@ function Overview({
           </div>
         </article>
 
-        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_10px_35px_rgba(28,55,47,0.05)] sm:p-6">
+        <article id="atencao-do-dia" className="scroll-mt-24 rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_10px_35px_rgba(28,55,47,0.05)] sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b46a15]">Caixa por exceção</p>
@@ -506,7 +630,7 @@ function Overview({
           </div>
           <div className="mt-5 divide-y divide-[#e7eeea]">
             {alerts.map((item) => (
-              <button type="button" key={item.patient} onClick={() => onAlert(item)} className="group min-h-20 w-full py-4 text-left first:pt-0 last:pb-0">
+              <button type="button" key={item.patient} onClick={() => onAlert(item)} className="group min-h-20 w-full cursor-pointer py-4 text-left first:pt-0 last:pb-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
                 <span className="flex items-start gap-3">
                   <span aria-hidden="true" className={cn('mt-1.5 size-2.5 shrink-0 rounded-full', item.tone === 'amber' ? 'bg-[#e49d45]' : item.tone === 'rose' ? 'bg-[#db766f]' : 'bg-[#6997d4]')} />
                   <span className="min-w-0">
@@ -520,44 +644,67 @@ function Overview({
           </div>
         </article>
       </section>
+
+      <section id="relatorios-do-dia" className="mt-6 scroll-mt-24 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
+        <div className="flex flex-col gap-3 border-b border-[#e7eeea] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#5578a9]">Fila de revisão</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em]">4 relatórios pendentes</h2></div>
+          <button type="button" onClick={onReports} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Abrir central de relatórios</button>
+        </div>
+        <div className="divide-y divide-[#e7eeea]">
+          {reportQueue.map((report) => (
+            <button type="button" key={report[0]} onClick={onReports} className="grid min-h-20 w-full cursor-pointer gap-2 px-5 py-4 text-left transition-colors hover:bg-[#f8faf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0b7b68] sm:grid-cols-[1fr_1fr_auto] sm:items-center sm:px-6">
+              <div><strong className="text-sm text-[#17372f]">{report[0]}</strong><p className="mt-1 text-xs text-[#698078]">{report[1]}</p></div>
+              <Status tone={report[3]}>{report[2]}</Status>
+              <span className="text-xs font-bold text-[#0b6a5b]">Revisar →</span>
+            </button>
+          ))}
+        </div>
+      </section>
     </>
   );
 }
 
-function Agenda({ onStart, onNotify }: { onStart: () => void; onNotify: (text: string) => void }) {
+function DayAgendaTimeline({ onOpenAppointment }: { onOpenAppointment: (appointment: Appointment) => void }) {
+  return (
+    <section id="agenda-do-dia" className="mt-6 scroll-mt-24 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
+      <div className="flex flex-col gap-3 border-b border-[#e7eeea] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Agenda aberta</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Hoje, consulta por consulta</h2><p className="mt-1 text-xs text-[#698078]">Clique em um nome para abrir a pré-consulta daquele paciente.</p></div>
+        <Status>5 consultas</Status>
+      </div>
+      <div className="px-4 py-3 sm:px-6">
+        {appointments.map((appointment, index) => {
+          const isNext = appointment.status === 'Próxima';
+          return (
+            <button type="button" key={`${appointment.time}-${appointment.patient}`} onClick={() => onOpenAppointment(appointment)} aria-label={`Abrir pré-consulta de ${appointment.patient}, às ${appointment.time}`} className={cn('group grid min-h-20 w-full cursor-pointer grid-cols-[58px_22px_minmax(0,1fr)] items-stretch gap-2 rounded-2xl px-2 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 sm:grid-cols-[70px_24px_minmax(0,1fr)_auto] sm:gap-3 sm:px-3', isNext ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
+              <time className={cn('pt-1 text-sm font-bold', isNext ? 'text-[#0b6a5b]' : 'text-[#526a62]')}>{appointment.time}</time>
+              <span aria-hidden="true" className="relative flex justify-center">
+                {index < appointments.length - 1 && <span className="absolute bottom-[-28px] top-4 w-px bg-[#d9e4e0]" />}
+                <span className={cn('relative mt-1 size-3 rounded-full border-2', isNext ? 'border-[#0b7b68] bg-[#8fd3c0]' : appointment.status === 'Concluída' ? 'border-[#8fa59e] bg-[#d9e4e0]' : 'border-[#9fc9be] bg-white')} />
+              </span>
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2"><strong className="text-sm text-[#17372f] group-hover:text-[#0b6a5b]">{appointment.patient}</strong>{isNext && <span className="rounded-full bg-[#0b7b68] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">Próxima</span>}</span>
+                <span className="mt-1 block text-xs text-[#698078]">{appointment.type}</span>
+                <span className={cn('mt-2 block text-[11px] font-bold', appointment.preVisitTone === 'rose' ? 'text-[#9c453f]' : appointment.preVisitTone === 'amber' ? 'text-[#986415]' : appointment.preVisitTone === 'blue' ? 'text-[#5578a9]' : 'text-[#0b6a5b]')}>{appointment.preVisit}</span>
+              </span>
+              <span className="hidden items-center gap-3 sm:flex"><Status tone={appointment.statusTone}>{appointment.status}</Status><span className="text-xs font-bold text-[#0b6a5b]">Abrir preparo →</span></span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Agenda({ onOpenAppointment, onNotify }: { onOpenAppointment: (appointment: Appointment) => void; onNotify: (text: string) => void }) {
   return (
     <>
       <Heading
         eyebrow="Agenda integrada"
         title="Consultas de hoje"
         description="Encontros, contexto clínico e sala de vídeo reunidos em um único fluxo."
-        action={<button type="button" className="min-h-11 rounded-xl border border-[#bfd4cd] bg-white px-4 text-sm font-bold text-[#0b6a5b]">Novo agendamento</button>}
+        action={<button type="button" onClick={() => onNotify('Novo agendamento demonstrativo iniciado.')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Novo agendamento</button>}
       />
-      <section className="mt-7 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white">
-        {appointments.map((appointment, index) => (
-          <article key={appointment.join('-')} className={cn('grid gap-4 p-5 sm:grid-cols-[80px_1fr_auto] sm:items-center sm:p-6', index > 0 && 'border-t border-[#e7eeea]')}>
-            <p className="text-xl font-semibold">{appointment[0]}</p>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-bold">{appointment[1]}</h2>
-                <Status tone={appointment[3] === 'A confirmar' ? 'amber' : 'green'}>{appointment[3]}</Status>
-              </div>
-              <p className="mt-1 text-sm text-[#698078]">{appointment[2]}</p>
-              <p className={cn('mt-2 text-xs font-semibold', index === 0 ? 'text-[#0b7b68]' : 'text-[#a06117]')}>
-                {index === 0 ? 'Pré-consulta por voz concluída · objetivo e transcrição prontos' : 'Link de pré-consulta ainda não enviado'}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 xl:flex-row">
-              <button type="button" onClick={() => index === 0 ? onStart() : onNotify('Link seguro de pré-consulta enviado para ' + appointment[1] + '.')} className="min-h-11 rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b]">
-                {index === 0 ? 'Ver respostas' : 'Enviar link'}
-              </button>
-              <button type="button" onClick={onStart} className="min-h-11 rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white">
-                {index === 0 ? 'Abrir consulta' : 'Ver preparo'}
-              </button>
-            </div>
-          </article>
-        ))}
-      </section>
+      <DayAgendaTimeline onOpenAppointment={onOpenAppointment} />
     </>
   );
 }
@@ -1156,11 +1303,11 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
   );
 }
 
-function Consultation({ onClose, onComplete }: { onClose: () => void; onComplete: () => void }) {
+function Consultation({ appointment, onClose, onComplete }: { appointment: Appointment; onClose: () => void; onComplete: () => void }) {
   type Step = 'preparo' | 'consulta' | 'plano' | 'fechamento';
   const [step, setStep] = useState<Step>('preparo');
   const [meetOpen, setMeetOpen] = useState(false);
-  const [notes, setNotes] = useState('Paciente relata boa adaptação ao plano e melhora da saciedade.');
+  const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
   const [summary, setSummary] = useState(false);
   const [compiled, setCompiled] = useState(false);
   const steps: Array<[Step, string]> = [
@@ -1174,8 +1321,8 @@ function Consultation({ onClose, onComplete }: { onClose: () => void; onComplete
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#102a24]/55 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="consultation-title">
       <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-t-3xl bg-[#f4f7f5] shadow-2xl sm:rounded-3xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dfe8e3] bg-white px-5 py-4 sm:px-6">
-          <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Consulta · 10:30</p><h2 id="consultation-title" className="mt-1 text-xl font-semibold">Marina Costa</h2></div>
-          <button type="button" onClick={onClose} aria-label="Fechar consulta" className="grid size-11 place-items-center rounded-full border border-[#d7e3df] text-xl">×</button>
+          <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta · {appointment.time}</p><h2 id="consultation-title" className="mt-1 text-xl font-semibold">{appointment.patient}</h2></div>
+          <button type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
         </div>
         <div className="border-b border-[#dfe8e3] bg-white px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
@@ -1188,33 +1335,29 @@ function Consultation({ onClose, onComplete }: { onClose: () => void; onComplete
               <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Briefing longitudinal</p><h3 className="mt-2 text-2xl font-semibold">O que mudou desde a última consulta</h3></div>
-                  <Status tone="amber">1 ponto de atenção</Status>
+                  <Status tone={appointment.preVisitTone}>{appointment.preVisit}</Status>
                 </div>
                 <div className="mt-6 rounded-3xl bg-[#17372f] p-5 text-white">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Entrevista de pré-consulta por voz</p>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d6e8e2]">Consentimento registrado</span>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Síntese da pré-consulta</p>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d6e8e2]">Dados demonstrativos</span>
                   </div>
-                  <p className="mt-4 text-lg font-semibold leading-7">“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”</p>
+                  <p className="mt-4 text-lg font-semibold leading-7">{appointment.objective}</p>
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Relatado pela paciente</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">Mais saciedade, sono pior nesta semana e nenhum sintoma novo.</p></div>
-                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Organizado pela IA</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">Priorizar sono e energia antes de ampliar metas.</p></div>
+                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Relato recebido</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">{appointment.reported}</p></div>
+                    <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Organizado pela IA</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">{appointment.aiFocus}</p></div>
                   </div>
-                  <details className="mt-4 rounded-2xl border border-white/15 p-3"><summary className="cursor-pointer text-xs font-bold text-[#c9e4dd]">Abrir transcrição revisada</summary><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">A paciente respondeu quatro perguntas básicas, revisou o objetivo e autorizou o envio do resumo. O áudio foi descartado após a transcrição demonstrativa.</p></details>
+                  <details className="mt-4 rounded-2xl border border-white/15 p-3"><summary className="cursor-pointer text-xs font-bold text-[#c9e4dd]">Abrir respostas de origem</summary><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">As respostas demonstrativas foram organizadas em um resumo revisável. Nenhum conteúdo é tratado como diagnóstico ou decisão clínica automática.</p></details>
                 </div>
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {[
-                    ['Peso', '78,2 kg', '−1,8 kg'],
-                    ['Adesão', '82%', '+6 p.p.'],
-                    ['Sono', '5h42', 'abaixo do padrão'],
-                  ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#698078]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[0] === 'Sono' ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
+                  {appointment.metrics.map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#698078]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[0] === 'Sintoma' ? 'text-[#9c453f]' : item[0] === 'Anamnese' || (item[0] === 'Sono' && item[2].includes('abaixo')) ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
                 </div>
-                <div className="mt-6 rounded-2xl border-l-4 border-[#e49d45] bg-[#fff8e9] p-4"><p className="text-sm font-bold text-[#6f4b0d]">Sono fora do padrão pessoal</p><p className="mt-1 text-sm leading-6 text-[#805f24]">Quatro noites abaixo de seis horas. Dados do relógio são demonstrativos e não equivalem a diagnóstico.</p></div>
+                <div className={cn('mt-6 rounded-2xl border-l-4 p-4', appointment.preVisitTone === 'rose' ? 'border-[#d36c64] bg-[#fdf0ef]' : appointment.preVisitTone === 'green' ? 'border-[#55aa96] bg-[#edf7f4]' : 'border-[#e49d45] bg-[#fff8e9]')}><p className={cn('text-sm font-bold', appointment.preVisitTone === 'rose' ? 'text-[#8d3f39]' : appointment.preVisitTone === 'green' ? 'text-[#0b6a5b]' : 'text-[#6f4b0d]')}>{appointment.attentionTitle}</p><p className={cn('mt-1 text-sm leading-6', appointment.preVisitTone === 'rose' ? 'text-[#7e504c]' : appointment.preVisitTone === 'green' ? 'text-[#45655c]' : 'text-[#805f24]')}>{appointment.attentionDetail}</p></div>
               </section>
               <aside className="rounded-3xl bg-[#17372f] p-5 text-white">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Preparar em 30 segundos</p>
-                <ol className="mt-5 space-y-4 text-sm text-[#e0eee9]"><li><strong className="mr-2 text-[#76c5b3]">01</strong>Validar sono</li><li><strong className="mr-2 text-[#76c5b3]">02</strong>Confirmar tolerância</li><li><strong className="mr-2 text-[#76c5b3]">03</strong>Decidir próximo passo</li></ol>
-                <button type="button" onClick={() => setStep('consulta')} className="mt-7 min-h-11 w-full rounded-xl bg-white px-4 text-sm font-bold text-[#17372f]">Começar consulta</button>
+                <ol className="mt-5 space-y-4 text-sm text-[#e0eee9]">{appointment.checklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#76c5b3]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}</ol>
+                <button type="button" onClick={() => setStep('consulta')} className="mt-7 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Começar consulta</button>
               </aside>
             </div>
           )}
@@ -1233,7 +1376,7 @@ function Consultation({ onClose, onComplete }: { onClose: () => void; onComplete
               </section>
               <aside className="space-y-4">
                 <div className="rounded-3xl border border-[#dfe8e3] bg-white p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Copiloto clínico</p><p className="mt-3 text-sm leading-6 text-[#526a62]">Organiza as notas e destaca lacunas. Não diagnostica nem decide conduta.</p><button type="button" onClick={() => setSummary(true)} className="mt-4 min-h-11 w-full rounded-xl border border-[#9ccdc2] text-sm font-bold text-[#0b6a5b]">Organizar notas com IA</button></div>
-                {summary && <div className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Síntese sugerida</p><p className="mt-3 text-sm leading-6 text-[#e0eee9]">Boa adaptação e saciedade. Investigar sono antes de modificar intensidade do plano.</p></div>}
+                {summary && <div className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Síntese sugerida</p><p className="mt-3 text-sm leading-6 text-[#e0eee9]">{appointment.aiFocus}</p></div>}
                 <button type="button" onClick={() => setStep('plano')} className="min-h-11 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white">Construir próximo plano</button>
               </aside>
             </div>
