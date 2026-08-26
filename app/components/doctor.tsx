@@ -193,6 +193,110 @@ const patients = [
   },
 ];
 
+const marinaDocuments = [
+  {
+    title: 'Síntese da primeira consulta',
+    category: 'Primeira consulta',
+    meta: 'PDF · 1 página · 12 ago',
+    status: 'Revisão pendente',
+    tone: 'amber' as const,
+    href: '/docs/primeira-consulta-marina-costa.pdf',
+  },
+  {
+    title: 'Relatório de evolução quinzenal',
+    category: 'Evolução',
+    meta: 'PDF · 1 página · atualizado hoje',
+    status: 'Revisado',
+    tone: 'green' as const,
+    href: '/docs/evolucao-quinzenal-marina-costa.pdf',
+  },
+  {
+    title: 'Plano de cuidado compartilhado',
+    category: 'Plano de cuidado',
+    meta: 'PDF · 1 página · versão 1.2',
+    status: 'Aprovação médica',
+    tone: 'amber' as const,
+    href: '/docs/plano-de-cuidado-marina-costa.pdf',
+  },
+];
+
+const intelligenceTabs = ['Resumo IA', 'Conversas sintetizadas', 'Fotos e análise', 'Linha do tempo'] as const;
+type IntelligenceTab = (typeof intelligenceTabs)[number];
+
+const marinaConversations = [
+  {
+    when: 'Hoje · 09:18',
+    channel: 'Pré-consulta por voz · 6 min',
+    title: 'Sono melhorou, mas ainda há despertares',
+    summary: 'Marina relata duas noites melhores, mantém cansaço ao acordar e quer entender se o horário do jantar interfere no sono.',
+    topics: ['Sono', 'Energia', 'Jantar'],
+    openItem: 'Perguntar quantas vezes desperta e se volta a dormir rapidamente.',
+  },
+  {
+    when: 'Ontem · 20:08',
+    channel: 'Chat · 8 mensagens',
+    title: 'Boa saciedade após o jantar',
+    summary: 'Registrou o jantar completo e disse que não sentiu necessidade de beliscar mais tarde. A foto da refeição ainda aguarda confirmação.',
+    topics: ['Saciedade', 'Foto do prato'],
+    openItem: 'Confirmar preparo, porção aproximada e bebida consumida.',
+  },
+  {
+    when: '23 ago · 18:42',
+    channel: 'Check-in · 4 respostas',
+    title: 'Energia mais baixa em dia de pouco sono',
+    summary: 'Relatou energia 2 de 5 após uma noite curta. Não informou novo sintoma e manteve o plano demonstrativo sem alterações.',
+    topics: ['Energia', 'Sono', 'Adesão'],
+    openItem: 'Validar se houve mudança de rotina, estresse ou consumo de cafeína.',
+  },
+];
+
+const marinaMeals = [
+  {
+    image: '/meals/almoco-equilibrado.jpg',
+    alt: 'Prato demonstrativo com frango grelhado, arroz integral, feijão preto, salada e abóbora assada.',
+    meal: 'Almoço',
+    when: 'Ontem · 12:34',
+    status: 'Confirmada pela paciente',
+    tone: 'green' as const,
+    recognized: 'Frango, arroz integral, feijão, folhas, tomate e abóbora.',
+    analysis: 'Boa variedade visual de grupos alimentares. A IA não estima adequação clínica sem confirmar porção, preparo, molho e bebida.',
+    confidence: 'Alta confiança no reconhecimento visual',
+    questions: ['A porção exibida foi consumida inteira?', 'Houve óleo, molho ou bebida fora da foto?'],
+  },
+  {
+    image: '/meals/jantar-omelete.jpg',
+    alt: 'Prato demonstrativo com omelete de legumes, batata-doce, brócolis e salada verde.',
+    meal: 'Jantar',
+    when: 'Ontem · 19:46',
+    status: 'Aguardando confirmação',
+    tone: 'amber' as const,
+    recognized: 'Omelete com vegetais, batata-doce, brócolis e salada.',
+    analysis: 'A composição aparente se aproxima do combinado, mas ingredientes, quantidade de ovos e método de preparo precisam ser confirmados.',
+    confidence: 'Confiança moderada no preparo',
+    questions: ['Quantos ovos foram usados?', 'A batata-doce foi assada com óleo?'],
+  },
+  {
+    image: '/meals/cafe-da-manha.jpg',
+    alt: 'Café da manhã demonstrativo com iogurte, mamão, aveia, chia e café preto.',
+    meal: 'Café da manhã',
+    when: '24 ago · 07:52',
+    status: 'Aguardando confirmação',
+    tone: 'amber' as const,
+    recognized: 'Iogurte, mamão, aveia, chia e café preto.',
+    analysis: 'Os itens foram reconhecidos com boa confiança. Tipo de iogurte, quantidades e adições não visíveis mudam qualquer interpretação.',
+    confidence: 'Alta confiança nos itens visíveis',
+    questions: ['Qual era o tipo de iogurte?', 'Houve açúcar ou outro ingrediente não visível?'],
+  },
+];
+
+const marinaTimeline = [
+  ['26 ago · agora', 'Dossiê atualizado', '3 PDFs, 7 conversas e 3 refeições recompilados pela IA.'],
+  ['25 ago · 16:42', 'Relatório quinzenal revisado', 'Médico validou síntese e manteve uma pendência sobre sono.'],
+  ['24 ago · 20:08', 'Refeição registrada', 'Foto do jantar recebida; reconhecimento visual aguarda confirmação.'],
+  ['23 ago · 18:42', 'Sinal fora do padrão', 'Energia 2 de 5 após noite curta, sem inferência diagnóstica.'],
+  ['12 ago · 11:14', 'Primeira consulta concluída', 'Objetivo, plano inicial e retorno em 30 dias registrados.'],
+];
+
 export default function DoctorWorkspace() {
   const [view, setView] = useState<DoctorView>('Visão geral');
   const [consultationOpen, setConsultationOpen] = useState(false);
@@ -468,7 +572,10 @@ function Patients({
   onNotify: (text: string) => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [intelligenceTab, setIntelligenceTab] = useState<IntelligenceTab>('Resumo IA');
+  const [selectedMealIndex, setSelectedMealIndex] = useState<number | null>(null);
   const selected = patients[selectedIndex] ?? patients[0];
+  const selectedMeal = selectedMealIndex === null ? null : marinaMeals[selectedMealIndex];
 
   if (!selected) return null;
 
@@ -500,7 +607,11 @@ function Patients({
             type="button"
             key={patient.name}
             aria-pressed={selectedIndex === index}
-            onClick={() => setSelectedIndex(index)}
+            onClick={() => {
+              setSelectedIndex(index);
+              setIntelligenceTab('Resumo IA');
+              setSelectedMealIndex(null);
+            }}
             className={cn(
               'cursor-pointer rounded-3xl border bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc8bd] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
               selectedIndex === index ? 'border-[#8bbcaf] ring-2 ring-[#dceee9]' : 'border-[#dfe8e3]',
@@ -624,38 +735,327 @@ function Patients({
           </article>
         </div>
 
-        <div className="grid gap-5 border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6 lg:grid-cols-2">
-          <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-            <h3 className="text-sm font-bold">Atividade recente</h3>
-            <div className="mt-4 space-y-4">
-              {selected.activity.map((item) => (
-                <div key={item[0]} className="flex gap-3">
-                  <span aria-hidden="true" className="mt-1.5 size-2.5 shrink-0 rounded-full bg-[#3da58f]" />
+        <section aria-labelledby="smart-dossier-title" className="border-t border-[#e7eeea] bg-[#f8faf9] p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Gerado automaticamente</p>
+              <h3 id="smart-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Dossiê inteligente do paciente</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#60766f]">Documentos organizados pela IA a partir de consultas, check-ins e registros, sempre antes da revisão do médico.</p>
+            </div>
+            <Status tone="green">3 PDFs atualizados</Status>
+          </div>
+
+          {selected.name === 'Marina Costa' ? (
+            <>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {marinaDocuments.map((document) => (
+                  <article key={document.href} className="flex min-h-52 flex-col rounded-2xl border border-[#d7e3df] bg-white p-5 shadow-[0_8px_22px_rgba(28,55,47,0.035)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e8f4f0] text-xs font-black tracking-[0.08em] text-[#0b6a5b]">PDF</span>
+                      <Status tone={document.tone}>{document.status}</Status>
+                    </div>
+                    <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.09em] text-[#789087]">{document.category}</p>
+                    <h4 className="mt-1 text-base font-bold leading-6 text-[#17372f]">{document.title}</h4>
+                    <p className="mt-2 text-xs text-[#789087]">{document.meta}</p>
+                    <a href={document.href} target="_blank" rel="noreferrer" className="mt-auto flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                      Abrir PDF demonstrativo
+                    </a>
+                  </article>
+                ))}
+              </div>
+              <article className="mt-4 flex flex-col gap-4 rounded-2xl border border-[#d7e3df] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="flex items-center gap-4">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#17372f] text-[10px] font-black tracking-[0.08em] text-white">RX</span>
                   <div>
-                    <p className="text-sm font-semibold text-[#405d54]">{item[1]}</p>
-                    <p className="mt-0.5 text-xs text-[#8a9c96]">{item[0]}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-bold text-[#17372f]">Receita digital #RX-1042</h4>
+                      <Status>Ativa</Status>
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-[#698078]">Emitida na última consulta · validade até 26 set · trilha de envio disponível</p>
                   </div>
                 </div>
-              ))}
+                <button type="button" onClick={() => onNotify('Receita demonstrativa e histórico de acessos abertos.')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                  Ver receita e histórico
+                </button>
+              </article>
+            </>
+          ) : (
+            <div className="mt-5 rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-6 text-center">
+              <p className="text-sm font-bold text-[#405d54]">Dossiê automático ainda em preparação para {selected.name}.</p>
+              <p className="mt-1 text-xs text-[#789087]">Os PDFs serão liberados depois que houver dados suficientes e revisão médica.</p>
             </div>
-          </article>
-          <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-            <h3 className="text-sm font-bold">Próximos passos sugeridos</h3>
-            <ol className="mt-4 space-y-3">
-              {selected.nextSteps.map((step, index) => (
-                <li key={step} className="flex items-start gap-3 text-sm text-[#526a62]">
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#e8f4f0] text-xs font-bold text-[#0b6a5b]">{index + 1}</span>
-                  <span className="pt-1">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </article>
-        </div>
+          )}
+        </section>
+
+        <section aria-labelledby="clinical-copilot-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Copiloto longitudinal</p>
+              <h3 id="clinical-copilot-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Contexto que se atualiza entre consultas</h3>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#60766f]">A IA conecta conversa, documentos, imagens e rotina para reduzir leitura manual e destacar o que merece validação.</p>
+            </div>
+            <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-2 text-xs font-bold text-[#526a62]">6 fontes conectadas · mock</span>
+          </div>
+
+          <div role="tablist" aria-label="Visões do copiloto clínico" className="mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-[#d7e3df] bg-white p-2">
+            {intelligenceTabs.map((tab) => (
+              <button
+                type="button"
+                role="tab"
+                key={tab}
+                aria-selected={intelligenceTab === tab}
+                aria-controls="patient-intelligence-panel"
+                onClick={() => setIntelligenceTab(tab)}
+                className={cn(
+                  'min-h-11 shrink-0 cursor-pointer rounded-xl px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
+                  intelligenceTab === tab ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#edf7f4] hover:text-[#0b6a5b]',
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div id="patient-intelligence-panel" role="tabpanel" className="mt-5">
+            {selected.name !== 'Marina Costa' ? (
+              <div className="rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-8 text-center">
+                <p className="text-sm font-bold text-[#405d54]">Ainda não há contexto suficiente para compor esta visão de {selected.name}.</p>
+                <p className="mt-2 text-xs leading-5 text-[#789087]">O copiloto só organiza dados disponíveis e não preenche lacunas com inferências.</p>
+              </div>
+            ) : (
+              <>
+                {intelligenceTab === 'Resumo IA' && (
+                  <div className="space-y-5">
+                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)_minmax(260px,0.9fr)]">
+                      <article className="rounded-2xl bg-[#17372f] p-5 text-white">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Briefing da próxima consulta</p>
+                            <h4 className="mt-2 text-lg font-semibold">Agenda clínica preparada em 42 segundos</h4>
+                          </div>
+                          <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#d9eee8]">Revisar hoje</span>
+                        </div>
+                        <ol className="mt-5 space-y-3">
+                          {['Entender despertares e energia ao acordar', 'Revisar duas refeições ainda não confirmadas', 'Validar exame anexado e meta da quinzena'].map((item, index) => (
+                            <li key={item} className="flex items-start gap-3 text-sm leading-5 text-[#d3e4df]">
+                              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-bold text-white">{index + 1}</span>
+                              <span className="pt-1">{item}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        <button type="button" onClick={() => onNotify('Agenda sugerida adicionada ao preparo da consulta.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
+                          Adicionar ao preparo
+                        </button>
+                      </article>
+
+                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Padrões multimodais explicáveis</p>
+                        <div className="mt-4 divide-y divide-[#e7eeea]">
+                          <div className="pb-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-bold">Sono curto e energia</h4><Status tone="amber">Hipótese</Status></div>
+                            <p className="mt-2 text-sm leading-6 text-[#526a62]">Energia menor apareceu em 3 de 4 dias após noites abaixo de seis horas.</p>
+                            <p className="mt-2 text-[11px] font-semibold text-[#8a9c96]">Base: 14 noites + 11 check-ins</p>
+                          </div>
+                          <div className="pt-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-bold">Registro do jantar e saciedade</h4><Status tone="blue">Observação</Status></div>
+                            <p className="mt-2 text-sm leading-6 text-[#526a62]">Dias com refeição confirmada tiveram relatos mais completos de saciedade.</p>
+                            <p className="mt-2 text-[11px] font-semibold text-[#8a9c96]">Base: 7 registros demonstrativos</p>
+                          </div>
+                        </div>
+                        <p className="mt-4 rounded-xl bg-[#fff4d8] p-3 text-xs leading-5 text-[#825b0b]">Associação não significa causa. O médico decide se vale investigar.</p>
+                      </article>
+
+                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                        <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Lacunas detectadas</p><Status tone="rose">3 itens</Status></div>
+                        <div className="mt-4 space-y-3">
+                          {[
+                            ['Exame anexado', 'Ainda sem revisão médica'],
+                            ['2 refeições', 'Aguardam confirmação da paciente'],
+                            ['Receita ativa', 'Vence em 31 dias'],
+                          ].map((item) => (
+                            <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
+                              <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
+                              <p className="mt-1 text-xs text-[#789087]">{item[1]}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => onNotify('Pendências adicionadas à caixa de revisão médica.')} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                          Revisar pendências
+                        </button>
+                      </article>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Narrativa da paciente</p>
+                        <blockquote className="mt-4 border-l-2 border-[#8bc6b9] pl-4 text-base font-semibold leading-7 text-[#2d4d44]">“Estou conseguindo seguir sem sentir que vivo de dieta. Quero dormir a noite inteira e acordar com mais energia.”</blockquote>
+                        <p className="mt-3 text-xs leading-5 text-[#789087]">Síntese de 7 conversas · palavras reorganizadas pela IA · trechos originais preservados.</p>
+                      </article>
+                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Capacidades de IA no cuidado</p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {[
+                            ['Rastreabilidade', 'Cada insight mostra de onde veio.'],
+                            ['Linguagem simples', 'Uma versão médica e outra para a paciente.'],
+                            ['Contradições', 'Sinaliza divergências entre relato e registros.'],
+                            ['Pós-consulta', 'Gera resumo, tarefas e lembretes após aprovação.'],
+                          ].map((item) => (
+                            <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
+                              <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
+                              <p className="mt-1 text-xs leading-5 text-[#789087]">{item[1]}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                )}
+
+                {intelligenceTab === 'Conversas sintetizadas' && (
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+                    <div className="space-y-4">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[['Conversas lidas', '7'], ['Mensagens', '18'], ['Questões abertas', '3']].map((item) => (
+                          <div key={item[0]} className="rounded-xl border border-[#dfe8e3] bg-white p-4">
+                            <p className="text-xs font-semibold text-[#789087]">{item[0]}</p>
+                            <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#17372f]">{item[1]}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {marinaConversations.map((conversation) => (
+                        <article key={conversation.when} className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#0b7b68]">{conversation.when}</p><h4 className="mt-1 text-base font-bold text-[#17372f]">{conversation.title}</h4></div>
+                            <span className="text-xs font-semibold text-[#789087]">{conversation.channel}</span>
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-[#526a62]">{conversation.summary}</p>
+                          <div className="mt-3 flex flex-wrap gap-2">{conversation.topics.map((topic) => <Status key={topic} tone="gray">{topic}</Status>)}</div>
+                          <div className="mt-4 rounded-xl bg-[#fff4d8] p-3">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#825b0b]">Pergunta que ficou aberta</p>
+                            <p className="mt-1 text-xs leading-5 text-[#704f10]">{conversation.openItem}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                    <aside className="h-fit rounded-2xl bg-[#17372f] p-5 text-white xl:sticky xl:top-24">
+                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Síntese das últimas conversas</p>
+                      <h4 className="mt-3 text-lg font-semibold">O foco espontâneo mudou de peso para energia e sono.</h4>
+                      <p className="mt-3 text-sm leading-6 text-[#d3e4df]">A paciente mantém boa adesão percebida e busca entender os despertares, sem pedir alteração de conduta.</p>
+                      <div className="mt-5 border-t border-white/15 pt-4">
+                        <p className="text-xs font-bold text-white">Próxima melhor pergunta</p>
+                        <p className="mt-2 text-sm leading-6 text-[#d3e4df]">“O que acontece antes, durante e depois de cada despertar?”</p>
+                      </div>
+                      <button type="button" onClick={() => onNotify('Trechos originais e horários usados na síntese abertos.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
+                        Ver trechos usados
+                      </button>
+                    </aside>
+                  </div>
+                )}
+
+                {intelligenceTab === 'Fotos e análise' && (
+                  <div>
+                    <div className="flex flex-col gap-3 rounded-2xl border border-[#c9ddd6] bg-[#edf7f4] p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div><h4 className="text-sm font-bold text-[#17372f]">3 refeições analisadas · 2 aguardam confirmação</h4><p className="mt-1 text-xs leading-5 text-[#60766f]">A IA reconhece itens visíveis e formula perguntas; não calcula adequação clínica como fato.</p></div>
+                      <Status tone="amber">Revisão humana</Status>
+                    </div>
+                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {marinaMeals.map((meal, index) => (
+                        <article key={meal.image} className="overflow-hidden rounded-2xl border border-[#dfe8e3] bg-white">
+                          <div className="relative aspect-[4/3] overflow-hidden bg-[#e8eeeb]">
+                            <img src={meal.image} alt={meal.alt} loading="lazy" className="h-full w-full object-cover" />
+                            <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-[#17372f] shadow-sm">{meal.meal}</span>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-[#789087]">{meal.when}</p><Status tone={meal.tone}>{meal.status}</Status></div>
+                            <h4 className="mt-3 text-sm font-bold text-[#17372f]">Itens reconhecidos</h4>
+                            <p className="mt-1 text-sm leading-6 text-[#526a62]">{meal.recognized}</p>
+                            <p className="mt-3 text-[11px] font-semibold text-[#789087]">{meal.confidence}</p>
+                            <button type="button" onClick={() => setSelectedMealIndex(index)} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                              Abrir foto e análise
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs leading-5 text-[#789087]">Estimativa visual demonstrativa. Itens ocultos, porções e preparo podem estar incorretos; paciente e médico confirmam antes de qualquer uso.</p>
+                  </div>
+                )}
+
+                {intelligenceTab === 'Linha do tempo' && (
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+                    <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Linha do tempo inteligente</p><h4 className="mt-2 text-lg font-semibold">Eventos conectados por significado</h4></div><Status tone="blue">5 marcos</Status></div>
+                      <div className="mt-5 space-y-1">
+                        {marinaTimeline.map((event, index) => (
+                          <div key={event[0]} className="relative grid gap-1 border-l border-[#b9d8cf] pb-5 pl-6 last:border-transparent last:pb-0 sm:grid-cols-[120px_1fr]">
+                            <span aria-hidden="true" className={cn('absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white', index === 0 ? 'bg-[#0b7b68]' : 'bg-[#8bbcaf]')} />
+                            <p className="text-xs font-bold text-[#0b6a5b]">{event[0]}</p>
+                            <div><p className="text-sm font-bold text-[#405d54]">{event[1]}</p><p className="mt-1 text-xs leading-5 text-[#789087]">{event[2]}</p></div>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                    <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Automações que evoluem com a IA</p>
+                      <div className="mt-4 space-y-3">
+                        {[
+                          ['Detecção de contradições', 'Compara relato, diário, receita e dados do relógio.'],
+                          ['Resumo em duas linguagens', 'Uma versão clínica e outra clara para a paciente.'],
+                          ['Auditoria de cada insight', 'Mostra fonte, data, confiança e quem aprovou.'],
+                          ['Consentimento contextual', 'Pede somente o dado necessário para cada recurso.'],
+                          ['Próxima ação adaptativa', 'Sugere contato, pergunta ou documento sem decidir conduta.'],
+                        ].map((item) => (
+                          <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
+                            <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
+                            <p className="mt-1 text-xs leading-5 text-[#789087]">{item[1]}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <button type="button" onClick={() => onNotify('Novo snapshot longitudinal gerado para revisão.')} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                        Gerar novo snapshot
+                      </button>
+                    </article>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
 
         <p className="border-t border-[#e7eeea] bg-[#f4f7f5] px-5 py-4 text-xs leading-5 text-[#789087] sm:px-6">
           Conteúdo demonstrativo. Relatórios, receitas e insights exigem revisão médica e não representam prontuário real.
         </p>
       </section>
+
+      {selectedMeal && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102a24]/55 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="meal-analysis-title" onClick={() => setSelectedMealIndex(null)}>
+          <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl" onClick={(event) => event.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dfe8e3] bg-white px-5 py-4 sm:px-6">
+              <div><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Análise visual demonstrativa</p><h3 id="meal-analysis-title" className="mt-1 text-xl font-semibold">{selectedMeal.meal} · {selectedMeal.when}</h3></div>
+              <button type="button" onClick={() => setSelectedMealIndex(null)} aria-label="Fechar análise da refeição" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
+            </div>
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+              <div className="bg-[#edf2ef] p-4 sm:p-6"><img src={selectedMeal.image} alt={selectedMeal.alt} className="h-full max-h-[620px] w-full rounded-2xl object-cover" /></div>
+              <div className="p-5 sm:p-6">
+                <Status tone={selectedMeal.tone}>{selectedMeal.status}</Status>
+                <h4 className="mt-5 text-sm font-bold text-[#17372f]">Itens reconhecidos</h4>
+                <p className="mt-2 text-sm leading-6 text-[#526a62]">{selectedMeal.recognized}</p>
+                <h4 className="mt-5 text-sm font-bold text-[#17372f]">Leitura assistida</h4>
+                <p className="mt-2 text-sm leading-6 text-[#526a62]">{selectedMeal.analysis}</p>
+                <p className="mt-3 text-xs font-semibold text-[#789087]">{selectedMeal.confidence}</p>
+                <div className="mt-5 rounded-2xl bg-[#fff4d8] p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#825b0b]">Perguntas para confirmar</p>
+                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[#704f10]">{selectedMeal.questions.map((question) => <li key={question}>{question}</li>)}</ul>
+                </div>
+                <button type="button" onClick={() => { setSelectedMealIndex(null); onNotify('Itens visíveis confirmados no mock da refeição.'); }} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+                  Confirmar itens visíveis
+                </button>
+                <p className="mt-4 text-xs leading-5 text-[#789087]">A foto não revela quantidades exatas, ingredientes ocultos ou preparo. Nenhuma decisão clínica é automática.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
