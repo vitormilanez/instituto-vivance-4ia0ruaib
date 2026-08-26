@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { cn, Heading, Status, Toast } from './shared';
 
 type PatientView = 'Hoje' | 'Plano' | 'Diário' | 'Evolução' | 'Mensagens' | 'Consultas';
+type MealRatings = [number, number, number];
 
 const nav: PatientView[] = ['Hoje', 'Plano', 'Diário', 'Evolução', 'Mensagens', 'Consultas'];
 
@@ -14,6 +15,8 @@ export default function PatientWorkspace() {
   const [preVisitOpen, setPreVisitOpen] = useState(false);
   const [preVisitDone, setPreVisitDone] = useState(false);
   const [mealAnalyzed, setMealAnalyzed] = useState(false);
+  const [mealRatings, setMealRatings] = useState<MealRatings>([0, 0, 0]);
+  const [mealFeedbackSent, setMealFeedbackSent] = useState(false);
   const [watchConnected, setWatchConnected] = useState(false);
   const [tasks, setTasks] = useState([true, false, false]);
   const [toast, setToast] = useState('');
@@ -62,7 +65,21 @@ export default function PatientWorkspace() {
             onToggle={(index) => setTasks(tasks.map((done, taskIndex) => taskIndex === index ? !done : done))}
           />
         )}
-        {view === 'Diário' && <Diary analyzed={mealAnalyzed} onAnalyze={() => setMealAnalyzed(true)} />}
+        {view === 'Diário' && (
+          <Diary
+            analyzed={mealAnalyzed}
+            ratings={mealRatings}
+            feedbackSent={mealFeedbackSent}
+            onAnalyze={() => setMealAnalyzed(true)}
+            onRate={(questionIndex, value) => {
+              setMealRatings((current) => current.map((rating, index) => index === questionIndex ? value : rating) as MealRatings);
+            }}
+            onSubmitFeedback={() => {
+              setMealFeedbackSent(true);
+              notify('Avaliação enviada ao Dr. Guilherme.');
+            }}
+          />
+        )}
         {view === 'Evolução' && <Evolution onNavigate={setView} />}
         {view === 'Mensagens' && <Messages onNotify={notify} />}
         {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={() => setPreVisitOpen(true)} />}
@@ -248,34 +265,94 @@ function Plan({ tasks, onToggle }: { tasks: boolean[]; onToggle: (index: number)
   );
 }
 
-function Diary({ analyzed, onAnalyze }: { analyzed: boolean; onAnalyze: () => void }) {
+function Diary({
+  analyzed,
+  ratings,
+  feedbackSent,
+  onAnalyze,
+  onRate,
+  onSubmitFeedback,
+}: {
+  analyzed: boolean;
+  ratings: MealRatings;
+  feedbackSent: boolean;
+  onAnalyze: () => void;
+  onRate: (questionIndex: number, value: number) => void;
+  onSubmitFeedback: () => void;
+}) {
+  const questions = [
+    { question: 'Quanto essa refeição deixou você saciada?', low: 'Nada saciada', high: 'Muito saciada' },
+    { question: 'Como ficou seu conforto digestivo depois?', low: 'Muito desconfortável', high: 'Muito confortável' },
+    { question: 'Quão fácil foi seguir o combinado nesta refeição?', low: 'Muito difícil', high: 'Muito fácil' },
+  ];
+  const allAnswered = ratings.every((rating) => rating > 0);
+
+  const submitFeedback = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!allAnswered || feedbackSent) return;
+    onSubmitFeedback();
+  };
+
   return (
     <section className="mt-0 lg:mt-8">
       <Heading eyebrow="Diário sem julgamento" title="Registre o que aconteceu" description="A ideia é enxergar padrões e contexto, não classificar refeições como boas ou ruins." />
       <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_350px]">
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-7">
-          <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Jantar · hoje, 19:42</p><h2 className="mt-2 text-xl font-semibold">Refeição registrada</h2></div><Status tone="gray">Foto simulada</Status></div>
+          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Jantar · hoje, 19:42</p><h2 className="mt-2 text-xl font-semibold">Refeição registrada</h2></div><Status tone="gray">Foto demonstrativa</Status></div>
           <div className="mt-6 grid gap-5 sm:grid-cols-[220px_1fr] sm:items-center">
-            <div className="mx-auto grid aspect-square w-full max-w-[220px] place-items-center rounded-3xl bg-[#e8dfce] p-5">
-              <div className="relative aspect-square w-full rounded-full border-[12px] border-white bg-[#f7f0df] shadow-[0_8px_30px_rgba(73,61,42,0.18)]">
-                <span className="absolute left-[14%] top-[18%] h-[46%] w-[42%] rounded-[45%] bg-[#5b9d65]" />
-                <span className="absolute bottom-[18%] right-[13%] h-[38%] w-[43%] rounded-[50%] bg-[#d09a57]" />
-                <span className="absolute right-[17%] top-[14%] h-[31%] w-[34%] rounded-[48%] bg-[#e8c66e]" />
-                <span className="absolute bottom-[24%] left-[24%] size-8 rounded-full bg-[#b95842]" />
-              </div>
+            <div className="mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl bg-[#e8dfce] shadow-[0_12px_34px_rgba(73,61,42,0.16)]">
+              <img src="/meals/jantar-omelete.jpg" alt="Prato demonstrativo com omelete, batata-doce, brócolis e salada." className="size-full object-cover" />
             </div>
             <div>
               <p className="text-sm leading-6 text-[#60766f]">Você marcou esta refeição como <strong className="text-[#17372f]">satisfatória</strong> e informou fome moderada antes de comer.</p>
-              <button type="button" onClick={onAnalyze} disabled={analyzed} className="mt-5 min-h-12 w-full rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white disabled:bg-[#779a91] sm:w-auto">{analyzed ? 'Análise concluída' : 'Analisar com IA'}</button>
+              <button type="button" onClick={onAnalyze} disabled={analyzed} className="mt-5 min-h-12 w-full cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#779a91] sm:w-auto">{analyzed ? 'Análise concluída' : 'Analisar com IA'}</button>
             </div>
           </div>
           {analyzed && (
-            <div className="mt-6 rounded-3xl border border-[#b9d8cf] bg-[#edf7f4] p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-[#0b6a5b]">Comparação com o combinado</p><Status>Compatível</Status></div>
-              <p className="mt-3 text-sm leading-6 text-[#45655c]">A imagem parece incluir vegetais, uma fonte de proteína e carboidrato. A porção visual está próxima do modelo combinado para o jantar.</p>
-              <div className="mt-4 rounded-2xl bg-white/70 p-4"><p className="text-xs font-bold text-[#45655c]">Uma pergunta útil</p><p className="mt-1 text-sm text-[#60766f]">Como ficou sua saciedade 20 minutos depois?</p></div>
-              <p className="mt-4 text-xs leading-5 text-[#698078]">Análise demonstrativa: fotos não permitem identificar ingredientes, quantidades ou valor nutricional com precisão.</p>
-            </div>
+            <>
+              <div className="mt-6 rounded-3xl border border-[#b9d8cf] bg-[#edf7f4] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-[#0b6a5b]">Comparação com o combinado</p><Status>Compatível</Status></div>
+                <p className="mt-3 text-sm leading-6 text-[#45655c]">A imagem parece incluir vegetais, uma fonte de proteína e carboidrato. A composição visual está próxima do modelo combinado para o jantar.</p>
+                <p className="mt-4 text-xs leading-5 text-[#698078]">Análise demonstrativa: fotos não permitem identificar ingredientes, quantidades ou valor nutricional com precisão.</p>
+              </div>
+
+              <form onSubmit={submitFeedback} className="mt-6 rounded-3xl border border-[#dfe8e3] bg-[#fbfcfb] p-5 sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Como você se sentiu</p><h3 className="mt-2 text-lg font-semibold text-[#17372f]">Dê uma nota de 1 a 5</h3><p className="mt-1 text-xs leading-5 text-[#698078]">Essas respostas ajudam a contextualizar a foto para o médico.</p></div>
+                  {!feedbackSent && <Status tone={allAnswered ? 'green' : 'gray'}>{ratings.filter(Boolean).length} de 3 respondidas</Status>}
+                </div>
+
+                <div className="mt-6 space-y-5">
+                  {questions.map((item, questionIndex) => (
+                    <fieldset key={item.question} disabled={feedbackSent} className="rounded-2xl border border-[#e1e9e5] bg-white p-4">
+                      <legend className="px-1 text-sm font-bold leading-5 text-[#294940]">{questionIndex + 1}. {item.question}</legend>
+                      <div className="mt-3 flex items-center gap-2" role="radiogroup" aria-label={item.question}>
+                        {[1, 2, 3, 4, 5].map((score) => {
+                          const inputId = `meal-question-${questionIndex}-score-${score}`;
+                          const selected = ratings[questionIndex] === score;
+                          return (
+                            <div key={inputId} className="min-w-0 flex-1">
+                              <input id={inputId} type="radio" name={`meal-question-${questionIndex}`} value={score} checked={selected} onChange={() => onRate(questionIndex, score)} className="peer sr-only" />
+                              <label htmlFor={inputId} className={cn('grid min-h-11 cursor-pointer place-items-center rounded-xl border text-sm font-bold transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#0b7b68] peer-focus-visible:ring-offset-2', selected ? 'border-[#0b7b68] bg-[#0b7b68] text-white' : 'border-[#c9d6d1] bg-white text-[#526a62] hover:border-[#82b6a9] hover:bg-[#edf7f4]', feedbackSent && 'cursor-default opacity-80')}>{score}</label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 flex justify-between gap-3 text-[11px] leading-4 text-[#789087]"><span>1 · {item.low}</span><span className="text-right">5 · {item.high}</span></div>
+                    </fieldset>
+                  ))}
+                </div>
+
+                {feedbackSent ? (
+                  <div role="status" className="mt-5 rounded-2xl border border-[#b9d8cf] bg-[#e8f4f0] p-4">
+                    <p className="text-sm font-bold text-[#0b6a5b]">Avaliação enviada ao Dr. Guilherme</p>
+                    <p className="mt-1 text-xs leading-5 text-[#526a62]">Suas três respostas foram adicionadas ao acompanhamento desta refeição.</p>
+                  </div>
+                ) : (
+                  <button type="submit" disabled={!allAnswered} className="mt-5 min-h-12 w-full cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#a9b8b3]">Enviar avaliação ao Dr. Guilherme</button>
+                )}
+              </form>
+            </>
           )}
         </article>
         <aside className="space-y-4">
