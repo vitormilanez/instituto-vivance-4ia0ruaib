@@ -63,7 +63,7 @@ export default function PatientWorkspace() {
           />
         )}
         {view === 'Diário' && <Diary analyzed={mealAnalyzed} onAnalyze={() => setMealAnalyzed(true)} />}
-        {view === 'Evolução' && <Evolution />}
+        {view === 'Evolução' && <Evolution onNavigate={setView} />}
         {view === 'Mensagens' && <Messages onNotify={notify} />}
         {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={() => setPreVisitOpen(true)} />}
       </main>
@@ -294,32 +294,204 @@ function Diary({ analyzed, onAnalyze }: { analyzed: boolean; onAnalyze: () => vo
   );
 }
 
-function Evolution() {
-  const weights = [80, 79.8, 79.3, 78.9, 78.6, 78.2];
+function Evolution({ onNavigate }: { onNavigate: (view: PatientView) => void }) {
+  type EvolutionRange = '6 semanas' | '3 meses' | '6 meses';
+  const [range, setRange] = useState<EvolutionRange>('6 semanas');
+  const rangeData: Record<EvolutionRange, Array<{ label: string; remaining: number }>> = {
+    '6 semanas': [
+      { label: 'S1', remaining: 8 },
+      { label: 'S2', remaining: 7.8 },
+      { label: 'S3', remaining: 7.3 },
+      { label: 'S4', remaining: 6.9 },
+      { label: 'S5', remaining: 6.6 },
+      { label: 'Hoje', remaining: 6.2 },
+    ],
+    '3 meses': [
+      { label: 'Jun', remaining: 9.2 },
+      { label: 'Fim jun', remaining: 8.8 },
+      { label: 'Jul', remaining: 8 },
+      { label: 'Fim jul', remaining: 7.3 },
+      { label: 'Ago', remaining: 6.6 },
+      { label: 'Hoje', remaining: 6.2 },
+    ],
+    '6 meses': [
+      { label: 'Mar', remaining: 11.7 },
+      { label: 'Abr', remaining: 10.8 },
+      { label: 'Mai', remaining: 9.9 },
+      { label: 'Jun', remaining: 9.2 },
+      { label: 'Jul', remaining: 8 },
+      { label: 'Hoje', remaining: 6.2 },
+    ],
+  };
+  const data = rangeData[range];
+  const maxRemaining = Math.max(...data.map((point) => point.remaining));
+  const firstRemaining = data[0]?.remaining ?? 6.2;
+  const progressInRange = firstRemaining - 6.2;
+  const journeyProgress = 23;
+  const movementWeek = [54, 63, 47, 72, 67, 83, 76];
+  const sleepWeek = [78, 51, 63, 56, 74, 68, 61];
+
   return (
     <section className="mt-0 lg:mt-8">
-      <Heading eyebrow="Evolução, não perfeição" title="Seus sinais ao longo do tempo" description="Veja tendências e conquistas sem transformar um único dia em veredito." />
-      <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_340px]">
-        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-7">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-bold">Peso · últimas 6 semanas</p><p className="mt-1 text-xs text-[#698078]">Tendência demonstrativa</p></div><div className="text-right"><p className="text-2xl font-semibold">78,2 kg</p><p className="text-xs font-bold text-[#0b7b68]">−1,8 kg no período</p></div></div>
-          <div className="mt-8 flex h-56 items-end gap-2 rounded-2xl bg-[#f8faf9] p-4 sm:gap-4">
-            {weights.map((weight, index) => {
-              const height = 48 + (80 - weight) * 26;
-              return <div key={String(weight)} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] font-bold text-[#526a62]">{String(weight).replace('.', ',')}</span><div className="w-full max-w-12 rounded-t-lg bg-[#77b8a9]" style={{ height: String(height) + 'px' }} /><span className="text-[10px] text-[#8a9c96]">S{index + 1}</span></div>;
-            })}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2"><Status tone="amber">Dados demonstrativos</Status><Status>Dia 29 de 90</Status></div>
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.13em] text-[#0b7b68]">Seu caminho, com clareza</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em] text-[#15342c] sm:text-4xl">Quanto falta para meu objetivo?</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">Um gráfico simples para enxergar o que já mudou e o que ainda falta, sem transformar variações de um dia em cobrança.</p>
+        </div>
+        <button type="button" onClick={() => onNavigate('Mensagens')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+          Conversar sobre a meta
+        </button>
+      </div>
+
+      <article className="mt-7 overflow-hidden rounded-[32px] bg-[#17372f] text-white shadow-[0_18px_45px_rgba(23,55,47,0.18)]">
+        <div className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[minmax(0,1.05fr)_190px_minmax(240px,0.85fr)] lg:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9fd6c8]">Objetivo combinado</p>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:max-w-md">
+              <div className="rounded-2xl bg-white/8 p-4"><p className="text-xs text-[#b8d3cb]">Hoje</p><p className="mt-1 text-2xl font-semibold">78,2 kg</p></div>
+              <div className="rounded-2xl bg-white/8 p-4"><p className="text-xs text-[#b8d3cb]">Objetivo</p><p className="mt-1 text-2xl font-semibold">72,0 kg</p></div>
+            </div>
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold"><span className="text-[#d3e4df]">1,8 kg percorridos</span><span className="text-white">{journeyProgress}% do caminho</span></div>
+              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/12"><div className="h-full rounded-full bg-[#8fd3c0]" style={{ width: `${journeyProgress}%` }} /></div>
+              <div className="mt-2 flex justify-between text-[11px] text-[#9fbab2]"><span>Início · 80,0 kg</span><span>Meta · 72,0 kg</span></div>
+            </div>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {[
-              ['Adesão', '82%', '+6 p.p.'],
-              ['Passos médios', '6.420', '+9%'],
-              ['Sono médio', '6h12', 'atenção'],
-            ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#698078]">{item[0]}</p><p className="mt-2 text-lg font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[2] === 'atenção' ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
+
+          <div className="mx-auto">
+            <div role="img" aria-label="Vinte e três por cento do caminho concluído; faltam 6,2 quilos para o objetivo demonstrativo." className="grid size-44 place-items-center rounded-full p-3" style={{ background: `conic-gradient(#8fd3c0 0 ${journeyProgress}%, rgba(255,255,255,0.12) ${journeyProgress}% 100%)` }}>
+              <div className="grid size-full place-items-center rounded-full border border-white/10 bg-[#17372f] text-center">
+                <div><p className="text-3xl font-semibold tracking-[-0.04em]">6,2 kg</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.09em] text-[#9fd6c8]">ainda faltam</p></div>
+              </div>
+            </div>
           </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/8 p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Próximo marco</p>
+            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">77,0 kg</p>
+            <p className="mt-1 text-sm font-semibold text-white">Faltam 1,2 kg até lá</p>
+            <p className="mt-4 text-sm leading-6 text-[#d3e4df]">Metas menores deixam o caminho mais compreensível. Este marco pode ser revisto com seu médico.</p>
+          </div>
+        </div>
+        <div className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-[#aac5bd] sm:px-7">Meta demonstrativa definida com o Dr. Guilherme · peso é apenas um dos sinais do cuidado</div>
+      </article>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <article className="rounded-[28px] border border-[#dfe8e3] bg-white p-5 shadow-[0_10px_30px_rgba(28,55,47,0.045)] sm:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Quanto faltava a cada período</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em]">O gráfico diminui conforme você avança</h2>
+              <p className="mt-1 text-sm text-[#698078]">Cada coluna mostra somente os quilos restantes até a meta.</p>
+            </div>
+            <div role="group" aria-label="Período do gráfico" className="flex w-fit rounded-xl bg-[#f1f5f3] p-1">
+              {(Object.keys(rangeData) as EvolutionRange[]).map((item) => (
+                <button type="button" key={item} aria-pressed={range === item} onClick={() => setRange(item)} className={cn('min-h-10 cursor-pointer rounded-lg px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]', range === item ? 'bg-white text-[#17372f] shadow-sm' : 'text-[#698078] hover:text-[#0b6a5b]')}>{item}</button>
+              ))}
+            </div>
+          </div>
+
+          <div role="img" aria-label={`Gráfico de ${range}: o valor restante diminui de ${String(firstRemaining).replace('.', ',')} para 6,2 quilos.`} className="mt-7 rounded-2xl border border-[#e7eeea] bg-[#f8faf9] p-4 sm:p-5">
+            <div className="flex h-64 items-end gap-2 sm:gap-4">
+              {data.map((point, index) => {
+                const height = (point.remaining / maxRemaining) * 100;
+                const isCurrent = index === data.length - 1;
+                return (
+                  <div key={`${point.label}-${point.remaining}`} className="flex h-full min-w-0 flex-1 flex-col items-center">
+                    <span className={cn('mb-2 whitespace-nowrap text-[10px] font-bold sm:text-xs', isCurrent ? 'text-[#0b6a5b]' : 'text-[#526a62]')}>{String(point.remaining).replace('.', ',')} kg</span>
+                    <div className="flex min-h-0 w-full flex-1 items-end justify-center">
+                      <div className={cn('w-full max-w-16 rounded-t-xl border-x border-t transition-[height] duration-300 motion-reduce:transition-none', isCurrent ? 'border-[#0b7b68] bg-[#0b7b68]' : 'border-[#a6cfc4] bg-[#b9ddd4]')} style={{ height: `${height}%` }} />
+                    </div>
+                    <span className={cn('mt-2 truncate text-[10px] sm:text-xs', isCurrent ? 'font-bold text-[#0b6a5b]' : 'text-[#8a9c96]')}>{point.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-dashed border-[#c9d6d1] pt-3 text-[11px] text-[#789087]"><span>Quanto menor, mais perto</span><strong className="text-[#0b6a5b]">Meta = 0 kg restantes</strong></div>
+            <table className="sr-only"><caption>Quilos restantes por período</caption><tbody>{data.map((point) => <tr key={`table-${point.label}`}><th>{point.label}</th><td>{String(point.remaining).replace('.', ',')} kg restantes</td></tr>)}</tbody></table>
+          </div>
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-[#edf7f4] p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[#0b6a5b]">{String(progressInRange.toFixed(1)).replace('.', ',')} kg a menos para percorrer neste período</p><p className="mt-1 text-xs text-[#60766f]">Tendência demonstrativa; pequenas oscilações são esperadas.</p></div><Status>6,2 kg restantes</Status></div>
         </article>
         <aside className="space-y-5">
-          <div className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Conquista do ciclo</p><h2 className="mt-3 text-xl font-semibold">Consistência maior que pressa</h2><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">Você manteve pelo menos duas ações do plano em 11 dos últimos 14 dias.</p></div>
-          <div className="rounded-3xl border border-[#dfe8e3] bg-white p-5"><div className="flex items-center justify-between"><p className="text-sm font-bold">Relatório quinzenal</p><Status>Disponível</Status></div><p className="mt-3 text-sm leading-6 text-[#698078]">Revisado pelo Dr. Guilherme em 24 de agosto.</p><button type="button" className="mt-4 min-h-11 text-sm font-bold text-[#0b6a5b] underline underline-offset-4">Ler relatório</button></div>
+          <article className="rounded-[28px] border border-[#c9ddd6] bg-[#edf7f4] p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Ritmo observado</p>
+            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">0,3 kg</p>
+            <p className="mt-1 text-sm font-bold text-[#405d54]">por semana, em média</p>
+            <div className="mt-5 rounded-2xl bg-white/80 p-4"><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#698078]">Se o ritmo fosse mantido</p><p className="mt-2 text-xl font-bold text-[#17372f]">cerca de 20 semanas</p><p className="mt-2 text-xs leading-5 text-[#789087]">Cenário matemático, não promessa. O ritmo pode mudar e deve ser interpretado com seu médico.</p></div>
+          </article>
+          <article className="rounded-[28px] border border-[#dfe8e3] bg-white p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold">Relatório quinzenal</p><Status>Disponível</Status></div>
+            <p className="mt-3 text-sm leading-6 text-[#698078]">Revisado pelo Dr. Guilherme em 24 de agosto.</p>
+            <a href="/docs/evolucao-quinzenal-marina-costa.pdf" target="_blank" rel="noreferrer" className="mt-4 flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Ler relatório</a>
+          </article>
         </aside>
+      </div>
+
+      <div className="mt-9 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Além da balança</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-[#17372f]">Outros sinais que contam essa história</h2>
+        </div>
+        <p className="max-w-md text-sm leading-6 text-[#698078]">Leituras rápidas para entender o ciclo inteiro, sem depender de uma única medida.</p>
+      </div>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_8px_24px_rgba(28,55,47,0.04)]">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-[#17372f]">Adesão ao plano</p><p className="mt-1 text-xs text-[#789087]">Últimos 14 dias</p></div><Status>+6 p.p.</Status></div>
+          <p className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">82%</p>
+          <div role="img" aria-label="Adesão de oitenta e dois por cento ao plano nos últimos quatorze dias." className="mt-4 h-2.5 overflow-hidden rounded-full bg-[#e4ece8]"><div className="h-full w-[82%] rounded-full bg-[#0b7b68]" /></div>
+          <p className="mt-3 text-xs leading-5 text-[#698078]">11 de 14 dias com pelo menos duas ações combinadas.</p>
+        </article>
+
+        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_8px_24px_rgba(28,55,47,0.04)]">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-[#17372f]">Movimento</p><p className="mt-1 text-xs text-[#789087]">Média diária</p></div><Status>+9%</Status></div>
+          <p className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">6.420 <span className="text-sm font-bold text-[#60766f]">passos</span></p>
+          <div role="img" aria-label="Barras dos passos dos últimos sete dias, com tendência geral de aumento." className="mt-4 flex h-12 items-end gap-1.5">
+            {movementWeek.map((height, index) => <span key={`movement-${index}`} className={cn('min-w-0 flex-1 rounded-t-md', index === movementWeek.length - 1 ? 'bg-[#0b7b68]' : 'bg-[#b9ddd4]')} style={{ height: `${height}%` }} />)}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-[#698078]">Sua semana ficou mais ativa, com variações naturais entre os dias.</p>
+        </article>
+
+        <article className="rounded-3xl border border-[#eadfca] bg-[#fffdf9] p-5 shadow-[0_8px_24px_rgba(80,61,28,0.04)]">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-[#17372f]">Sono</p><p className="mt-1 text-xs text-[#789087]">Média por noite</p></div><Status tone="amber">Atenção</Status></div>
+          <p className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">6h12</p>
+          <div role="img" aria-label="Barras da duração de sono dos últimos sete dias; quatro noites ficaram abaixo do padrão pessoal." className="mt-4 flex h-12 items-end gap-1.5">
+            {sleepWeek.map((height, index) => <span key={`sleep-${index}`} className={cn('min-w-0 flex-1 rounded-t-md', height < 65 ? 'bg-[#d8a658]' : 'bg-[#c6d8d2]')} style={{ height: `${height}%` }} />)}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-[#698078]">4 noites abaixo do seu padrão pessoal neste ciclo.</p>
+        </article>
+
+        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_8px_24px_rgba(28,55,47,0.04)]">
+          <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-bold text-[#17372f]">Consistência</p><p className="mt-1 text-xs text-[#789087]">Presença, não perfeição</p></div><Status>Boa</Status></div>
+          <p className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">11 <span className="text-sm font-bold text-[#60766f]">de 14 dias</span></p>
+          <div role="img" aria-label="Onze de quatorze dias com ações do plano registradas." className="mt-4 grid grid-cols-7 gap-2">
+            {Array.from({ length: 14 }, (_, index) => <span key={`consistency-${index}`} className={cn('aspect-square rounded-full border', index < 11 ? 'border-[#0b7b68] bg-[#0b7b68]' : 'border-[#b8c9c3] bg-white')} />)}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-[#698078]">Você retomou o plano mesmo depois de dias diferentes.</p>
+        </article>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+        <article className="rounded-[28px] bg-[#17372f] p-5 text-white sm:p-7">
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9fd6c8]">Conquista do ciclo</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">Consistência maior que pressa</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#d3e4df]">Seu peso se aproximou da meta enquanto movimento e adesão melhoraram. O sono ainda merece atenção — um sinal para conversar, não uma falha.</p>
+          <button type="button" onClick={() => onNavigate('Mensagens')} className="mt-5 min-h-11 cursor-pointer rounded-xl bg-white px-5 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Levar para a conversa</button>
+        </article>
+
+        <details className="group rounded-[28px] border border-[#dfe8e3] bg-white p-5 sm:p-7">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-bold text-[#17372f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+            Como calculamos o que falta?
+            <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-[#edf7f4] text-lg text-[#0b6a5b] transition-transform group-open:rotate-45 motion-reduce:transition-none">+</span>
+          </summary>
+          <div className="mt-4 border-t border-[#e7eeea] pt-4 text-xs leading-5 text-[#698078]">
+            <p><strong className="text-[#405d54]">Valor restante:</strong> peso mais recente validado menos a meta atual.</p>
+            <p className="mt-2"><strong className="text-[#405d54]">Leitura do gráfico:</strong> médias do período reduzem o ruído das oscilações diárias.</p>
+            <p className="mt-2">Meta e ritmo são demonstrativos e podem ser revistos com o médico a qualquer momento.</p>
+          </div>
+        </details>
       </div>
     </section>
   );
