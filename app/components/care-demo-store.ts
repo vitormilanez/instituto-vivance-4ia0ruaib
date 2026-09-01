@@ -4,7 +4,10 @@ import { createContext, useContext } from 'react';
 import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
 import type {
   CareAuditEvent,
+  CareCheckIn,
+  CareCheckInInput,
   CarePlanDraftContent,
+  CarePlanActionConfirmation,
   CarePlanVersion,
   PreConsultationAnswers,
   PreConsultationReview,
@@ -16,6 +19,8 @@ export interface CareDemoState {
   submissions: PreConsultationSubmission[];
   reviews: PreConsultationReview[];
   carePlans: CarePlanVersion[];
+  checkIns: CareCheckIn[];
+  actionConfirmations: CarePlanActionConfirmation[];
   auditEvents: CareAuditEvent[];
 }
 
@@ -27,6 +32,11 @@ export interface CareDemoStoreValue extends CareDemoState {
     patch: Partial<PreConsultationAnswers>,
   ) => void;
   submitPreConsultation: (patientId: string, encounterId: string) => PreConsultationSubmission;
+  submitCheckIn: (
+    patientId: string,
+    encounterId: string,
+    input: CareCheckInInput,
+  ) => CareCheckIn;
   startPreConsultationReview: (patientId: string, encounterId: string) => PreConsultationReview;
   savePreConsultationReview: (
     patientId: string,
@@ -70,6 +80,13 @@ export interface CareDemoStoreValue extends CareDemoState {
     encounterId: string,
     planId: string,
   ) => CarePlanVersion;
+  confirmCarePlanAction: (
+    patientId: string,
+    encounterId: string,
+    planId: string,
+    actionId: string,
+    completed: boolean,
+  ) => CarePlanActionConfirmation;
 }
 
 export interface CareDemoContextValue {
@@ -83,12 +100,17 @@ export interface CareDemoContextValue {
   activeReview: PreConsultationReview | null;
   reviewHistory: PreConsultationReview[];
   carePlans: CarePlanVersion[];
+  checkIns: CareCheckIn[];
+  latestCheckIn: CareCheckIn | null;
+  actionConfirmations: CarePlanActionConfirmation[];
+  confirmedActionIds: string[];
   auditEvents: CareAuditEvent[];
   latestCarePlan: CarePlanVersion | null;
   activeCarePlan: CarePlanVersion | null;
   latestPublishedCarePlan: CarePlanVersion | null;
   savePreConsultationDraft: (patch: Partial<PreConsultationAnswers>) => void;
   submitPreConsultation: () => PreConsultationSubmission;
+  submitCheckIn: (input: CareCheckInInput) => CareCheckIn;
   startPreConsultationReview: () => PreConsultationReview;
   savePreConsultationReview: (content: string) => PreConsultationReview;
   approvePreConsultationReview: (content: string) => PreConsultationReview;
@@ -98,6 +120,11 @@ export interface CareDemoContextValue {
   saveCarePlan: (planId: string, patch: Partial<CarePlanDraftContent>) => CarePlanVersion;
   approveCarePlan: (planId: string) => CarePlanVersion;
   publishCarePlan: (planId: string) => CarePlanVersion;
+  confirmCarePlanAction: (
+    planId: string,
+    actionId: string,
+    completed: boolean,
+  ) => CarePlanActionConfirmation;
 }
 
 export const EMPTY_PRECONSULTATION_DRAFT: PreConsultationAnswers = {
@@ -148,6 +175,20 @@ export function useCareDemo(
   const latestPublishedCarePlan = [...carePlans].reverse().find(
     (plan) => plan.status === 'published',
   ) ?? null;
+  const checkIns = (context.checkIns ?? [])
+    .filter((checkIn) => checkIn.patientId === patientId && checkIn.encounterId === encounterId)
+    .toSorted((left, right) => left.submittedAtIso.localeCompare(right.submittedAtIso));
+  const latestCheckIn = checkIns.at(-1) ?? null;
+  const actionConfirmations = (context.actionConfirmations ?? [])
+    .filter((confirmation) => confirmation.patientId === patientId && confirmation.encounterId === encounterId)
+    .toSorted((left, right) => left.recordedAtIso.localeCompare(right.recordedAtIso));
+  const latestConfirmationByAction = new Map<string, CarePlanActionConfirmation>();
+  for (const confirmation of actionConfirmations) {
+    latestConfirmationByAction.set(confirmation.actionId, confirmation);
+  }
+  const confirmedActionIds = [...latestConfirmationByAction.values()]
+    .filter((confirmation) => confirmation.completed)
+    .map((confirmation) => confirmation.actionId);
   const auditEvents = context.auditEvents
     .filter((event) => event.patientId === patientId && event.encounterId === encounterId)
     .toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso));
@@ -166,10 +207,15 @@ export function useCareDemo(
     latestCarePlan,
     activeCarePlan,
     latestPublishedCarePlan,
+    checkIns,
+    latestCheckIn,
+    actionConfirmations,
+    confirmedActionIds,
     auditEvents,
     savePreConsultationDraft: (patch) =>
       context.savePreConsultationDraft(patientId, encounterId, patch),
     submitPreConsultation: () => context.submitPreConsultation(patientId, encounterId),
+    submitCheckIn: (input) => context.submitCheckIn(patientId, encounterId, input),
     startPreConsultationReview: () =>
       context.startPreConsultationReview(patientId, encounterId),
     savePreConsultationReview: (content) =>
@@ -184,5 +230,7 @@ export function useCareDemo(
     saveCarePlan: (planId, patch) => context.saveCarePlan(patientId, encounterId, planId, patch),
     approveCarePlan: (planId) => context.approveCarePlan(patientId, encounterId, planId),
     publishCarePlan: (planId) => context.publishCarePlan(patientId, encounterId, planId),
+    confirmCarePlanAction: (planId, actionId, completed) =>
+      context.confirmCarePlanAction(patientId, encounterId, planId, actionId, completed),
   };
 }

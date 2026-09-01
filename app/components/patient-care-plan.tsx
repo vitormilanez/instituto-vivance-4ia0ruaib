@@ -5,12 +5,12 @@ import { cn, Heading, Status } from './shared';
 
 export function PatientCarePlan({
   plan,
-  tasks,
-  onToggle,
+  confirmedActionIds,
+  onConfirm,
 }: {
   plan: CarePlanVersion | null;
-  tasks: boolean[];
-  onToggle: (index: number) => void;
+  confirmedActionIds: string[];
+  onConfirm: (actionId: string, completed: boolean) => void;
 }) {
   if (!plan) {
     return (
@@ -25,7 +25,8 @@ export function PatientCarePlan({
   }
 
   const visibleActions = plan.actions.filter((action) => action.active);
-  const completed = visibleActions.filter((_, index) => tasks[index] ?? false).length;
+  const confirmedActionIdSet = new Set(confirmedActionIds);
+  const completed = visibleActions.filter((action) => confirmedActionIdSet.has(action.id)).length;
   const completion = visibleActions.length > 0 ? Math.round((completed / visibleActions.length) * 100) : 0;
 
   return (
@@ -44,10 +45,10 @@ export function PatientCarePlan({
           <div className="mt-6 flex items-center justify-between gap-4"><div><p className="text-sm font-bold text-[#17372f]">Seus passos</p><p className="mt-1 text-xs text-[#698078]">{completed} de {visibleActions.length} registrados nesta sessão</p></div><span className="text-2xl font-semibold text-[#0b7b68]">{completion}%</span></div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e3ebe7]"><div className="h-full rounded-full bg-[#0b7b68] transition-[width]" style={{ width: `${completion}%` }} /></div>
           <div className="mt-6 space-y-3">
-            {visibleActions.map((action, index) => {
-              const done = tasks[index] ?? false;
+            {visibleActions.map((action) => {
+              const done = confirmedActionIdSet.has(action.id);
               return (
-                <button type="button" key={action.id} aria-pressed={done} onClick={() => onToggle(index)} className={cn('flex min-h-16 w-full cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2', done ? 'border-[#b9d8cf] bg-[#edf7f4]' : 'border-[#dfe8e3] bg-white hover:border-[#9fc9bd] hover:bg-[#fbfdfc]')}>
+                <button type="button" key={action.id} aria-pressed={done} onClick={() => onConfirm(action.id, !done)} className={cn('flex min-h-16 w-full cursor-pointer items-center gap-4 rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2', done ? 'border-[#b9d8cf] bg-[#edf7f4]' : 'border-[#dfe8e3] bg-white hover:border-[#9fc9bd] hover:bg-[#fbfdfc]')}>
                   <span aria-hidden="true" className={cn('grid size-7 shrink-0 place-items-center rounded-full border-2 text-sm font-bold', done ? 'border-[#0b7b68] bg-[#0b7b68] text-white' : 'border-[#aebfba] text-transparent')}>✓</span>
                   <span><strong className={cn('block text-sm text-[#17372f]', done && 'text-[#45655c] line-through')}>{action.title}</strong><span className="mt-1 block text-xs text-[#698078]">{action.cadence}</span></span>
                 </button>

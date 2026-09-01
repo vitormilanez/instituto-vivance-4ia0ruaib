@@ -8,8 +8,8 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 ### Paciente — mobile-first
 
-- visão diária com próximos passos e check-in;
-- plano de cuidado em ações simples;
+- visão diária alimentada pelo plano publicado e check-in guiado;
+- plano de cuidado em ações simples, com confirmação opcional da paciente;
 - diário alimentar com análise demonstrativa de refeição;
 - evolução de peso, adesão, sono e passos;
 - mensagens e consultas em um só lugar;
@@ -30,7 +30,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, a auditoria de transições e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões, os planos e os registros de transição criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, confirmações de ações e auditoria de transições permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões, os planos, os autorrelatos e os registros de transição criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -45,6 +45,7 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - O plano só chega à visão da paciente após rascunho, aprovação médica e publicação explícita; cada nova publicação preserva a versão anterior.
 - Publicação e transferência para prontuário são fluxos diferentes: este protótipo não envia dados ao Feegow nem a qualquer serviço externo.
 - A auditoria exibida no dossiê registra somente transições e ciência na sessão demonstrativa; não substitui trilha de auditoria de prontuário, autenticação ou evidência legal.
+- Check-ins e confirmações de ações são autorrelatos para organizar a próxima conversa; não são triagem, alerta de urgência, diagnóstico ou confirmação de resultado clínico.
 - Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.

@@ -86,7 +86,37 @@ export interface CarePlanVersion extends CarePlanDraftContent {
   supersededByVersion: number | null;
 }
 
+export type CareCheckInSleepQuality = 'poor' | 'regular' | 'good';
+
+export interface CareCheckInInput {
+  energy: 1 | 2 | 3 | 4 | 5;
+  sleepQuality: CareCheckInSleepQuality;
+  newSymptom: boolean;
+}
+
+export interface CareCheckIn extends CareCheckInInput {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  submittedAt: string;
+  submittedAtIso: string;
+}
+
+export interface CarePlanActionConfirmation {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  planId: string;
+  planVersion: number;
+  actionId: string;
+  completed: boolean;
+  recordedAt: string;
+  recordedAtIso: string;
+}
+
 export type CareAuditAction =
+  | 'check-in-submitted'
   | 'pre-consultation-submitted'
   | 'pre-consultation-review-started'
   | 'pre-consultation-review-approved'

@@ -4,7 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
-import type { CarePlanVersion, PreConsultationAnswers, PreConsultationSubmission } from './care-demo-types';
+import type {
+  CareCheckIn,
+  CareCheckInInput,
+  CareCheckInSleepQuality,
+  CarePlanVersion,
+  PreConsultationAnswers,
+  PreConsultationSubmission,
+} from './care-demo-types';
 import { PatientCarePlan } from './patient-care-plan';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import {
@@ -19,23 +26,17 @@ import { useSessionDemoState } from './use-session-demo-state';
 type MealRatings = [number, number, number];
 
 interface PatientDemoUiState {
-  checkinDone: boolean;
   mealAnalyzed: boolean;
   mealRatings: MealRatings;
   mealFeedbackSent: boolean;
   watchConnected: boolean;
-  tasks: boolean[];
-  tasksByPlan: Record<string, boolean[]>;
 }
 
 const initialPatientDemoUiState: PatientDemoUiState = {
-  checkinDone: false,
   mealAnalyzed: false,
   mealRatings: [0, 0, 0],
   mealFeedbackSent: false,
   watchConnected: false,
-  tasks: [true, false, false],
-  tasksByPlan: {},
 };
 
 function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
@@ -43,27 +44,11 @@ function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
   const ratings = Array.isArray(stored.mealRatings) && stored.mealRatings.length === 3 && stored.mealRatings.every((item) => typeof item === 'number')
     ? stored.mealRatings as MealRatings
     : initialPatientDemoUiState.mealRatings;
-  const tasks = Array.isArray(stored.tasks) && stored.tasks.length === 3 && stored.tasks.every((item) => typeof item === 'boolean')
-    ? stored.tasks
-    : initialPatientDemoUiState.tasks;
-  const tasksByPlan = typeof stored.tasksByPlan === 'object' && stored.tasksByPlan !== null && !Array.isArray(stored.tasksByPlan)
-    ? Object.fromEntries(
-        Object.entries(stored.tasksByPlan).flatMap(([planId, planTasks]) =>
-          Array.isArray(planTasks) && planTasks.every((item) => typeof item === 'boolean')
-            ? [[planId, planTasks]]
-            : [],
-        ),
-      ) as Record<string, boolean[]>
-    : {};
-
   return {
-    checkinDone: typeof stored.checkinDone === 'boolean' ? stored.checkinDone : false,
     mealAnalyzed: typeof stored.mealAnalyzed === 'boolean' ? stored.mealAnalyzed : false,
     mealRatings: ratings,
     mealFeedbackSent: typeof stored.mealFeedbackSent === 'boolean' ? stored.mealFeedbackSent : false,
     watchConnected: typeof stored.watchConnected === 'boolean' ? stored.watchConnected : false,
-    tasks,
-    tasksByPlan,
   };
 }
 
@@ -84,8 +69,12 @@ export default function PatientWorkspace({
     draft: preConsultationDraft,
     latestSubmission,
     latestPublishedCarePlan,
+    latestCheckIn,
+    confirmedActionIds,
     savePreConsultationDraft,
     submitPreConsultation,
+    submitCheckIn,
+    confirmCarePlanAction,
   } = useCareDemo(patientId, encounterId);
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [demoUi, setDemoUi, demoUiHydrated] = useSessionDemoState(
@@ -94,13 +83,15 @@ export default function PatientWorkspace({
     normalizePatientDemoUiState,
   );
   const [toast, setToast] = useState('');
-  const { checkinDone, mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected, tasks, tasksByPlan } = demoUi;
+  const { mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected } = demoUi;
   const preVisitDone = Boolean(latestSubmission);
+  const checkinDone = Boolean(latestCheckIn);
   const visiblePublishedActions = latestPublishedCarePlan?.actions.filter((action) => action.active) ?? [];
-  const publishedPlanTasks = latestPublishedCarePlan
-    ? tasksByPlan[latestPublishedCarePlan.id]
-      ?? (latestPublishedCarePlan.version === 1 ? tasks : Array.from({ length: visiblePublishedActions.length }, () => false))
-    : tasks;
+  const confirmedActionIdSet = new Set(confirmedActionIds);
+  const completedActionCount = visiblePublishedActions.filter((action) => confirmedActionIdSet.has(action.id)).length;
+  const nextPlanAction = visiblePublishedActions.find((action) => !confirmedActionIdSet.has(action.id))
+    ?? visiblePublishedActions.at(0)
+    ?? null;
 
   const notify = (text: string) => {
     setToast(text);
@@ -144,8 +135,12 @@ export default function PatientWorkspace({
         {view === 'Hoje' && (
           <Today
             checkinDone={checkinDone}
+            latestCheckIn={latestCheckIn}
             preVisitDone={preVisitDone}
             watchConnected={watchConnected}
+            completedActionCount={completedActionCount}
+            totalActionCount={visiblePublishedActions.length}
+            nextPlanAction={nextPlanAction}
             onCheckin={() => setCheckinOpen(true)}
             onPreVisit={openPreVisit}
             onConnectWatch={() => {
@@ -158,23 +153,10 @@ export default function PatientWorkspace({
         {view === 'Plano' && (
           <Plan
             plan={latestPublishedCarePlan}
-            tasks={publishedPlanTasks}
-            onToggle={(index) => {
+            confirmedActionIds={confirmedActionIds}
+            onConfirm={(actionId, completed) => {
               if (!latestPublishedCarePlan) return;
-              setDemoUi((current) => {
-                const actionCount = latestPublishedCarePlan.actions.filter((action) => action.active).length;
-                const currentTasks = current.tasksByPlan[latestPublishedCarePlan.id]
-                  ?? (latestPublishedCarePlan.version === 1
-                    ? current.tasks
-                    : Array.from({ length: actionCount }, () => false));
-                return {
-                  ...current,
-                  tasksByPlan: {
-                    ...current.tasksByPlan,
-                    [latestPublishedCarePlan.id]: currentTasks.map((done, taskIndex) => taskIndex === index ? !done : done),
-                  },
-                };
-              });
+              confirmCarePlanAction(latestPublishedCarePlan.id, actionId, completed);
             }}
           />
         )}
@@ -223,9 +205,9 @@ export default function PatientWorkspace({
       {checkinOpen && (
         <Checkin
           onClose={() => setCheckinOpen(false)}
-          onComplete={() => {
+          onComplete={(input) => {
+            submitCheckIn(input);
             setCheckinOpen(false);
-            setDemoUi((current) => ({ ...current, checkinDone: true }));
             notify('Check-in registrado. Obrigado, Marina.');
           }}
         />
@@ -250,28 +232,47 @@ export default function PatientWorkspace({
 
 function Today({
   checkinDone,
+  latestCheckIn,
   preVisitDone,
   watchConnected,
+  completedActionCount,
+  totalActionCount,
+  nextPlanAction,
   onCheckin,
   onPreVisit,
   onConnectWatch,
   onNavigate,
 }: {
   checkinDone: boolean;
+  latestCheckIn: CareCheckIn | null;
   preVisitDone: boolean;
   watchConnected: boolean;
+  completedActionCount: number;
+  totalActionCount: number;
+  nextPlanAction: CarePlanVersion['actions'][number] | null;
   onCheckin: () => void;
   onPreVisit: () => void;
   onConnectWatch: () => void;
   onNavigate: (view: PatientView) => void;
 }) {
+  const completionPercentage = totalActionCount > 0
+    ? Math.round((completedActionCount / totalActionCount) * 100)
+    : 0;
+  const sleepLabel = latestCheckIn
+    ? { poor: 'ruim', regular: 'regular', good: 'bom' }[latestCheckIn.sleepQuality]
+    : null;
+
   return (
     <>
       <section className="mt-0 flex flex-col gap-4 lg:mt-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex flex-wrap gap-2"><Status tone="amber">Dados demonstrativos</Status><Status>Plano em andamento · dia 29</Status></div>
           <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Bom dia, Marina</h1>
-          <p className="mt-2 text-sm leading-6 text-[#60766f]">Hoje tem só o essencial. Um pequeno passo de cada vez.</p>
+          <p className="mt-2 text-sm leading-6 text-[#60766f]">
+            {latestCheckIn
+              ? `Seu check-in foi registrado: energia ${latestCheckIn.energy}/5 e sono ${sleepLabel}.`
+              : 'Hoje tem só o essencial. Um pequeno passo de cada vez.'}
+          </p>
         </div>
         <button type="button" onClick={onCheckin} disabled={checkinDone} className="min-h-12 rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] disabled:bg-[#779a91]">
           {checkinDone ? 'Check-in concluído' : 'Fazer check-in de hoje'}
@@ -308,16 +309,16 @@ function Today({
         <article className="overflow-hidden rounded-3xl bg-[#17372f] text-white shadow-[0_16px_40px_rgba(23,55,47,0.16)]">
           <div className="p-5 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Seu próximo passo</p><h2 className="mt-3 max-w-lg text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">Registrar como foi o jantar</h2></div>
-              <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#d6e8e2]">até 21h</span>
+              <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Seu próximo passo</p><h2 className="mt-3 max-w-lg text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">{nextPlanAction?.title ?? 'Acompanhar o plano publicado'}</h2></div>
+              <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#d6e8e2]">{nextPlanAction?.cadence ?? 'quando houver uma versão publicada'}</span>
             </div>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#d6e8e2]">Uma foto ajuda você e o Dr. Guilherme a enxergarem padrões sem precisar contar calorias.</p>
-            <button type="button" onClick={() => onNavigate('Diário')} className="mt-6 min-h-12 rounded-xl bg-white px-5 text-sm font-bold text-[#17372f]">Abrir diário alimentar</button>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#d6e8e2]">Confirme apenas o que você quer registrar. Isso ajuda a organizar a próxima conversa, sem substituir orientação médica.</p>
+            <button type="button" onClick={() => onNavigate('Plano')} className="mt-6 min-h-12 rounded-xl bg-white px-5 text-sm font-bold text-[#17372f]">Ver ações do plano</button>
           </div>
           <div className="grid grid-cols-3 border-t border-white/10">
             {[
               ['29', 'dias de plano'],
-              ['82%', 'ações concluídas'],
+              [`${completionPercentage}%`, 'ações confirmadas'],
               ['3', 'dias até o retorno'],
             ].map((item, index) => (
               <div key={item[1]} className={cn('p-4 sm:p-5', index > 0 && 'border-l border-white/10')}><p className="text-xl font-bold">{item[0]}</p><p className="mt-1 text-[11px] leading-4 text-[#b8d3cb]">{item[1]}</p></div>
@@ -334,8 +335,8 @@ function Today({
 
       <section className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5">
-          <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Hoje no plano</p><h2 className="mt-2 text-xl font-semibold">2 de 3 ações</h2></div><span className="text-2xl font-semibold text-[#0b7b68]">67%</span></div>
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e3ebe7]"><div className="h-full w-2/3 rounded-full bg-[#0b7b68]" /></div>
+          <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Hoje no plano</p><h2 className="mt-2 text-xl font-semibold">{completedActionCount} de {totalActionCount} ações</h2></div><span className="text-2xl font-semibold text-[#0b7b68]">{completionPercentage}%</span></div>
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e3ebe7]"><div className="h-full rounded-full bg-[#0b7b68]" style={{ width: `${completionPercentage}%` }} /></div>
           <button type="button" onClick={() => onNavigate('Plano')} className="mt-4 min-h-11 text-sm font-bold text-[#0b6a5b] underline underline-offset-4">Ver plano completo</button>
         </article>
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5">
@@ -356,14 +357,14 @@ function Today({
 
 function Plan({
   plan,
-  tasks,
-  onToggle,
+  confirmedActionIds,
+  onConfirm,
 }: {
   plan: CarePlanVersion | null;
-  tasks: boolean[];
-  onToggle: (index: number) => void;
+  confirmedActionIds: string[];
+  onConfirm: (actionId: string, completed: boolean) => void;
 }) {
-  return <PatientCarePlan plan={plan} tasks={tasks} onToggle={onToggle} />;
+  return <PatientCarePlan plan={plan} confirmedActionIds={confirmedActionIds} onConfirm={onConfirm} />;
 }
 
 function Diary({
@@ -1041,25 +1042,32 @@ function PreVisitInterview({
   );
 }
 
-function Checkin({ onClose, onComplete }: { onClose: () => void; onComplete: () => void }) {
-  const [energy, setEnergy] = useState(3);
-  const [sleep, setSleep] = useState(2);
-  const [symptom, setSymptom] = useState<'Não' | 'Sim'>('Não');
+function Checkin({
+  onClose,
+  onComplete,
+}: {
+  onClose: () => void;
+  onComplete: (input: CareCheckInInput) => void;
+}) {
+  const [energy, setEnergy] = useState<CareCheckInInput['energy']>(3);
+  const [sleepQuality, setSleepQuality] = useState<CareCheckInSleepQuality>('regular');
+  const [newSymptom, setNewSymptom] = useState(false);
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#102a24]/55 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="checkin-title">
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-7">
-        <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Leva menos de 1 minuto</p><h2 id="checkin-title" className="mt-2 text-2xl font-semibold">Como você está hoje?</h2></div><button type="button" onClick={onClose} aria-label="Fechar check-in" className="grid size-11 place-items-center rounded-full border border-[#d7e3df] text-xl">×</button></div>
+        <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Leva menos de 1 minuto</p><h2 id="checkin-title" className="mt-2 text-2xl font-semibold">Como você está hoje?</h2></div><button type="button" onClick={onClose} aria-label="Fechar check-in" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button></div>
         <div className="mt-7 space-y-7">
-          <fieldset><legend className="text-sm font-bold">Sua energia</legend><div className="mt-3 grid grid-cols-5 gap-2">{[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} onClick={() => setEnergy(value)} aria-pressed={energy === value} className={cn('min-h-12 rounded-xl border text-sm font-bold', energy === value ? 'border-[#0b7b68] bg-[#0b7b68] text-white' : 'border-[#d7e3df]')}>{value}</button>)}</div><div className="mt-2 flex justify-between text-[11px] text-[#8a9c96]"><span>Muito baixa</span><span>Muito boa</span></div></fieldset>
-          <fieldset><legend className="text-sm font-bold">Como foi seu sono?</legend><div className="mt-3 grid grid-cols-3 gap-2">{[
-            ['Ruim', 1],
-            ['Regular', 2],
-            ['Bom', 3],
-          ].map((item) => <button type="button" key={String(item[0])} onClick={() => setSleep(Number(item[1]))} aria-pressed={sleep === item[1]} className={cn('min-h-12 rounded-xl border text-sm font-bold', sleep === item[1] ? 'border-[#0b7b68] bg-[#edf7f4] text-[#0b6a5b]' : 'border-[#d7e3df]')}>{item[0]}</button>)}</div></fieldset>
-          <fieldset><legend className="text-sm font-bold">Surgiu algum sintoma novo?</legend><div className="mt-3 grid grid-cols-2 gap-2">{(['Não', 'Sim'] as const).map((value) => <button type="button" key={value} onClick={() => setSymptom(value)} aria-pressed={symptom === value} className={cn('min-h-12 rounded-xl border text-sm font-bold', symptom === value ? value === 'Sim' ? 'border-[#d38780] bg-[#fdecea] text-[#9c453f]' : 'border-[#0b7b68] bg-[#edf7f4] text-[#0b6a5b]' : 'border-[#d7e3df]')}>{value}</button>)}</div></fieldset>
-          {symptom === 'Sim' && <label className="block text-sm font-bold">Conte brevemente<textarea className="mt-2 min-h-24 w-full rounded-2xl border border-[#d7e3df] p-3 font-normal outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder="Descreva o que sentiu..." /></label>}
+          <fieldset><legend className="text-sm font-bold">Sua energia</legend><div className="mt-3 grid grid-cols-5 gap-2">{([1, 2, 3, 4, 5] as const).map((value) => <button type="button" key={value} onClick={() => setEnergy(value)} aria-pressed={energy === value} className={cn('min-h-12 cursor-pointer rounded-xl border text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2', energy === value ? 'border-[#0b7b68] bg-[#0b7b68] text-white' : 'border-[#d7e3df]')}>{value}</button>)}</div><div className="mt-2 flex justify-between text-[11px] text-[#8a9c96]"><span>Muito baixa</span><span>Muito boa</span></div></fieldset>
+          <fieldset><legend className="text-sm font-bold">Como foi seu sono?</legend><div className="mt-3 grid grid-cols-3 gap-2">{([
+            { label: 'Ruim', value: 'poor' },
+            { label: 'Regular', value: 'regular' },
+            { label: 'Bom', value: 'good' },
+          ] as const).map((option) => <button type="button" key={option.value} onClick={() => setSleepQuality(option.value)} aria-pressed={sleepQuality === option.value} className={cn('min-h-12 cursor-pointer rounded-xl border text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2', sleepQuality === option.value ? 'border-[#0b7b68] bg-[#edf7f4] text-[#0b6a5b]' : 'border-[#d7e3df]')}>{option.label}</button>)}</div></fieldset>
+          <fieldset><legend className="text-sm font-bold">Surgiu algum sintoma novo?</legend><div className="mt-3 grid grid-cols-2 gap-2">{([false, true] as const).map((value) => <button type="button" key={String(value)} onClick={() => setNewSymptom(value)} aria-pressed={newSymptom === value} className={cn('min-h-12 cursor-pointer rounded-xl border text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2', newSymptom === value ? value ? 'border-[#d38780] bg-[#fdecea] text-[#9c453f]' : 'border-[#0b7b68] bg-[#edf7f4] text-[#0b6a5b]' : 'border-[#d7e3df]')}>{value ? 'Sim' : 'Não'}</button>)}</div></fieldset>
+          {newSymptom ? <p className="rounded-2xl border border-[#f0d59c] bg-[#fff8e9] p-4 text-xs leading-5 text-[#805f24]">A equipe verá que você marcou esta opção. O protótipo não classifica urgência nem substitui avaliação médica.</p> : null}
         </div>
-        <button type="button" onClick={onComplete} className="mt-8 min-h-12 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white">Concluir check-in</button>
+        <button type="button" onClick={() => onComplete({ energy, sleepQuality, newSymptom })} className="mt-8 min-h-12 w-full cursor-pointer rounded-xl bg-[#0b7b68] text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Concluir check-in</button>
         <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">O check-in ajuda no acompanhamento, mas não substitui avaliação médica.</p>
       </div>
     </div>

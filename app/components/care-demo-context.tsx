@@ -13,7 +13,10 @@ import type {
   CareAuditAction,
   CareAuditActor,
   CareAuditEvent,
+  CareCheckIn,
+  CareCheckInSleepQuality,
   CarePlanAction,
+  CarePlanActionConfirmation,
   CarePlanDraftContent,
   CarePlanSourceMode,
   CarePlanStatus,
@@ -296,8 +299,77 @@ function normalizeCarePlan(value: unknown): CarePlanVersion | null {
   };
 }
 
+function isCareCheckInSleepQuality(value: unknown): value is CareCheckInSleepQuality {
+  return value === 'poor' || value === 'regular' || value === 'good';
+}
+
+function normalizeCheckIn(value: unknown): CareCheckIn | null {
+  if (!isRecord(value)) return null;
+  const energy = typeof value.energy === 'number' && Number.isInteger(value.energy) && value.energy >= 1 && value.energy <= 5
+    ? value.energy as CareCheckIn['energy']
+    : null;
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !energy ||
+    !isCareCheckInSleepQuality(value.sleepQuality) ||
+    typeof value.newSymptom !== 'boolean' ||
+    typeof value.submittedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    energy,
+    sleepQuality: value.sleepQuality,
+    newSymptom: value.newSymptom,
+    submittedAt: value.submittedAt,
+    submittedAtIso: typeof value.submittedAtIso === 'string'
+      ? value.submittedAtIso
+      : isoTimestampFromOpaqueId(value.id),
+  };
+}
+
+function normalizeActionConfirmation(value: unknown): CarePlanActionConfirmation | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.planId !== 'string' ||
+    typeof value.planVersion !== 'number' ||
+    typeof value.actionId !== 'string' ||
+    typeof value.completed !== 'boolean' ||
+    typeof value.recordedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    planId: value.planId,
+    planVersion: value.planVersion,
+    actionId: value.actionId,
+    completed: value.completed,
+    recordedAt: value.recordedAt,
+    recordedAtIso: typeof value.recordedAtIso === 'string'
+      ? value.recordedAtIso
+      : isoTimestampFromOpaqueId(value.id),
+  };
+}
+
 function isCareAuditAction(value: unknown): value is CareAuditAction {
   return [
+    'check-in-submitted',
     'pre-consultation-submitted',
     'pre-consultation-review-started',
     'pre-consultation-review-approved',
@@ -359,7 +431,24 @@ function getAuditEventsFromHistory(
   submissions: PreConsultationSubmission[],
   reviews: PreConsultationReview[],
   carePlans: CarePlanVersion[],
+  checkIns: CareCheckIn[],
 ): CareAuditEvent[] {
+  const checkInEvents = checkIns.map<CareAuditEvent>((checkIn) => ({
+    id: `audit-derived-${checkIn.id}-submitted`,
+    patientId: checkIn.patientId,
+    encounterId: checkIn.encounterId,
+    action: 'check-in-submitted',
+    actor: 'patient',
+    actorLabel: getPatientAuditLabel(checkIn.patientId),
+    occurredAt: checkIn.submittedAt,
+    occurredAtIso: checkIn.submittedAtIso,
+    relatedId: checkIn.id,
+    relatedVersion: checkIn.version,
+    summary: 'Check-in de acompanhamento registrado.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
   const submissionEvents = submissions.map<CareAuditEvent>((submission) => ({
     id: `audit-derived-${submission.id}-submitted`,
     patientId: submission.patientId,
@@ -475,7 +564,7 @@ function getAuditEventsFromHistory(
     return events;
   });
 
-  return [...submissionEvents, ...reviewEvents, ...planEvents]
+  return [...checkInEvents, ...submissionEvents, ...reviewEvents, ...planEvents]
     .toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso));
 }
 
@@ -485,7 +574,9 @@ const emptyState: CareDemoState = {
   submissions: [],
   reviews: [],
   carePlans: initialCarePlans,
-  auditEvents: getAuditEventsFromHistory([], [], initialCarePlans),
+  checkIns: [],
+  actionConfirmations: [],
+  auditEvents: getAuditEventsFromHistory([], [], initialCarePlans, []),
 };
 
 function normalizeCurrentState(value: unknown): CareDemoState | null {
@@ -516,6 +607,18 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
       })
     : [];
   const carePlans = parsedCarePlans.length > 0 ? parsedCarePlans : getInitialCarePlans();
+  const checkIns = Array.isArray(value.checkIns)
+    ? value.checkIns.flatMap((checkIn) => {
+        const normalized = normalizeCheckIn(checkIn);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const actionConfirmations = Array.isArray(value.actionConfirmations)
+    ? value.actionConfirmations.flatMap((confirmation) => {
+        const normalized = normalizeActionConfirmation(confirmation);
+        return normalized ? [normalized] : [];
+      })
+    : [];
   const parsedAuditEvents = Array.isArray(value.auditEvents)
     ? value.auditEvents.flatMap((event) => {
         const normalized = normalizeAuditEvent(event);
@@ -528,9 +631,11 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     submissions,
     reviews,
     carePlans,
+    checkIns,
+    actionConfirmations,
     auditEvents: parsedAuditEvents.length > 0
       ? parsedAuditEvents
-      : getAuditEventsFromHistory(submissions, reviews, carePlans),
+      : getAuditEventsFromHistory(submissions, reviews, carePlans, checkIns),
   };
 }
 
@@ -559,7 +664,9 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     submissions,
     reviews,
     carePlans,
-    auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans),
+    checkIns: [],
+    actionConfirmations: [],
+    auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, []),
   };
 }
 
@@ -716,6 +823,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
     const latestSubmissionFor = (patientId: string, encounterId: string) =>
       submissionsFor(patientId, encounterId).at(-1) ?? null;
 
+    const checkInsFor = (patientId: string, encounterId: string) =>
+      (state.checkIns ?? []).filter(
+        (checkIn) => checkIn.patientId === patientId && checkIn.encounterId === encounterId,
+      );
+
     const reviewHistoryFor = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       return latestSubmission
@@ -828,6 +940,8 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       submissions: state.submissions,
       reviews: state.reviews,
       carePlans: state.carePlans,
+      checkIns: state.checkIns ?? [],
+      actionConfirmations: state.actionConfirmations ?? [],
       auditEvents: state.auditEvents,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
         const scopeKey = getCareDemoScopeKey(patientId, encounterId);
@@ -878,6 +992,47 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           auditEvents: [...current.auditEvents, auditEvent],
         }));
 
+        return created;
+      },
+      submitCheckIn: (patientId, encounterId, input) => {
+        if (
+          !Number.isInteger(input.energy) ||
+          input.energy < 1 ||
+          input.energy > 5 ||
+          !isCareCheckInSleepQuality(input.sleepQuality)
+        ) {
+          throw new Error('Revise as respostas do check-in antes de registrar.');
+        }
+
+        const now = new Date();
+        const created: CareCheckIn = {
+          id: `check-in-${Date.now()}`,
+          patientId,
+          encounterId,
+          version: checkInsFor(patientId, encounterId).length + 1,
+          energy: input.energy,
+          sleepQuality: input.sleepQuality,
+          newSymptom: input.newSymptom,
+          submittedAt: formatSubmissionTime(now),
+          submittedAtIso: now.toISOString(),
+        };
+        const auditEvent = createAuditEvent({
+          action: 'check-in-submitted',
+          actor: 'patient',
+          patientId,
+          encounterId,
+          occurredAt: created.submittedAt,
+          occurredAtIso: created.submittedAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: 'Check-in de acompanhamento registrado.',
+        });
+
+        setState((current) => ({
+          ...current,
+          checkIns: [...(current.checkIns ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
         return created;
       },
       startPreConsultationReview: (patientId, encounterId) => {
@@ -1151,6 +1306,34 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           auditEvents: [...current.auditEvents, auditEvent],
         }));
         return published;
+      },
+      confirmCarePlanAction: (patientId, encounterId, planId, actionId, completed) => {
+        const plan = requireCarePlan(patientId, encounterId, planId);
+        if (plan.status !== 'published') {
+          throw new Error('A paciente só pode confirmar ações de uma versão publicada do plano.');
+        }
+        const action = plan.actions.find((candidate) => candidate.id === actionId && candidate.active);
+        if (!action) {
+          throw new Error('Esta ação não está disponível na versão publicada do plano.');
+        }
+
+        const now = new Date();
+        const created: CarePlanActionConfirmation = {
+          id: `confirmacao-acao-${Date.now()}-${actionId}`,
+          patientId,
+          encounterId,
+          planId: plan.id,
+          planVersion: plan.version,
+          actionId: action.id,
+          completed,
+          recordedAt: formatSubmissionTime(now),
+          recordedAtIso: now.toISOString(),
+        };
+        setState((current) => ({
+          ...current,
+          actionConfirmations: [...(current.actionConfirmations ?? []), created],
+        }));
+        return created;
       },
     };
   }, [hydrated, state]);

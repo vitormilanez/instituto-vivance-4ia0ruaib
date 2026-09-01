@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
-import type { CareAuditAction, CareAuditEvent } from './care-demo-types';
+import type {
+  CareAuditAction,
+  CareAuditEvent,
+  CareCheckIn,
+} from './care-demo-types';
 import { getDefaultEncounterId } from './demo-routes';
 import {
   getLongitudinalDossier,
@@ -75,6 +79,7 @@ function reviewStateLabel(status: 'draft' | 'approved' | 'rejected') {
 }
 
 const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' | 'amber' | 'blue' | 'gray' }> = {
+  'check-in-submitted': { label: 'Check-in enviado', tone: 'blue' },
   'pre-consultation-submitted': { label: 'Pré-consulta enviada', tone: 'blue' },
   'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
   'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
@@ -83,6 +88,40 @@ const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' 
   'care-plan-approved': { label: 'Plano aprovado', tone: 'blue' },
   'care-plan-published': { label: 'Plano publicado', tone: 'green' },
 };
+
+const sleepPresentation: Record<CareCheckIn['sleepQuality'], string> = {
+  poor: 'sono ruim',
+  regular: 'sono regular',
+  good: 'sono bom',
+};
+
+function OperationalCheckIn({ checkIn }: { checkIn: CareCheckIn | null }) {
+  return (
+    <section aria-labelledby="operational-checkin-title" className="rounded-2xl border border-[#d7e3df] bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Acompanhamento operacional</p>
+          <h4 id="operational-checkin-title" className="mt-2 text-lg font-semibold text-[#17372f]">Check-in mais recente</h4>
+        </div>
+        <Status tone={checkIn?.newSymptom ? 'amber' : checkIn ? 'green' : 'gray'}>
+          {checkIn?.newSymptom ? 'Revisar fonte' : checkIn ? 'Disponível' : 'Sem registro'}
+        </Status>
+      </div>
+
+      {checkIn ? (
+        <>
+          <p className="mt-3 text-sm leading-6 text-[#526a62]">
+            Autorrelato de energia {checkIn.energy}/5 e {sleepPresentation[checkIn.sleepQuality]}. {checkIn.newSymptom ? 'A paciente marcou que surgiu um sintoma novo.' : 'A paciente não marcou sintoma novo.'}
+          </p>
+          <p className="mt-3 text-xs font-semibold text-[#405d54]">Fonte: check-in da paciente · v{checkIn.version} · {checkIn.submittedAt}</p>
+          <p className="mt-3 border-t border-[#e7eeea] pt-3 text-[11px] leading-5 text-[#789087]">É um autorrelato para orientar a próxima conversa; não é triagem, classificação de urgência, diagnóstico ou conduta.</p>
+        </>
+      ) : (
+        <p className="mt-3 text-sm leading-6 text-[#60766f]">Ainda não há check-in neste contexto. O protótipo não transforma a ausência em sinal clínico.</p>
+      )}
+    </section>
+  );
+}
 
 function AuditTrail({ events }: { events: CareAuditEvent[] }) {
   const visibleEvents = [...events].reverse().slice(0, 6);
@@ -96,7 +135,7 @@ function AuditTrail({ events }: { events: CareAuditEvent[] }) {
         </div>
         <Status tone="gray">{events.length}</Status>
       </div>
-      <p className="mt-2 text-xs leading-5 text-[#60766f]">Registra quem confirmou cada mudança importante, sem repetir relatos ou conteúdo clínico.</p>
+      <p className="mt-2 text-xs leading-5 text-[#60766f]">Registra mudanças importantes e envios de check-in, sem repetir relatos ou conteúdo clínico.</p>
 
       {visibleEvents.length > 0 ? (
         <ol className="mt-4 space-y-3">
@@ -131,7 +170,16 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const [filter, setFilter] = useState<DossierFilter>('all');
   const dossier = getLongitudinalDossier(patientId);
   const encounterId = getDefaultEncounterId(patientId);
-  const { hydrated, submissions, reviews, carePlans, auditEvents } = useCareDemo(patientId, encounterId);
+  const {
+    hydrated,
+    submissions,
+    reviews,
+    carePlans,
+    checkIns,
+    actionConfirmations,
+    latestCheckIn,
+    auditEvents,
+  } = useCareDemo(patientId, encounterId);
 
   const sessionRecords = useMemo<LongitudinalRecord[]>(() => {
     const submissionRecords = submissions.map<LongitudinalRecord>((submission) => ({
@@ -152,6 +200,24 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       limitation: submission.aiAssistanceAllowed
         ? 'A paciente autorizou a organização assistida; o relato original continua separado do rascunho.'
         : 'A paciente não autorizou assistência de IA; o fluxo manual permanece disponível.',
+    }));
+
+    const checkInRecords = checkIns.map<LongitudinalRecord>((checkIn) => ({
+      id: `timeline-${checkIn.id}`,
+      patientId,
+      encounterId,
+      occurredAt: formatTimelineTimestamp(checkIn.submittedAtIso),
+      occurredAtIso: checkIn.submittedAtIso,
+      kind: 'recorded-data',
+      title: `Check-in enviado · versão ${checkIn.version}`,
+      summary: `Autorrelato: energia ${checkIn.energy}/5, ${sleepPresentation[checkIn.sleepQuality]} e ${checkIn.newSymptom ? 'novo sintoma marcado' : 'nenhum sintoma novo marcado'}.`,
+      source: 'Check-in guiado da paciente',
+      sourceId: checkIn.id,
+      sourceVersion: checkIn.version,
+      author: `${patientName} · paciente`,
+      reviewState: checkIn.newSymptom ? 'Aguardando leitura médica da fonte' : 'Registro confirmado pela paciente',
+      visibility: 'medical-team',
+      limitation: 'É um autorrelato da paciente; não equivale a triagem, diagnóstico, classificação de urgência ou decisão clínica.',
     }));
 
     const reviewRecords = reviews.map<LongitudinalRecord>((review) => {
@@ -225,8 +291,40 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       };
     });
 
-    return [...submissionRecords, ...reviewRecords, ...carePlanRecords];
-  }, [carePlans, encounterId, patientId, patientName, reviews, submissions]);
+    const actionConfirmationRecords = actionConfirmations.map<LongitudinalRecord>((confirmation) => {
+      const plan = carePlans.find((candidate) => candidate.id === confirmation.planId);
+      const action = plan?.actions.find((candidate) => candidate.id === confirmation.actionId);
+      const actionLabel = action?.title ?? 'Ação da versão publicada';
+      return {
+        id: `timeline-${confirmation.id}`,
+        patientId,
+        encounterId,
+        occurredAt: formatTimelineTimestamp(confirmation.recordedAtIso),
+        occurredAtIso: confirmation.recordedAtIso,
+        kind: 'recorded-data',
+        title: confirmation.completed ? 'Ação confirmada pela paciente' : 'Confirmação de ação atualizada',
+        summary: confirmation.completed
+          ? `A paciente marcou “${actionLabel}” como realizada.`
+          : `A paciente retirou a marcação de “${actionLabel}”.`,
+        source: `Plano de cuidado · versão ${confirmation.planVersion}`,
+        sourceId: confirmation.planId,
+        sourceVersion: confirmation.planVersion,
+        linkedSourceIds: [confirmation.actionId],
+        author: `${patientName} · paciente`,
+        reviewState: confirmation.completed ? 'Confirmação autorrelatada' : 'Confirmação retirada pela paciente',
+        visibility: 'medical-team',
+        limitation: 'A confirmação é declarada pela paciente nesta sessão; não comprova execução fora do protótipo nem resultado clínico.',
+      };
+    });
+
+    return [
+      ...checkInRecords,
+      ...submissionRecords,
+      ...reviewRecords,
+      ...carePlanRecords,
+      ...actionConfirmationRecords,
+    ];
+  }, [actionConfirmations, carePlans, checkIns, encounterId, patientId, patientName, reviews, submissions]);
 
   if (!hydrated) {
     return (
@@ -260,7 +358,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const sourceCount = new Set(records.flatMap((record) => [record.sourceId, ...(record.linkedSourceIds ?? [])])).size;
   const reviewedCount = records.filter((record) => Boolean(record.reviewedBy)).length;
   const latestUpdate = records[0]?.occurredAt ?? dossier.updatedAt;
-  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
+  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
   const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (
@@ -407,6 +505,8 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
             </ul>
             <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">Relato não vira fato, rascunho não vira decisão e confirmação manual não significa sincronização com prontuário.</p>
           </section>
+
+          <OperationalCheckIn checkIn={latestCheckIn} />
 
           <AuditTrail events={auditEvents} />
 

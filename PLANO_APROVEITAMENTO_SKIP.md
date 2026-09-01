@@ -146,13 +146,23 @@ Ainda pendente neste lote:
 - Validar teclado, foco, responsividade, contraste e redução de movimento.
 - Remover afirmações de integrações que ainda não existam.
 
-### Lote 5 — MVP-2
+### Lote 5 — MVP-2 — primeira fatia implementada nesta branch
 
-- Página Hoje alimentada pelo plano publicado.
-- Check-ins autorrelatados.
-- Confirmação opcional de execução.
-- Histórico longitudinal.
-- Atenção baseada apenas em regras operacionais determinísticas aprovadas.
+Implementado neste incremento:
+
+- alimentar a página Hoje com a versão publicada do plano e as confirmações feitas pela paciente na sessão;
+- registrar check-in guiado com energia, qualidade do sono e indicação de sintoma novo, sem texto clínico livre;
+- manter a confirmação opcional de cada ação publicada como registro autorrelatado, vinculado à versão e à ação do plano;
+- projetar check-ins e confirmações no dossiê médico com fonte, autoria, versão, estado e limite de uso;
+- mostrar o check-in mais recente como contexto operacional para a próxima conversa, sem chamá-lo de alerta clínico, triagem ou urgência;
+- acrescentar à auditoria apenas o envio do check-in, sem repetir seu conteúdo.
+
+Ainda pendente neste lote:
+
+- definir calendário, frequência e retenção de check-ins com validação clínica e de privacidade;
+- transformar regras operacionais em critérios aprovados pelo médico, explicáveis e testados;
+- projetar notificações, escalonamento humano e tratamento explícito de ausências, sem monitoramento de urgência;
+- validar a jornada com pacientes e médico antes de ampliar indicadores, métricas ou integrações.
 
 ## Critérios de aceite do primeiro ciclo
 
@@ -216,6 +226,17 @@ Ainda pendente neste lote:
 - Sessões anteriores do protótipo recebem eventos derivados apenas de metadados já existentes, sem inventar conteúdo clínico novo.
 - A interface afirma claramente que o registro é transitório e não equivale a autenticação, prontuário, prova legal ou integração externa.
 - Build, lint, verificação de tipos e jornada visual passam.
+
+## Critérios de aceite da primeira fatia do Lote 5
+
+- O check-in da paciente é salvo apenas no contexto sintético de paciente e atendimento da sessão.
+- O check-in registra somente escolhas guiadas e não solicita texto clínico livre.
+- A paciente só confirma ações da versão publicada mais recente do plano.
+- Retirar uma confirmação preserva o histórico do registro anterior e atualiza o estado visível da ação.
+- O dossiê médico recebe o autorrelato e as confirmações com autoria, fonte, versão e limites explícitos.
+- Marcar um sintoma novo pede leitura da fonte pelo médico, sem classificar risco, urgência, diagnóstico ou conduta.
+- A auditoria mostra o envio do check-in sem expor seus valores ou conteúdo clínico.
+- Build, lint, verificação de tipos e jornada paciente -> médico passam.
 
 ## Itens explicitamente excluídos
 
