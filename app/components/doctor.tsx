@@ -22,6 +22,7 @@ import {
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
+import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
@@ -391,7 +392,7 @@ const marinaDocuments = [
   },
 ];
 
-const intelligenceTabs = ['Resumo IA', 'Conversas sintetizadas', 'Fotos e análise'] as const;
+const intelligenceTabs = ['Padrões exploratórios', 'Conversas sintetizadas', 'Fotos e análise'] as const;
 type IntelligenceTab = (typeof intelligenceTabs)[number];
 
 const marinaConversations = [
@@ -891,7 +892,7 @@ function Patients({
   onMessage: (patientId: string) => void;
   onNotify: (text: string) => void;
 }) {
-  const [intelligenceTab, setIntelligenceTab] = useState<IntelligenceTab>('Resumo IA');
+  const [intelligenceTab, setIntelligenceTab] = useState<IntelligenceTab>('Padrões exploratórios');
   const [selectedMealIndex, setSelectedMealIndex] = useState<number | null>(null);
   const selectedIndex = patients.findIndex((patient) => patient.id === patientId);
   const selected = selectedIndex >= 0 ? patients[selectedIndex] : null;
@@ -939,7 +940,7 @@ function Patients({
             key={patient.id}
             aria-pressed={selectedIndex === index}
             onClick={() => {
-              setIntelligenceTab('Resumo IA');
+              setIntelligenceTab('Padrões exploratórios');
               setSelectedMealIndex(null);
               onSelectPatient(patient.id);
             }}
@@ -1013,6 +1014,14 @@ function Patients({
           key={`summary-${selected.id}`}
           patientId={selected.id}
           encounterId={getDefaultEncounterId(selected.id)}
+        />
+
+        <DoctorAiPreparationWorkspace
+          key={`ai-preparation-${selected.id}`}
+          patientId={selected.id}
+          patientName={selected.name}
+          encounterId={getDefaultEncounterId(selected.id)}
+          onNotify={onNotify}
         />
 
         <LongitudinalDossier key={selected.id} patientId={selected.id} patientName={selected.name} />
@@ -1129,9 +1138,9 @@ function Patients({
         <section aria-labelledby="clinical-copilot-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Copiloto longitudinal</p>
-              <h3 id="clinical-copilot-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Contexto que se atualiza entre consultas</h3>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#60766f]">A IA conecta conversa, documentos, imagens e rotina para reduzir leitura manual e destacar o que merece validação.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Exploração multimodal</p>
+              <h3 id="clinical-copilot-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Contexto complementar, separado da pauta médica</h3>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#60766f]">Conversas, fotos e padrões demonstrativos ficam disponíveis para exploração. A pauta rastreável e revisável permanece na preparação assistida acima.</p>
             </div>
             <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-2 text-xs font-bold text-[#526a62]">{selected.id === DEFAULT_PATIENT_ID ? '6 fontes demonstrativas · mock' : 'Sem fontes suficientes'}</span>
           </div>
@@ -1163,14 +1172,14 @@ function Patients({
               </div>
             ) : (
               <>
-                {intelligenceTab === 'Resumo IA' && (
+                {intelligenceTab === 'Padrões exploratórios' && (
                   <div className="space-y-5">
                     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)_minmax(260px,0.9fr)]">
                       <article className="rounded-2xl bg-[#17372f] p-5 text-white">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Briefing da próxima consulta</p>
-                            <h4 className="mt-2 text-lg font-semibold">Agenda clínica preparada em 42 segundos</h4>
+                            <h4 className="mt-2 text-lg font-semibold">Exemplo estático de temas recorrentes</h4>
                           </div>
                           <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#d9eee8]">Revisar hoje</span>
                         </div>
@@ -1182,8 +1191,8 @@ function Patients({
                             </li>
                           ))}
                         </ol>
-                        <button type="button" onClick={() => onNotify('Agenda sugerida adicionada ao preparo da consulta.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
-                          Adicionar ao preparo
+                        <button type="button" onClick={() => document.getElementById('doctor-ai-preparation-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
+                          Ir ao preparo rastreável
                         </button>
                       </article>
 
@@ -1577,7 +1586,12 @@ function Consultation({
   onComplete: () => void;
   onNotify: (message: string) => void;
 }) {
-  const { latestSubmission, latestCarePlan, latestPublishedCarePlan } = useCareDemo(appointment.patientId, appointment.encounterId);
+  const {
+    latestAiPreparationReview,
+    latestSubmission,
+    latestCarePlan,
+    latestPublishedCarePlan,
+  } = useCareDemo(appointment.patientId, appointment.encounterId);
   const [step, setStep] = useState<ConsultationStep>(initialStep);
   const [meetOpen, setMeetOpen] = useState(false);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
@@ -1586,6 +1600,10 @@ function Consultation({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const usesSharedPreConsultation = appointment.patientId === DEFAULT_PATIENT_ID && Boolean(latestSubmission);
+  const reviewedAgendaItems = latestAiPreparationReview?.items.filter((item) => item.decision === 'included') ?? [];
+  const preparationChecklist = reviewedAgendaItems.length > 0
+    ? reviewedAgendaItems.map((item) => item.label)
+    : appointment.checklist;
   const steps: Array<[ConsultationStep, string]> = [
     ['preparo', '1. Preparo'],
     ['consulta', '2. Consulta'],
@@ -1699,8 +1717,12 @@ function Consultation({
                 <div className={cn('mt-6 rounded-2xl border-l-4 p-4', appointment.preVisitTone === 'rose' ? 'border-[#d36c64] bg-[#fdf0ef]' : appointment.preVisitTone === 'green' ? 'border-[#55aa96] bg-[#edf7f4]' : 'border-[#e49d45] bg-[#fff8e9]')}><p className={cn('text-sm font-bold', appointment.preVisitTone === 'rose' ? 'text-[#8d3f39]' : appointment.preVisitTone === 'green' ? 'text-[#0b6a5b]' : 'text-[#6f4b0d]')}>{appointment.attentionTitle}</p><p className={cn('mt-1 text-sm leading-6', appointment.preVisitTone === 'rose' ? 'text-[#7e504c]' : appointment.preVisitTone === 'green' ? 'text-[#45655c]' : 'text-[#805f24]')}>{appointment.attentionDetail}</p></div>
               </section>
               <aside className="rounded-3xl bg-[#17372f] p-5 text-white">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Preparar em 30 segundos</p>
-                <ol className="mt-5 space-y-4 text-sm text-[#e0eee9]">{appointment.checklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#76c5b3]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}</ol>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Pauta para a consulta</p>
+                  {latestAiPreparationReview ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d9eee8]">Revisada · v{latestAiPreparationReview.version}</span> : null}
+                </div>
+                <ol className="mt-5 space-y-4 text-sm text-[#e0eee9]">{preparationChecklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#76c5b3]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}</ol>
+                <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">{latestAiPreparationReview ? 'Itens escolhidos pelo médico no preparo assistido; as fontes continuam disponíveis no dossiê.' : 'Pauta demonstrativa ainda sem revisão no preparo assistido.'}</p>
                 <button type="button" onClick={() => setStep('consulta')} className="mt-7 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Começar consulta</button>
               </aside>
             </div>

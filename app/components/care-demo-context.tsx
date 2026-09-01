@@ -10,6 +10,10 @@ import {
   type CareDemoStoreValue,
 } from './care-demo-store';
 import type {
+  CareAiPreparationDismissalReason,
+  CareAiPreparationReview,
+  CareAiPreparationReviewItem,
+  CareAiPreparationSourceRef,
   CareAuditAction,
   CareAuditActor,
   CareAuditEvent,
@@ -560,6 +564,124 @@ function normalizeConversationMessage(value: unknown): CareConversationMessage |
   };
 }
 
+function isAiPreparationDismissalReason(
+  value: unknown,
+): value is CareAiPreparationDismissalReason {
+  return value === 'duplicate' ||
+    value === 'already-reviewed' ||
+    value === 'insufficient-source' ||
+    value === 'not-useful';
+}
+
+function normalizeAiPreparationSourceRef(value: unknown): CareAiPreparationSourceRef | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    !value.id.trim() ||
+    typeof value.version !== 'number' ||
+    typeof value.label !== 'string' ||
+    !value.label.trim()
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    version: value.version,
+    label: value.label,
+  };
+}
+
+function normalizeAiPreparationReviewItem(value: unknown): CareAiPreparationReviewItem | null {
+  if (!isRecord(value)) return null;
+  const decision = value.decision === 'included' || value.decision === 'dismissed'
+    ? value.decision
+    : null;
+  const sourceIds = Array.isArray(value.sourceIds)
+    ? value.sourceIds.filter((sourceId): sourceId is string => typeof sourceId === 'string' && Boolean(sourceId.trim()))
+    : [];
+  const dismissalReason = value.dismissalReason === null || value.dismissalReason === undefined
+    ? null
+    : isAiPreparationDismissalReason(value.dismissalReason)
+      ? value.dismissalReason
+      : undefined;
+
+  if (
+    typeof value.id !== 'string' ||
+    !value.id.trim() ||
+    typeof value.label !== 'string' ||
+    !value.label.trim() ||
+    !decision ||
+    sourceIds.length === 0 ||
+    dismissalReason === undefined ||
+    (decision === 'dismissed' && dismissalReason === null) ||
+    (decision === 'included' && dismissalReason !== null)
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    label: value.label,
+    decision,
+    sourceIds,
+    dismissalReason,
+  };
+}
+
+function normalizeAiPreparationReview(value: unknown): CareAiPreparationReview | null {
+  if (!isRecord(value)) return null;
+  const authorizationMode = value.authorizationMode === 'mock-scenario' || value.authorizationMode === 'patient-consent'
+    ? value.authorizationMode
+    : null;
+  const sourceRefs = Array.isArray(value.sourceRefs)
+    ? value.sourceRefs.flatMap((sourceRef) => {
+        const normalized = normalizeAiPreparationSourceRef(sourceRef);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const items = Array.isArray(value.items)
+    ? value.items.flatMap((item) => {
+        const normalized = normalizeAiPreparationReviewItem(item);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !authorizationMode ||
+    value.templateVersion !== 'preparo-consulta-v1' ||
+    value.serviceMode !== 'deterministic-mock' ||
+    sourceRefs.length === 0 ||
+    items.length === 0 ||
+    typeof value.sourceFingerprint !== 'string' ||
+    typeof value.reviewedBy !== 'string' ||
+    typeof value.reviewedAt !== 'string' ||
+    typeof value.reviewedAtIso !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    authorizationMode,
+    templateVersion: 'preparo-consulta-v1',
+    serviceMode: 'deterministic-mock',
+    sourceRefs,
+    items,
+    sourceFingerprint: value.sourceFingerprint,
+    reviewedBy: value.reviewedBy,
+    reviewedAt: value.reviewedAt,
+    reviewedAtIso: value.reviewedAtIso,
+  };
+}
+
 function isCareAuditAction(value: unknown): value is CareAuditAction {
   return [
     'check-in-submitted',
@@ -575,6 +697,7 @@ function isCareAuditAction(value: unknown): value is CareAuditAction {
     'care-plan-created',
     'care-plan-approved',
     'care-plan-published',
+    'ai-preparation-reviewed',
   ].includes(value as CareAuditAction);
 }
 
@@ -635,6 +758,7 @@ function getAuditEventsFromHistory(
   followUpContacts: CareFollowUpContact[] = [],
   diaryEntries: CareDiaryEntry[] = [],
   conversationMessages: CareConversationMessage[] = [],
+  aiPreparationReviews: CareAiPreparationReview[] = [],
 ): CareAuditEvent[] {
   const checkInEvents = checkIns.map<CareAuditEvent>((checkIn) => ({
     id: `audit-derived-${checkIn.id}-submitted`,
@@ -733,6 +857,26 @@ function getAuditEventsFromHistory(
     consentVersion: null,
     aiAssistanceAllowed: null,
   }));
+
+  const aiPreparationEvents = aiPreparationReviews.map<CareAuditEvent>((review) => {
+    const includedCount = review.items.filter((item) => item.decision === 'included').length;
+    const dismissedCount = review.items.length - includedCount;
+    return {
+      id: `audit-derived-${review.id}-reviewed`,
+      patientId: review.patientId,
+      encounterId: review.encounterId,
+      action: 'ai-preparation-reviewed',
+      actor: 'doctor',
+      actorLabel: review.reviewedBy,
+      occurredAt: review.reviewedAt,
+      occurredAtIso: review.reviewedAtIso,
+      relatedId: review.id,
+      relatedVersion: review.version,
+      summary: `Pauta assistida revisada: ${includedCount} ${includedCount === 1 ? 'item incluído' : 'itens incluídos'} e ${dismissedCount} ${dismissedCount === 1 ? 'descartado' : 'descartados'}.`,
+      consentVersion: null,
+      aiAssistanceAllowed: true,
+    };
+  });
 
   const submissionEvents = submissions.map<CareAuditEvent>((submission) => ({
     id: `audit-derived-${submission.id}-submitted`,
@@ -856,6 +1000,7 @@ function getAuditEventsFromHistory(
     ...followUpContactEvents,
     ...diaryEvents,
     ...conversationEvents,
+    ...aiPreparationEvents,
     ...submissionEvents,
     ...reviewEvents,
     ...planEvents,
@@ -876,6 +1021,7 @@ const emptyState: CareDemoState = {
   diaryEntries: [],
   conversationMessages: [],
   actionConfirmations: [],
+  aiPreparationReviews: [],
   auditEvents: getAuditEventsFromHistory([], [], initialCarePlans, []),
 };
 
@@ -949,6 +1095,12 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
         return normalized ? [normalized] : [];
       })
     : [];
+  const aiPreparationReviews = Array.isArray(value.aiPreparationReviews)
+    ? value.aiPreparationReviews.flatMap((review) => {
+        const normalized = normalizeAiPreparationReview(review);
+        return normalized ? [normalized] : [];
+      })
+    : [];
   const parsedAuditEvents = Array.isArray(value.auditEvents)
     ? value.auditEvents.flatMap((event) => {
         const normalized = normalizeAuditEvent(event);
@@ -968,6 +1120,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     diaryEntries,
     conversationMessages,
     actionConfirmations,
+    aiPreparationReviews,
     auditEvents: parsedAuditEvents.length > 0
       ? parsedAuditEvents
       : getAuditEventsFromHistory(
@@ -980,6 +1133,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
           followUpContacts,
           diaryEntries,
           conversationMessages,
+          aiPreparationReviews,
         ),
   };
 }
@@ -1016,6 +1170,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     diaryEntries: [],
     conversationMessages: [],
     actionConfirmations: [],
+    aiPreparationReviews: [],
     auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, []),
   };
 }
@@ -1204,6 +1359,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         (message) => message.patientId === patientId && message.encounterId === encounterId,
       );
 
+    const aiPreparationReviewsFor = (patientId: string, encounterId: string) =>
+      (state.aiPreparationReviews ?? []).filter(
+        (review) => review.patientId === patientId && review.encounterId === encounterId,
+      );
+
     const reviewHistoryFor = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       return latestSubmission
@@ -1323,6 +1483,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       diaryEntries: state.diaryEntries ?? [],
       conversationMessages: state.conversationMessages ?? [],
       actionConfirmations: state.actionConfirmations ?? [],
+      aiPreparationReviews: state.aiPreparationReviews ?? [],
       auditEvents: state.auditEvents,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
         const scopeKey = getCareDemoScopeKey(patientId, encounterId);
@@ -1943,6 +2104,75 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         setState((current) => ({
           ...current,
           actionConfirmations: [...(current.actionConfirmations ?? []), created],
+        }));
+        return created;
+      },
+      reviewAiPreparation: (patientId, encounterId, input) => {
+        const sourceRefs = input.sourceRefs.flatMap((sourceRef) => {
+          const normalized = normalizeAiPreparationSourceRef(sourceRef);
+          return normalized ? [normalized] : [];
+        });
+        const items = input.items.flatMap((item) => {
+          const normalized = normalizeAiPreparationReviewItem(item);
+          return normalized ? [normalized] : [];
+        });
+
+        if (
+          input.templateVersion !== 'preparo-consulta-v1' ||
+          input.serviceMode !== 'deterministic-mock' ||
+          (input.authorizationMode !== 'mock-scenario' && input.authorizationMode !== 'patient-consent') ||
+          sourceRefs.length !== input.sourceRefs.length ||
+          items.length !== input.items.length ||
+          sourceRefs.length === 0 ||
+          items.length === 0
+        ) {
+          throw new Error('Revise as fontes e as decisões antes de salvar a pauta assistida.');
+        }
+
+        const availableSourceIds = new Set(sourceRefs.map((sourceRef) => sourceRef.id));
+        if (items.some((item) => item.sourceIds.some((sourceId) => !availableSourceIds.has(sourceId)))) {
+          throw new Error('Um item da pauta perdeu a referência de origem. Refaça a preparação.');
+        }
+
+        const now = new Date();
+        const scopedReviews = aiPreparationReviewsFor(patientId, encounterId);
+        const created: CareAiPreparationReview = {
+          id: `preparo-ia-${Date.now()}`,
+          patientId,
+          encounterId,
+          version: scopedReviews.length + 1,
+          authorizationMode: input.authorizationMode,
+          templateVersion: input.templateVersion,
+          serviceMode: input.serviceMode,
+          sourceRefs,
+          items,
+          sourceFingerprint: sourceRefs
+            .map((sourceRef) => `${sourceRef.id}@${sourceRef.version}`)
+            .toSorted()
+            .join('|'),
+          reviewedBy: 'Dr. Guilherme Martins · médico responsável',
+          reviewedAt: formatSubmissionTime(now),
+          reviewedAtIso: now.toISOString(),
+        };
+        const includedCount = items.filter((item) => item.decision === 'included').length;
+        const dismissedCount = items.length - includedCount;
+        const auditEvent = createAuditEvent({
+          action: 'ai-preparation-reviewed',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.reviewedAt,
+          occurredAtIso: created.reviewedAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: `Pauta assistida revisada: ${includedCount} ${includedCount === 1 ? 'item incluído' : 'itens incluídos'} e ${dismissedCount} ${dismissedCount === 1 ? 'descartado' : 'descartados'}.`,
+          aiAssistanceAllowed: true,
+        });
+
+        setState((current) => ({
+          ...current,
+          aiPreparationReviews: [...(current.aiPreparationReviews ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;
       },

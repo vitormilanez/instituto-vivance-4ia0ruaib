@@ -196,6 +196,46 @@ export interface CarePlanActionConfirmation {
   recordedAtIso: string;
 }
 
+export type CareAiPreparationDecision = 'included' | 'dismissed';
+export type CareAiPreparationDismissalReason =
+  | 'duplicate'
+  | 'already-reviewed'
+  | 'insufficient-source'
+  | 'not-useful';
+
+export interface CareAiPreparationSourceRef {
+  id: string;
+  version: number;
+  label: string;
+}
+
+export interface CareAiPreparationReviewItem {
+  id: string;
+  label: string;
+  decision: CareAiPreparationDecision;
+  sourceIds: string[];
+  dismissalReason: CareAiPreparationDismissalReason | null;
+}
+
+export interface CareAiPreparationReviewInput {
+  authorizationMode: 'mock-scenario' | 'patient-consent';
+  templateVersion: 'preparo-consulta-v1';
+  serviceMode: 'deterministic-mock';
+  sourceRefs: CareAiPreparationSourceRef[];
+  items: CareAiPreparationReviewItem[];
+}
+
+export interface CareAiPreparationReview extends CareAiPreparationReviewInput {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  sourceFingerprint: string;
+  reviewedBy: string;
+  reviewedAt: string;
+  reviewedAtIso: string;
+}
+
 export type CareAuditAction =
   | 'check-in-submitted'
   | 'check-in-reviewed'
@@ -209,7 +249,8 @@ export type CareAuditAction =
   | 'pre-consultation-review-rejected'
   | 'care-plan-created'
   | 'care-plan-approved'
-  | 'care-plan-published';
+  | 'care-plan-published'
+  | 'ai-preparation-reviewed';
 
 export type CareAuditActor = 'patient' | 'doctor' | 'system';
 

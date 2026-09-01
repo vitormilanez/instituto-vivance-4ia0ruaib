@@ -93,6 +93,7 @@ const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' 
   'care-plan-created': { label: 'Plano em rascunho', tone: 'amber' },
   'care-plan-approved': { label: 'Plano aprovado', tone: 'blue' },
   'care-plan-published': { label: 'Plano publicado', tone: 'green' },
+  'ai-preparation-reviewed': { label: 'Pauta assistida revisada', tone: 'green' },
 };
 
 const sleepPresentation: Record<CareCheckIn['sleepQuality'], string> = {
@@ -188,6 +189,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
     diaryEntries,
     conversationMessages,
     actionConfirmations,
+    aiPreparationReviews,
     latestCheckIn,
     auditEvents,
   } = useCareDemo(patientId, encounterId);
@@ -370,6 +372,32 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       };
     });
 
+    const aiPreparationRecords = aiPreparationReviews.map<LongitudinalRecord>((review) => {
+      const includedCount = review.items.filter((item) => item.decision === 'included').length;
+      const dismissedCount = review.items.length - includedCount;
+      return {
+        id: `timeline-${review.id}`,
+        patientId,
+        encounterId,
+        occurredAt: formatTimelineTimestamp(review.reviewedAtIso),
+        occurredAtIso: review.reviewedAtIso,
+        kind: 'care-draft',
+        title: `Pauta assistida revisada · versão ${review.version}`,
+        summary: `${includedCount} ${includedCount === 1 ? 'pergunta incluída' : 'perguntas incluídas'} e ${dismissedCount} ${dismissedCount === 1 ? 'descartada' : 'descartadas'} pelo médico.`,
+        source: `${review.sourceRefs.length} fontes · template ${review.templateVersion}`,
+        sourceId: review.id,
+        sourceVersion: review.version,
+        linkedSourceIds: review.sourceRefs.map((sourceRef) => sourceRef.id),
+        author: 'Assistente demonstrativo · organização inicial',
+        reviewedBy: review.reviewedBy,
+        reviewedAt: formatTimelineTimestamp(review.reviewedAtIso),
+        reviewState: 'Pauta revisada para apoiar a consulta',
+        visibility: 'medical-team',
+        assistanceMode: 'assisted',
+        limitation: 'A revisão da pauta não registra diagnóstico, prescrição, dose, conduta, urgência ou sincronização com prontuário.',
+      };
+    });
+
     const carePlanRecords = carePlans.map<LongitudinalRecord>((plan) => {
       const eventTimestampIso = plan.status === 'published'
         ? plan.publishedAtIso ?? plan.updatedAtIso
@@ -443,11 +471,13 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       ...conversationRecords,
       ...submissionRecords,
       ...reviewRecords,
+      ...aiPreparationRecords,
       ...carePlanRecords,
       ...actionConfirmationRecords,
     ];
   }, [
     actionConfirmations,
+    aiPreparationReviews,
     carePlans,
     checkInReviews,
     checkIns,
@@ -494,7 +524,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const sourceCount = new Set(records.flatMap((record) => [record.sourceId, ...(record.linkedSourceIds ?? [])])).size;
   const reviewedCount = records.filter((record) => Boolean(record.reviewedBy)).length;
   const latestUpdate = records[0]?.occurredAt ?? dossier.updatedAt;
-  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || checkInReviews.length > 0 || followUpConfigurations.length > 0 || followUpContacts.length > 0 || diaryEntries.length > 0 || conversationMessages.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
+  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || checkInReviews.length > 0 || followUpConfigurations.length > 0 || followUpContacts.length > 0 || diaryEntries.length > 0 || conversationMessages.length > 0 || actionConfirmations.length > 0 || aiPreparationReviews.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
   const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (

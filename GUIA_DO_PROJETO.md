@@ -102,6 +102,11 @@ Principais recursos:
 - Síntese longitudinal do acompanhamento.
 - Perfil do paciente com relatórios, receitas, insights e próximos passos.
 - Dossiê assistido por IA com resumo, conversas sintetizadas, fotos e análises e linha do tempo.
+- Preparação assistida da consulta com relatos, dados, revisões e hipóteses em camadas separadas.
+- Lacunas e ausência de contradições mantidas explícitas, sem preenchimento automático.
+- Perguntas sugeridas com fonte, cobertura e revisão item a item pelo médico.
+- Justificativa obrigatória para perguntas descartadas, versionamento e auditoria por metadados.
+- Pauta revisada reaproveitada no ambiente da consulta e fluxo manual preservado quando a IA não está autorizada.
 - Rascunhos de relatório sujeitos à aprovação médica.
 - Consulta com notas estruturadas.
 - Copiloto para organizar notas.
@@ -163,7 +168,7 @@ O código está documentado em [README.md](/Users/vitormilanez/Desktop/Codes/Ins
 
 ## 6. O que ainda é mockado
 
-O protótipo possui estado somente em memória e dados fictícios.
+O protótipo possui dados fictícios e estado demonstrativo limitado à sessão do navegador (`sessionStorage`). Não há persistência clínica real.
 
 Ainda não existem:
 

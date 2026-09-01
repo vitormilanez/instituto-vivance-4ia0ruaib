@@ -3,6 +3,8 @@
 import { createContext, useContext } from 'react';
 import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
 import type {
+  CareAiPreparationReview,
+  CareAiPreparationReviewInput,
   CareAuditEvent,
   CareCheckIn,
   CareCheckInInput,
@@ -35,6 +37,7 @@ export interface CareDemoState {
   diaryEntries: CareDiaryEntry[];
   conversationMessages: CareConversationMessage[];
   actionConfirmations: CarePlanActionConfirmation[];
+  aiPreparationReviews: CareAiPreparationReview[];
   auditEvents: CareAuditEvent[];
 }
 
@@ -128,6 +131,11 @@ export interface CareDemoStoreValue extends CareDemoState {
     actionId: string,
     completed: boolean,
   ) => CarePlanActionConfirmation;
+  reviewAiPreparation: (
+    patientId: string,
+    encounterId: string,
+    input: CareAiPreparationReviewInput,
+  ) => CareAiPreparationReview;
 }
 
 export interface CareDemoContextValue {
@@ -152,6 +160,8 @@ export interface CareDemoContextValue {
   diaryEntries: CareDiaryEntry[];
   conversationMessages: CareConversationMessage[];
   actionConfirmations: CarePlanActionConfirmation[];
+  aiPreparationReviews: CareAiPreparationReview[];
+  latestAiPreparationReview: CareAiPreparationReview | null;
   confirmedActionIds: string[];
   auditEvents: CareAuditEvent[];
   latestCarePlan: CarePlanVersion | null;
@@ -185,6 +195,9 @@ export interface CareDemoContextValue {
     actionId: string,
     completed: boolean,
   ) => CarePlanActionConfirmation;
+  reviewAiPreparation: (
+    input: CareAiPreparationReviewInput,
+  ) => CareAiPreparationReview;
 }
 
 export const EMPTY_PRECONSULTATION_DRAFT: PreConsultationAnswers = {
@@ -262,6 +275,10 @@ export function useCareDemo(
   const actionConfirmations = (context.actionConfirmations ?? [])
     .filter((confirmation) => confirmation.patientId === patientId && confirmation.encounterId === encounterId)
     .toSorted((left, right) => left.recordedAtIso.localeCompare(right.recordedAtIso));
+  const aiPreparationReviews = (context.aiPreparationReviews ?? [])
+    .filter((review) => review.patientId === patientId && review.encounterId === encounterId)
+    .toSorted((left, right) => left.reviewedAtIso.localeCompare(right.reviewedAtIso));
+  const latestAiPreparationReview = aiPreparationReviews.at(-1) ?? null;
   const latestConfirmationByAction = new Map<string, CarePlanActionConfirmation>();
   for (const confirmation of actionConfirmations) {
     latestConfirmationByAction.set(confirmation.actionId, confirmation);
@@ -298,6 +315,8 @@ export function useCareDemo(
     diaryEntries,
     conversationMessages,
     actionConfirmations,
+    aiPreparationReviews,
+    latestAiPreparationReview,
     confirmedActionIds,
     auditEvents,
     savePreConsultationDraft: (patch) =>
@@ -328,5 +347,7 @@ export function useCareDemo(
     publishCarePlan: (planId) => context.publishCarePlan(patientId, encounterId, planId),
     confirmCarePlanAction: (planId, actionId, completed) =>
       context.confirmCarePlanAction(patientId, encounterId, planId, actionId, completed),
+    reviewAiPreparation: (input) =>
+      context.reviewAiPreparation(patientId, encounterId, input),
   };
 }
