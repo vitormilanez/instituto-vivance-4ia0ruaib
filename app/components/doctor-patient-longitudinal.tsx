@@ -216,7 +216,7 @@ export function PatientCohort({ patients, onSelectPatient }: { patients: Patient
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#17372f]">Pacientes</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">Abra uma pessoa para ver evolução, fontes, pendências e próximos passos em um único dossiê.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">Abra uma pessoa para ver evolução, fontes, pendências e próximos passos em uma única tela.</p>
         </div>
         <label className="flex min-h-11 items-center rounded-xl border border-[#d7e3df] bg-white px-4 text-sm text-[#526a62] focus-within:ring-2 focus-within:ring-[#0b7b68]">
           <span className="sr-only">Buscar paciente</span>
@@ -241,7 +241,7 @@ export function PatientCohort({ patients, onSelectPatient }: { patients: Patient
               <span className="mt-1 block text-sm text-[#526a62]">{patient.focus}</span>
               <span className="mt-5 block text-2xl font-semibold tracking-[-0.04em] text-[#17372f]">{patient.progress}</span>
               <span className="mt-1 block text-xs text-[#526a62]">desde o último ciclo</span>
-              <span className="mt-5 flex min-h-11 items-center justify-between border-t border-[#e7eeea] pt-4 text-sm font-bold text-[#0b6a5b]"><span>Abrir dossiê</span><span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span></span>
+              <span className="mt-5 flex min-h-11 items-center justify-between border-t border-[#e7eeea] pt-4 text-sm font-bold text-[#0b6a5b]"><span>Abrir histórico</span><span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span></span>
             </button>
           ))}
         </section>
@@ -359,7 +359,7 @@ export function PatientLongitudinalWorkspace({
           <strong className="text-[#17372f]">Visão auxiliar.</strong> Não substitui o prontuário oficial.<span className="hidden sm:inline"> Originais, autoria, versões e revisão humana permanecem identificados.</span>
         </div>
 
-        <nav aria-label="Áreas do dossiê longitudinal" className="mt-3 overflow-x-auto rounded-2xl border border-[#dfe8e3] bg-white p-1.5 sm:mt-4">
+        <nav aria-label="Áreas do histórico do paciente" className="mt-3 overflow-x-auto rounded-2xl border border-[#dfe8e3] bg-white p-1.5 sm:mt-4">
           <div className="flex min-w-max gap-1">
             {patientTabs.map((tab) => (
               <a
@@ -600,7 +600,7 @@ function EvolutionPanel({ error, incomplete, onNotify }: { error: boolean; incom
     <div className="space-y-5">
       {incomplete && <InlineState tone="amber" title="Período incompleto" description="A linha interrompida não foi interpolada. A leitura considera apenas registros confirmados e mostra a cobertura de cada fonte." />}
       <section className="rounded-2xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#17372f]">Evolução longitudinal</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">Compare períodos e observe coincidências com consultas, exames e versões do plano sem converter associação em causa.</p></div><div className="flex gap-2 overflow-x-auto" aria-label="Selecionar período">{['30 dias', '90 dias', '6 meses'].map((item) => <button key={item} type="button" aria-pressed={period === item} onClick={() => setPeriod(item)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', period === item ? 'bg-[#17372f] text-white' : 'border border-[#d7e3df] text-[#526a62]')}>{item}</button>)}</div></div>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#17372f]">Histórico e evolução</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">Compare períodos e veja o que aconteceu perto de consultas, exames e mudanças no plano, sem afirmar que um evento causou o outro.</p></div><div className="flex gap-2 overflow-x-auto" aria-label="Selecionar período">{['30 dias', '90 dias', '6 meses'].map((item) => <button key={item} type="button" aria-pressed={period === item} onClick={() => setPeriod(item)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', period === item ? 'bg-[#17372f] text-white' : 'border border-[#d7e3df] text-[#526a62]')}>{item}</button>)}</div></div>
         <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Selecionar indicador">{(Object.keys(evolutionMetrics) as EvolutionMetric[]).map((key) => <button key={key} type="button" aria-pressed={metricKey === key} onClick={() => setMetricKey(key)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', metricKey === key ? 'bg-[#e8f4f0] text-[#0b6a5b] ring-1 ring-[#b9d8cf]' : 'border border-[#d7e3df] text-[#526a62]')}>{evolutionMetrics[key].label}</button>)}</div>
       </section>
 
@@ -656,7 +656,7 @@ function EvolutionChart({ metricKey }: { metricKey: EvolutionMetric }) {
 }
 
 function LoadingState() {
-  return <div aria-live="polite" aria-busy="true" className="space-y-4"><span className="sr-only">Carregando visão longitudinal</span>{[120, 260, 420].map((height) => <div key={height} style={{ minHeight: height }} className="animate-pulse rounded-2xl border border-[#dfe8e3] bg-gradient-to-r from-white via-[#f0f5f2] to-white motion-reduce:animate-none" />)}</div>;
+  return <div aria-live="polite" aria-busy="true" className="space-y-4"><span className="sr-only">Carregando histórico do paciente</span>{[120, 260, 420].map((height) => <div key={height} style={{ minHeight: height }} className="animate-pulse rounded-2xl border border-[#dfe8e3] bg-gradient-to-r from-white via-[#f0f5f2] to-white motion-reduce:animate-none" />)}</div>;
 }
 
 function EmptyPatientState({ onNotify }: { onNotify: (text: string) => void }) {

@@ -1,5 +1,17 @@
 'use client';
 
+import {
+  ArrowRight,
+  Broadcast as PhosphorBroadcast,
+  CalendarBlank,
+  ChatCircle,
+  FileText,
+  House,
+  SignOut,
+  Sparkle,
+  Users,
+  VideoCamera,
+} from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
@@ -20,6 +32,7 @@ import {
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
+import { VivanseDoctorDashboard } from './doctor-dashboard-vivanse';
 import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
 import {
   PatientCohort,
@@ -50,52 +63,11 @@ type Appointment = {
   checklist: string[];
 };
 
-type DashboardIconProps = { className?: string };
-
-function SparklesIcon({ className = 'size-4' }: DashboardIconProps) {
-  return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3.5c.5 3.5 2.5 5.5 6 6-3.5.5-5.5 2.5-6 6-.5-3.5-2.5-5.5-6-6 3.5-.5 5.5-2.5 6-6Z" />
-      <path d="M19 15.5c.25 1.75 1.25 2.75 3 3-1.75.25-2.75 1.25-3 3-.25-1.75-1.25-2.75-3-3 1.75-.25 2.75-1.25 3-3Z" />
-      <path d="M5 3v3M3.5 4.5h3" />
-    </svg>
-  );
-}
-
-function VideoIcon({ className = 'size-5' }: DashboardIconProps) {
-  return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="6" width="13" height="12" rx="2.5" />
-      <path d="m16 10 5-3v10l-5-3" />
-    </svg>
-  );
-}
-
-function CalendarIcon({ className = 'size-5' }: DashboardIconProps) {
-  return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="5" width="18" height="16" rx="2.5" />
-      <path d="M8 3v4M16 3v4M3 10h18" />
-    </svg>
-  );
-}
-
-function BroadcastIcon({ className = 'size-4' }: DashboardIconProps) {
-  return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none" />
-      <path d="M8.8 8.8a4.5 4.5 0 0 0 0 6.4M15.2 8.8a4.5 4.5 0 0 1 0 6.4M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ className = 'size-4' }: DashboardIconProps) {
-  return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M14 7l5 5-5 5" />
-    </svg>
-  );
-}
+const SparklesIcon = Sparkle;
+const VideoIcon = VideoCamera;
+const CalendarIcon = CalendarBlank;
+const BroadcastIcon = PhosphorBroadcast;
+const ArrowRightIcon = ArrowRight;
 
 interface DoctorDemoUiState {
   reportApproved: boolean;
@@ -429,7 +401,7 @@ export default function DoctorWorkspace({
 }) {
   const router = useRouter();
   const view = initialView;
-  const { hydrated } = useCareDemo(patientId, encounterId ?? getDefaultEncounterId(patientId));
+  const { hydrated, latestSubmission } = useCareDemo(patientId, encounterId ?? getDefaultEncounterId(patientId));
   const [selectedAlert, setSelectedAlert] = useState<(typeof alerts)[number] | null>(null);
   const [demoUi, setDemoUi, demoUiHydrated] = useSessionDemoState(
     'instituto-vivans-demo-ui-v1:doctor',
@@ -438,7 +410,6 @@ export default function DoctorWorkspace({
   );
   const [toast, setToast] = useState('');
   const approved = demoUi.reportApproved;
-  const nudged = demoUi.overdueReminderSent;
   const activeAppointment = routeMode === 'workspace'
     ? null
     : appointments.find((appointment) => appointment.patientId === patientId && appointment.encounterId === encounterId) ?? null;
@@ -450,10 +421,6 @@ export default function DoctorWorkspace({
 
   const openPreparation = (appointment: Appointment) => {
     router.push(getPreConsultationHref(appointment.patientId, appointment.encounterId));
-  };
-
-  const openConsultation = (appointment: Appointment) => {
-    router.push(getConsultationHref(appointment.patientId, appointment.encounterId));
   };
 
   const closeClinicalWorkspace = (appointment: Appointment) => {
@@ -470,44 +437,46 @@ export default function DoctorWorkspace({
 
   return (
     <>
-      <div id="doctor-workspace-content" className="mx-auto grid max-w-[1540px] lg:grid-cols-[232px_minmax(0,1fr)]">
-        <aside className="hidden min-h-[calc(100vh-72px)] border-r border-[#dfe8e3] bg-white px-4 py-6 lg:block">
-          <nav aria-label="Navegação do médico" className="space-y-1">
-            {doctorNavigation.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                aria-current={view === item.label ? 'page' : undefined}
-                className={cn(
-                  'flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors',
-                  view === item.label
-                    ? 'bg-[#e8f4f0] text-[#075f52]'
-                    : 'text-[#60766f] hover:bg-[#f4f7f5] hover:text-[#17372f]'
-                )}
-              >
-                <span aria-hidden="true" className={cn('size-2 rounded-full', view === item.label ? 'bg-[#0b7b68]' : 'bg-[#b7c7c1]')} />
-                {item.label}
-              </Link>
-            ))}
+      <div id="doctor-workspace-content" className="grid min-h-[calc(100vh-76px)] lg:grid-cols-[252px_minmax(0,1fr)]">
+        <aside className="vivanse-sidebar-surface hidden min-h-[calc(100vh-76px)] flex-col px-4 py-5 text-white lg:flex">
+          <nav aria-label="Navegação do médico" className="space-y-3">
+            {doctorNavigation.map((item) => {
+              const Icon = item.label === 'Visão geral'
+                ? House
+                : item.label === 'Agenda'
+                  ? CalendarBlank
+                  : item.label === 'Pacientes'
+                    ? Users
+                    : item.label === 'Mensagens'
+                      ? ChatCircle
+                      : FileText;
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  aria-current={view === item.label ? 'page' : undefined}
+                  className={cn(
+                    'vivanse-glass-menu flex min-h-[58px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-left text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white',
+                    view === item.label && 'vivanse-glass-menu-active text-white'
+                  )}
+                >
+                  <Icon aria-hidden="true" size={21} weight={view === item.label ? 'fill' : 'regular'} />
+                  {item.label === 'Visão geral' ? 'Hoje' : item.label}
+                </Link>
+              );
+            })}
           </nav>
-          <div className="mt-10 rounded-2xl bg-[#17372f] p-4 text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#9cc7ba]">Pacientes ativos</p>
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between rounded-xl bg-white/8 px-3 py-2.5"><span className="text-xs text-[#c7ddd6]">Total</span><strong className="text-lg">22</strong></div>
-              <div className="flex items-center justify-between rounded-xl bg-white/8 px-3 py-2.5"><span className="text-xs text-[#c7ddd6]">Regulares</span><strong className="text-lg text-[#9fe0ce]">17</strong></div>
-              <div className="flex items-center justify-between rounded-xl bg-[#fff3df] px-3 py-2.5 text-[#70480e]"><span className="text-xs font-bold">Check-in atrasado</span><strong className="text-lg">5</strong></div>
-            </div>
-            <button type="button" disabled={nudged} onClick={() => { setDemoUi((current) => ({ ...current, overdueReminderSent: true })); notify('Cutucão enviado para 5 pacientes com check-in atrasado.'); }} className="mt-3 min-h-11 w-full cursor-pointer rounded-xl bg-white px-3 text-xs font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f] disabled:cursor-default disabled:bg-[#b9d0c9]">
-              {nudged ? 'Lembrete enviado' : 'Dar um cutucão nos 5'}
-            </button>
-          </div>
-          <div className="mt-4 rounded-2xl border border-[#dfe8e3] bg-[#f8faf9] p-4">
-            <p className="text-xs font-bold text-[#45655c]">IA com revisão médica</p>
-            <p className="mt-2 text-xs leading-5 text-[#526a62]">Sugestões nunca são enviadas ao paciente sem sua aprovação.</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => notify('Saída disponível apenas na versão conectada.')}
+            className="vivanse-glass-menu mt-auto flex min-h-[54px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white"
+          >
+            <SignOut aria-hidden="true" size={21} />
+            Sair
+          </button>
         </aside>
 
-        <main id="main-content" className="min-w-0 px-4 pb-12 pt-6 sm:px-5 lg:px-9 lg:pt-9">
+        <main id="main-content" className="min-w-0 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8 xl:px-9">
           {!patientDetail && <div className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Navegação do médico">
             {doctorNavigation.map((item) => (
               <Link
@@ -515,22 +484,26 @@ export default function DoctorWorkspace({
                 href={item.href}
                 aria-current={view === item.label ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
-                  view === item.label ? 'bg-[#17372f] text-white' : 'border border-[#dfe8e3] bg-white text-[#60766f]'
+                  'flex min-h-11 shrink-0 items-center rounded-xl px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c5ba8] focus-visible:ring-offset-2',
+                  view === item.label ? 'bg-[#061b3e] text-white' : 'border border-[#cddaea] bg-white/80 text-[#50627f] backdrop-blur'
                 )}
               >
-                {item.label}
+                {item.label === 'Visão geral' ? 'Hoje' : item.label}
               </Link>
             ))}
           </div>}
 
           {view === 'Visão geral' && (
-            <Overview
-              onOpenAppointment={openConsultation}
-              onOpenPreparation={openPreparation}
-              onPatient={(selectedPatientId) => router.push(getPatientDossierHref(selectedPatientId))}
-              onAlert={setSelectedAlert}
-              onReports={() => router.push('/medico/relatorios')}
+            <VivanseDoctorDashboard
+              appointments={appointments}
+              attentionItems={alerts}
+              hasPreConsultation={Boolean(latestSubmission)}
+              onStartConsultation={(selectedPatientId, selectedEncounterId) => router.push(getConsultationHref(selectedPatientId, selectedEncounterId))}
+              onOpenPreparation={(selectedPatientId, selectedEncounterId) => router.push(getPreConsultationHref(selectedPatientId, selectedEncounterId))}
+              onOpenAttention={(patient) => {
+                const item = alerts.find((alert) => alert.patient === patient);
+                if (item) setSelectedAlert(item);
+              }}
             />
           )}
           {view === 'Agenda' && <Agenda onOpenAppointment={openPreparation} onNotify={notify} />}
@@ -587,7 +560,7 @@ export default function DoctorWorkspace({
   );
 }
 
-function Overview({
+export function LegacyOverview({
   onOpenAppointment,
   onOpenPreparation,
   onPatient,
@@ -658,7 +631,7 @@ function Overview({
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#e7efea] px-4 text-xs font-bold text-[#2e6253] sm:text-sm">
               <SparklesIcon />
-              Painel de longevidade
+              Painel do dia
             </span>
             <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-[#bdd2c8] bg-[#f2f8f5] px-4 text-xs font-semibold text-[#2e6253] shadow-[0_2px_5px_rgba(46,98,83,0.08)] sm:text-sm">
               <span aria-hidden="true" className="size-2 rounded-full bg-[#328568]" />
@@ -914,7 +887,7 @@ function Patients({
   if (!selected) {
     return (
       <>
-        <Heading eyebrow="Carteira ativa" title="Dossiê não disponível" description="Este atendimento demonstrativo existe na agenda, mas ainda não possui um dossiê longitudinal preenchido." />
+        <Heading eyebrow="Carteira ativa" title="Histórico não disponível" description="Este atendimento de exemplo existe na agenda, mas ainda não possui um histórico preenchido." />
         <section className="mt-7 rounded-3xl border border-[#dfe8e3] bg-white p-6">
           <Status tone="gray">Dados demonstrativos</Status>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-[#60766f]">Nenhum dado de outra pessoa foi usado como alternativa. Volte à agenda para escolher um atendimento disponível.</p>
@@ -1100,7 +1073,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
 function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => void }) {
   return (
     <>
-      <Heading eyebrow="Evolução longitudinal" title="Relatórios" description="Rascunhos gerados a partir de dados demonstrativos, sempre revisados pelo médico." />
+      <Heading eyebrow="Histórico e evolução" title="Relatórios" description="Rascunhos criados a partir de dados de exemplo, sempre revisados pelo médico." />
       <section className="mt-7 grid gap-6 xl:grid-cols-[300px_1fr]">
         <div className="space-y-3">
           {[
@@ -1260,7 +1233,7 @@ function Consultation({
             <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
               <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Briefing longitudinal</p><h3 className="mt-2 text-2xl font-semibold">O que mudou desde a última consulta</h3></div>
+                  <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Resumo do acompanhamento</p><h3 className="mt-2 text-2xl font-semibold">O que mudou desde a última consulta</h3></div>
                   <Status tone={usesSharedPreConsultation ? 'blue' : appointment.preVisitTone}>{usesSharedPreConsultation ? 'Fonte compartilhada nesta sessão' : appointment.preVisit}</Status>
                 </div>
                 {usesSharedPreConsultation ? (
@@ -1292,7 +1265,7 @@ function Consultation({
                   {latestAiPreparationReview ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d9eee8]">Revisada · v{latestAiPreparationReview.version}</span> : null}
                 </div>
                 <ol className="mt-5 space-y-4 text-sm text-[#e0eee9]">{preparationChecklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#76c5b3]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}</ol>
-                <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">{latestAiPreparationReview ? 'Itens escolhidos pelo médico no preparo assistido; as fontes continuam disponíveis no dossiê.' : 'Pauta demonstrativa ainda sem revisão no preparo assistido.'}</p>
+                <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">{latestAiPreparationReview ? 'Itens escolhidos pelo médico no preparo assistido; as fontes continuam disponíveis no histórico.' : 'Pauta demonstrativa ainda sem revisão no preparo assistido.'}</p>
                 <button type="button" onClick={() => setStep('consulta')} className="mt-7 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Começar consulta</button>
               </aside>
             </div>
@@ -1332,7 +1305,7 @@ function Consultation({
                 <h3 className="mt-2 text-2xl font-semibold">Tudo pronto para conferir</h3>
                 <div className="mt-6 space-y-3">
                   {[
-                    ['Fechamento da consulta', latestConsultationClosure ? `Versão ${latestConsultationClosure.version} aprovada · ${latestConsultationClosure.items.length} itens rastreáveis` : summary ? 'Notas organizadas, sem fonte longitudinal registrada' : 'Usará somente as notas atuais'],
+                    ['Fechamento da consulta', latestConsultationClosure ? `Versão ${latestConsultationClosure.version} aprovada · ${latestConsultationClosure.items.length} itens rastreáveis` : summary ? 'Notas organizadas, sem histórico registrado' : 'Usará somente as notas atuais'],
                     ['Plano de cuidado', latestPublishedCarePlan ? `Versão ${latestPublishedCarePlan.version} publicada para a paciente` : latestCarePlan?.status === 'approved' ? `Versão ${latestCarePlan.version} aprovada, aguardando publicação` : latestCarePlan?.status === 'draft' ? `Versão ${latestCarePlan.version} em rascunho` : 'Nenhum plano iniciado'],
                     ['Origem do plano', latestCarePlan?.sourceClosureId && latestCarePlan.sourceClosureId === latestConsultationClosure?.id ? `${latestCarePlan.sourceItemIds.length} ${latestCarePlan.sourceItemIds.length === 1 ? 'item aprovado vinculado' : 'itens aprovados vinculados'}` : 'Sem vínculo com o fechamento aprovado'],
                     ['Próximo acompanhamento', activeFollowUpConfiguration ? `Cadência ligada ao plano v${activeFollowUpConfiguration.planVersion}` : latestPublishedCarePlan ? 'Ainda não configurado' : 'Disponível depois da publicação'],

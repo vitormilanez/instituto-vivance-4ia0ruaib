@@ -496,7 +496,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   if (!hydrated) {
     return (
       <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico longitudinal</p>
+        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico do paciente</p>
         <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold">Carregando o contexto demonstrativo...</h3>
         <p className="mt-2 text-sm leading-6 text-[#60766f]">Nenhum dado de outro paciente é exibido durante o carregamento.</p>
       </section>
@@ -506,7 +506,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   if (!dossier) {
     return (
       <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico longitudinal</p>
+        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico do paciente</p>
         <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold">Ainda não há eventos para este contexto.</h3>
         <p className="mt-2 text-sm leading-6 text-[#60766f]">O protótipo não completa lacunas com informações de outra pessoa.</p>
       </section>

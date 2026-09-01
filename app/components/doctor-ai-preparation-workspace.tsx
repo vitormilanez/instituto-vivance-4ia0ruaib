@@ -696,7 +696,7 @@ export function DoctorAiPreparationWorkspace({
             </article>
           ))}
         </div>
-        <a href="#longitudinal-dossier-title" className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Abrir histórico longitudinal completo</a>
+        <a href="#longitudinal-dossier-title" className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Abrir histórico completo</a>
       </details>
 
       <div className="mt-5">

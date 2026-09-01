@@ -1,115 +1,76 @@
 ---
-name: "Instituto Vivans"
-description: "Clareza clínica contínua em uma interface serena e orientada à decisão."
+name: "VIVANSE"
+description: "Uma área de cuidado clara, elegante e orientada ao que o profissional precisa fazer agora."
 colors:
-  evergreen-ink: "#17372f"
-  institutional-green: "#0b7b68"
-  institutional-green-strong: "#0b6a5b"
-  editorial-green: "#2e6253"
-  body-ink: "#405d54"
-  supporting-ink: "#526a62"
-  muted-ink: "#60766f"
-  mist-canvas: "#f4f7f5"
-  white-surface: "#ffffff"
-  soft-border: "#dfe8e3"
-  control-border: "#d7e3df"
-  accent-border: "#bfd4cd"
-  divider-mist: "#e7eeea"
-  mint-soft: "#e8f4f0"
-  mint-hover: "#edf7f4"
-  green-state-border: "#b9d8cf"
-  amber-soft: "#fff4d8"
-  amber-ink: "#825b0b"
+  midnight: "#03132d"
+  midnight-soft: "#082553"
+  action-blue: "#124da0"
+  action-blue-hover: "#0f3f83"
+  deep-ink: "#071a3a"
+  body-ink: "#405675"
+  muted-ink: "#61718a"
+  canvas: "#f6f9fe"
+  white: "#ffffff"
+  ice: "#edf3fb"
+  border: "#dbe4f0"
+  gold-logo: "#d7a33c"
+  amber-soft: "#fff0ca"
+  amber-ink: "#77500a"
   rose-soft: "#fdecea"
   rose-ink: "#9c453f"
-  rose-state-border: "#efc7c3"
-  blue-soft: "#edf3fb"
-  blue-ink: "#456b9c"
-  blue-state-border: "#c9d8ec"
-  neutral-soft: "#f1f5f3"
 typography:
-  display:
-    fontFamily: "Playfair Display, Georgia, 'Times New Roman', serif"
-    fontSize: "2.35rem"
+  headline-mobile:
+    fontFamily: "Geist, Arial, Helvetica, sans-serif"
+    fontSize: "2rem"
     fontWeight: 600
-    lineHeight: 1.04
-    letterSpacing: "-0.045em"
-  display-md:
-    fontFamily: "Playfair Display, Georgia, 'Times New Roman', serif"
-    fontSize: "3rem"
-    fontWeight: 600
-    lineHeight: 1.04
-    letterSpacing: "-0.045em"
-  display-lg:
-    fontFamily: "Playfair Display, Georgia, 'Times New Roman', serif"
-    fontSize: "3.65rem"
-    fontWeight: 600
-    lineHeight: 1.04
-    letterSpacing: "-0.045em"
+    lineHeight: 1.15
+    letterSpacing: "-0.03em"
   headline:
     fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "1.875rem"
+    fontSize: "2.2rem"
     fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "-0.04em"
-  title:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 600
-    lineHeight: 1.333
+    lineHeight: 1.15
     letterSpacing: "-0.03em"
-  metric:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 600
-    lineHeight: 1.333
-    letterSpacing: "-0.035em"
-  stat:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 600
-    lineHeight: 1
-    letterSpacing: "-0.04em"
-  section-title:
+  title:
     fontFamily: "Geist, Arial, Helvetica, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 600
-    lineHeight: "1.75rem"
-  card-title:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "1.125rem"
-    fontWeight: 600
-    lineHeight: "1.75rem"
-  body-large:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "1rem"
-    fontWeight: 400
-    lineHeight: "1.5rem"
+    lineHeight: 1.4
+    letterSpacing: "-0.02em"
   body:
     fontFamily: "Geist, Arial, Helvetica, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 400
-    lineHeight: "1.5rem"
+    lineHeight: 1.5
   label:
     fontFamily: "Geist, Arial, Helvetica, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 700
-    lineHeight: "1rem"
-  support-label:
-    fontFamily: "Geist, Arial, Helvetica, sans-serif"
-    fontSize: "0.6875rem"
-    fontWeight: 500
-    lineHeight: "1rem"
+    lineHeight: 1.3
   action:
     fontFamily: "Geist, Arial, Helvetica, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 700
-    lineHeight: "1.25rem"
+    lineHeight: 1.25
+  brand:
+    fontFamily: "Geist, Arial, Helvetica, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 700
+    lineHeight: 1.25
+  support:
+    fontFamily: "Geist, Arial, Helvetica, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 700
+    lineHeight: 1.25
+  badge:
+    fontFamily: "Geist, Arial, Helvetica, sans-serif"
+    fontSize: "0.5625rem"
+    fontWeight: 700
+    lineHeight: 1
 rounded:
-  lg: "8px"
-  xl: "12px"
-  2xl: "16px"
-  3xl: "24px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
   full: "9999px"
 spacing:
   "1": "4px"
@@ -119,252 +80,95 @@ spacing:
   "5": "20px"
   "6": "24px"
   "8": "32px"
-components:
-  button-primary:
-    backgroundColor: "{colors.evergreen-ink}"
-    textColor: "{colors.white-surface}"
-    typography: "{typography.action}"
-    rounded: "{rounded.xl}"
-    padding: "0 16px"
-    height: "44px"
-  button-primary-hover:
-    backgroundColor: "#24483e"
-    textColor: "{colors.white-surface}"
-  button-secondary:
-    backgroundColor: "{colors.white-surface}"
-    textColor: "{colors.institutional-green-strong}"
-    typography: "{typography.action}"
-    rounded: "{rounded.xl}"
-    padding: "0 16px"
-    height: "44px"
-  button-secondary-hover:
-    backgroundColor: "{colors.mint-hover}"
-    textColor: "{colors.institutional-green-strong}"
-  input:
-    backgroundColor: "{colors.white-surface}"
-    textColor: "{colors.supporting-ink}"
-    typography: "{typography.body}"
-    rounded: "{rounded.xl}"
-    padding: "0 16px"
-    height: "44px"
-    width: "100%"
-  tab-active:
-    backgroundColor: "{colors.evergreen-ink}"
-    textColor: "{colors.white-surface}"
-    typography: "{typography.action}"
-    rounded: "{rounded.xl}"
-    padding: "0 16px"
-    height: "48px"
-  status-green:
-    backgroundColor: "{colors.mint-soft}"
-    textColor: "{colors.institutional-green-strong}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "6px 12px"
-  status-amber:
-    backgroundColor: "{colors.amber-soft}"
-    textColor: "{colors.amber-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "6px 12px"
-  status-rose:
-    backgroundColor: "{colors.rose-soft}"
-    textColor: "{colors.rose-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "6px 12px"
-  status-blue:
-    backgroundColor: "{colors.blue-soft}"
-    textColor: "{colors.blue-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "6px 12px"
-  status-neutral:
-    backgroundColor: "{colors.neutral-soft}"
-    textColor: "{colors.supporting-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "6px 12px"
-  card:
-    backgroundColor: "{colors.white-surface}"
-    textColor: "{colors.evergreen-ink}"
-    rounded: "{rounded.2xl}"
-    padding: "20px"
-  review-strip:
-    backgroundColor: "{colors.evergreen-ink}"
-    textColor: "{colors.white-surface}"
-    rounded: "{rounded.2xl}"
-    padding: "24px"
 ---
 
-# Design System: Instituto Vivans
+# Sistema visual VIVANSE
 
-## Overview
+## Direção
 
-**Creative North Star: "Clareza clínica contínua"**
+**Ideia central: “Clareza para cuidar”.**
 
-O sistema se comporta como um workspace clínico sereno: verde institucional funcional, superfícies brancas sobre uma névoa esverdeada, bordas suaves e pouca profundidade. A expressão vem da precisão da hierarquia, não de decoração; o contraste mais forte aparece apenas quando há estado, seleção, evidência ou ação humana a distinguir.
+A área do profissional deve parecer segura e calma. O azul-marinho cria identidade e contraste; o restante da tela fica claro para que consultas, pendências e ações sejam lidas rapidamente. A aparência de vidro é reservada aos menus e às barras. Cartões de trabalho são quase planos, com borda fina e sombra discreta.
 
-Em superfícies longitudinais, a leitura visual avança de pessoa e contexto para mudança, pendência, fonte e ação. Conteúdo aprofundado permanece agrupado em regiões claras e familiares, com densidade operacional suficiente para comparar sem transformar cada módulo em um concorrente visual.
+O produto não deve parecer um aplicativo de IA. A tecnologia aparece como apoio dentro do trabalho do médico, sempre com fonte, estado e revisão humana.
 
-**Key Characteristics:**
+## Regras de cor
 
-- Verde institucional raro e funcional sobre superfícies brancas e névoa.
-- Material plano, bordas suaves e profundidade reservada a sobreposições.
-- Geist para operação; Playfair apenas em momentos editoriais.
-- Controles familiares com altura mínima de 44 px e estados explícitos.
-- Hierarquia por pessoa, mudança, pendência, fonte e ação.
+- **Azul-marinho `#03132d`:** menu lateral, ação principal e texto de maior destaque.
+- **Azul-marinho suave `#082553`:** hover, seleção e pequenas variações de profundidade.
+- **Azul de ação `#124da0`:** links, foco, contadores e informação selecionada.
+- **Azul-claro `#edf3fb`:** linha selecionada, avatar e áreas de orientação.
+- **Fundo `#f6f9fe`:** tela principal, sem grande degradê.
+- **Branco `#ffffff`:** cartões e áreas de leitura.
+- **Dourado `#d7a33c`:** somente no logo oficial. Não usar como cor decorativa comum.
+- **Âmbar e rosa:** apenas para estados que pedem revisão, sempre acompanhados de texto.
 
-## Colors
+## Transparência
 
-A paleta combina verdes frios e neutros levemente esverdeados; âmbar, rosa e azul aparecem apenas como pares semânticos de estado.
+- Menu lateral, barra superior e menu móvel podem usar fundo translúcido e desfoque.
+- O efeito deve continuar legível quando o desfoque não estiver disponível.
+- Cartões clínicos não devem parecer vidro; usam branco quase sólido.
+- Evitar brilhos fortes, bordas luminosas ou grandes manchas em degradê.
 
-### Primary
+## Tipografia
 
-- **Evergreen Ink** (#17372f): texto de maior hierarquia, navegação selecionada, ações primárias contidas e faixas de revisão.
-- **Institutional Green** (#0b7b68): foco, seleção, indicadores e acento institucional.
-- **Institutional Green Strong** (#0b6a5b): texto de ações secundárias e estados positivos sobre fundos claros.
-- **Editorial Green** (#2e6253): ênfase verde mais suave em momentos editoriais e ações de destaque fora do fluxo clínico denso.
+- Geist em toda a área profissional.
+- Título principal entre 32 e 35 px no computador; 30 a 32 px no celular.
+- Títulos de cartão entre 16 e 20 px.
+- Texto comum entre 14 e 16 px.
+- Rótulos curtos podem usar caixa alta e espaçamento leve entre letras.
+- Não usar fonte editorial em tabelas, botões, números ou rotinas clínicas.
 
-### Secondary
+## Espaço e forma
 
-- **Amber Soft / Amber Ink** (#fff4d8 / #825b0b): revisão pendente e atenção não urgente.
-- **Rose Soft / Rose Ink** (#fdecea / #9c453f): erro localizado, restrição ou conflito.
-- **Blue Soft / Blue Ink** (#edf3fb / #456b9c): conteúdo assistido, informacional ou ainda separado da decisão humana.
-- **Mint Soft** (#e8f4f0): seleção positiva e estado concluído sem dominar a tela.
-- **State Borders** (#b9d8cf / #c9d8ec / #efc7c3): contornos leves que mantêm estados verdes, azuis e rosas localizados.
+- Ritmo base de 4 px.
+- Distância comum entre blocos: 20 a 24 px.
+- Cartões: 16 px de arredondamento.
+- Botões e menus: 12 px de arredondamento.
+- Alvos de clique e toque: pelo menos 44 px.
+- Sombra discreta; borda clara continua sendo a separação principal.
 
-### Neutral
+## Estrutura do painel do médico
 
-- **Mist Canvas** (#f4f7f5): fundo contínuo da aplicação.
-- **White Surface** (#ffffff): cartões, controles, menus e regiões de leitura.
-- **Body Ink** (#405d54): texto operacional de contraste intermediário.
-- **Supporting Ink** (#526a62): texto de apoio, metadados e descrições de estado.
-- **Muted Ink** (#60766f): explicações, subtítulos e contexto secundário.
-- **Soft Border** (#dfe8e3): divisão padrão entre superfícies.
-- **Control Border** (#d7e3df): contorno de campos, seletores e controles.
-- **Accent Border** (#bfd4cd): contorno de ações secundárias e estados verdes.
-- **Divider Mist** (#e7eeea): separação interna de listas, tabelas e grades.
-- **Mint Hover** (#edf7f4): resposta discreta de hover em ações verdes sobre superfície clara.
-- **Neutral Soft** (#f1f5f3): estado neutro de chips e apoio tonal discreto.
+1. Identidade VIVANSE e perfil do médico.
+2. Menu principal curto e previsível.
+3. Saudação compacta com data e aviso de dados de exemplo.
+4. Próxima consulta com uma única ação principal: **Atender agora**.
+5. Consultas do dia em lista fácil de percorrer.
+6. Pessoas que precisam de atenção em uma coluna de apoio.
 
-### Named Rules
+## Texto da interface
 
-**The Clinical Contrast Rule.** Reserve o verde institucional e as cores semânticas para seleção, estado, foco, evidência e ação; grandes áreas permanecem brancas ou em névoa clara.
+- Usar português do Brasil e palavras de uso comum.
+- Preferir “histórico” a “dossiê” e “acompanhamento” a “visão longitudinal”.
+- Explicar estados pelo que aconteceu: “Pré-consulta pendente”, “Relatório pronto para revisar”.
+- Não chamar atenção de “urgência” quando o produto só ordena itens para revisão.
 
-## Typography
+## Estados e segurança
 
-**Display Font:** Playfair Display (com Georgia e Times New Roman como fallbacks)
-**Body Font:** Geist (com Arial, Helvetica e sans-serif como fallbacks)
-**Label/Mono Font:** Geist para rótulos; Geist Mono permanece disponível apenas para conteúdo monoespaçado real.
+- Cor nunca é a única forma de explicar um estado.
+- A IA pode organizar e sugerir perguntas, mas não diagnostica, prescreve, altera doses ou decide conduta.
+- Todo rascunho deve mostrar fonte e exigir revisão do profissional.
+- Dados do protótipo são identificados como exemplos e não representam pessoas reais.
 
-**Character:** Geist mantém leitura operacional direta em controles, tabelas, métricas e texto corrido. Playfair acrescenta uma pausa editorial pontual, sem entrar nos artefatos clínicos densos.
+## Responsivo
 
-### Hierarchy
+- No computador, menu lateral fixo e conteúdo em duas colunas quando houver espaço.
+- No celular, marca compacta, menu horizontal rolável e conteúdo em uma coluna.
+- A próxima consulta e a ação principal aparecem antes das listas.
+- Nenhuma rolagem horizontal estrutural a partir de 320 px.
 
-- **Display** (600, 2.35rem, 1.04): saudações ou aberturas editoriais; cresce responsivamente para 3rem e 3.65rem quando o espaço comporta.
-- **Stat** (600, 2.25rem, 1): totais editoriais e resumos numéricos de alta hierarquia.
-- **Headline** (600, 1.875rem, 1.2): títulos principais de área e identidade da pessoa selecionada.
-- **Title** (600, 1.5rem, 1.333): títulos de seção, painéis e diálogos.
-- **Metric** (600, 1.5rem, 1.333): valores resumidos com tracking levemente fechado.
-- **Section Title** (600, 1.25rem, 1.75rem): títulos internos que precisam permanecer abaixo do título de área.
-- **Card Title** (600, 1.125rem, 1.75rem): cabeçalhos de cartões e listas.
-- **Body Large** (400, 1rem, 1.5rem): introduções curtas e contexto com maior respiro.
-- **Body** (400, 0.875rem, 1.5rem): descrição, metadados e orientação operacional.
-- **Label** (700, 0.75rem, 1rem): chips, estados e legendas curtas.
-- **Support Label** (500, 0.6875rem, 1rem): descrição auxiliar em abas e metadados compactos; nunca é o único portador de uma ação.
-- **Action** (700, 0.875rem, 1.25rem): botões, abas e links operacionais.
+## Fazer
 
-### Named Rules
+- Usar azul-marinho forte em poucas áreas decisivas.
+- Deixar o branco e o espaço organizarem o conteúdo.
+- Manter uma ação principal clara em cada bloco.
+- Preservar foco visível, contraste e uso por teclado.
 
-**The Operational First Rule.** Geist conduz toda tarefa, controle, tabela, estado e evidência; Playfair aparece somente em momentos genuinamente editoriais.
+## Evitar
 
-## Layout
-
-A base usa um ritmo de 4 px, com 8–12 px entre elementos relacionados, 16–24 px dentro de superfícies e 20–32 px entre blocos. O shell admite até 1540 px e as áreas de trabalho mais densas se concentram em até 1240 px, preservando margens laterais progressivas.
-
-O sistema começa em 320 px com uma coluna, controles que podem rolar horizontalmente e conteúdo sem rolagem horizontal estrutural. Em 640 px a densidade interna aumenta; em 1024 px entram navegação lateral e grades auxiliares; em 1280 px painéis de apoio podem ocupar uma segunda coluna sem competir com a tarefa principal.
-
-**The Progressive Compression Rule.** Ao reduzir a largura, empilhe regiões e permita rolagem local de abas ou filtros; não comprima controles, texto ou alvos abaixo da leitura confortável.
-
-## Elevation & Depth
-
-O material é plano por padrão. Superfícies se separam por fundo tonal, borda de 1 px e espaço; sombra aparece em menus, diálogos, marca e ações de destaque que realmente flutuam sobre o conteúdo.
-
-### Shadow Vocabulary
-
-- **Ambient Surface** (`box-shadow: 0 10px 35px rgba(28, 55, 47, 0.05)`): elevação baixa de painéis especiais sem romper a calma do workspace.
-- **Floating Menu** (`box-shadow: 0 18px 48px rgba(23, 55, 47, 0.16)`): menus contextuais acima da camada de leitura.
-- **Primary Action** (`box-shadow: 0 12px 30px rgba(46, 98, 83, 0.20)`): destaque raro para uma ação editorial ou de entrada.
-
-### Named Rules
-
-**The Flat-by-Default Rule.** Use borda e contraste tonal para estruturar a interface; sombra só comunica uma camada que de fato se eleva.
-
-## Shapes
-
-Controles compactos usam cantos suavemente curvos (8 px); botões, campos e abas usam 12 px; cartões recorrentes usam 16 px; diálogos e painéis de destaque usam 24 px. Avatares, indicadores e chips são circulares ou totalmente arredondados. Estados vazios podem trocar o contorno contínuo por tracejado, mantendo a mesma geometria.
-
-## Components
-
-Os componentes são refinados e contidos: familiares à primeira leitura, com estado explícito e feedback visual sem ornamento excessivo.
-
-### Buttons
-
-- **Shape:** controles de 44 px ou mais, cantos de 12 px e padding horizontal de 16–20 px.
-- **Primary:** fundo Evergreen Ink, texto branco e peso 700; ícones acompanham o texto em 20 px.
-- **Hover / Focus:** o fundo escurece de forma curta; foco visível usa contorno Institutional Green de 2 px com offset de 2 px.
-- **Secondary:** superfície branca, texto Institutional Green Strong e borda Accent Border; hover usa uma camada verde muito clara.
-- **Disabled:** mantém rótulo legível e reduz opacidade sem remover a distinção de forma.
-
-### Chips
-
-- **Style:** forma pill, padding de 6 px por 12 px, texto de 12 px em peso 700 e pares de fundo/texto coerentes por estado.
-- **State:** toda cor acompanha um rótulo; verde, âmbar, rosa, azul e neutro nunca dependem apenas da tonalidade.
-
-### Cards / Containers
-
-- **Corner Style:** 16 px para cartões recorrentes; 24 px apenas para painéis de maior escala.
-- **Background:** branco sobre Mist Canvas, com áreas auxiliares em tons muito claros.
-- **Shadow Strategy:** sem sombra na maioria dos cartões; use a elevação definida apenas para camadas flutuantes ou painéis especiais.
-- **Border:** 1 px em Soft Border; Accent Border marca controles ou estados verdes.
-- **Internal Padding:** 16 px no compacto, 20 px por padrão e 24 px quando a leitura ganha largura.
-
-### Inputs / Fields
-
-- **Style:** fundo branco, contorno Control Border, 12 px de raio, altura mínima de 44 px e texto Geist de 14 px.
-- **Focus:** contorno Institutional Green de 2 px com offset; o campo não depende de mudança de cor interna.
-- **Error / Disabled:** o erro permanece localizado e rotulado; o estado desabilitado reduz ênfase sem ocultar o conteúdo necessário.
-
-### Navigation
-
-- **Style:** links semânticos com área mínima de 44 px; o item ativo usa fundo Evergreen Ink ou Mint Soft conforme a densidade do contexto.
-- **Default / Hover / Focus:** estado padrão em Supporting Ink, hover em Mist Canvas e foco visível verde. Em telas estreitas, itens permanecem íntegros e rolam horizontalmente.
-
-### Clinical Layer Badge
-
-Um chip com ponto tonal distingue relato, fato observado, rascunho assistido e revisão humana. O rótulo sempre explicita a camada e preserva contraste entre fundo, borda, ponto e texto.
-
-### Review Strip
-
-A faixa de revisão é o padrão de maior contraste do sistema: superfície Evergreen Ink, estado rotulado, fonte visível, mudança concisa e uma ação clara para conferência. Ela destaca uma decisão humana sem transformar atenção em alarme.
-
-**The Familiar Control Rule.** Toda ação essencial preserva pelo menos 44 px de altura, foco visível e um estado compreensível sem depender de hover.
-
-## Do's and Don'ts
-
-### Do:
-
-- **Do** preserve superfícies brancas, bordas suaves e espaço como estrutura principal.
-- **Do** reserve o verde mais forte para foco, seleção, ação e indicadores realmente funcionais.
-- **Do** mantenha rótulo, origem ou descrição junto de toda cor semântica.
-- **Do** use links semânticos quando a área possui histórico navegável ou endereço próprio.
-- **Do** deixe abas e filtros rolarem horizontalmente antes de reduzir o alvo de toque.
-
-### Don't:
-
-- **Don't** use Playfair em controles, tabelas, chips, métricas clínicas ou texto operacional.
-- **Don't** transforme cada cartão em uma camada elevada; a maior parte das superfícies permanece plana.
-- **Don't** use verde, âmbar, rosa ou azul como decoração sem função de estado ou hierarquia.
-- **Don't** comprima controles abaixo de 44 px nem remova o foco visível.
-- **Don't** faça resumo, derivado ou estado visual competir com a fonte original que o sustenta.
+- Grandes degradês, brilho neon e excesso de transparência.
+- Cartões demais, todos com o mesmo destaque.
+- Estrelas, robôs ou outros sinais visuais genéricos de IA.
+- Termos técnicos quando uma palavra simples comunica melhor.
+- Dourado fora do logo ou sem uma função real.
