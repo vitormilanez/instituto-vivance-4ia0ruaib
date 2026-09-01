@@ -7,22 +7,22 @@ export type ClinicalLayer = 'relato' | 'fato' | 'sintese_ia' | 'decisao_medica';
 
 const clinicalLayers: Record<ClinicalLayer, { label: string; className: string; dot: string }> = {
   relato: {
-    label: 'Relato original',
+    label: 'Enviado pela paciente · original',
     className: 'border-[#bfd4cd] bg-[#f4f7f5] text-[#405d54]',
     dot: 'bg-[#789087]',
   },
   fato: {
-    label: 'Dado observado',
+    label: 'Dado observado · fonte registrada',
     className: 'border-[#b9d8cf] bg-[#edf7f4] text-[#0b6a5b]',
     dot: 'bg-[#0b7b68]',
   },
   sintese_ia: {
-    label: 'Rascunho assistido',
+    label: 'Gerado por IA · rascunho',
     className: 'border-[#c9d8ec] bg-[#edf3fb] text-[#456b9c]',
     dot: 'bg-[#6997d4]',
   },
   decisao_medica: {
-    label: 'Decisão médica aprovada',
+    label: 'Revisado e aprovado pelo médico',
     className: 'border-[#ead3a6] bg-[#fff8e9] text-[#825b0b]',
     dot: 'bg-[#d39439]',
   },
@@ -44,7 +44,7 @@ export function ClinicalLayerBadge({ layer }: { layer: ClinicalLayer }) {
   );
 }
 
-export function AiDraftBadge({ children = 'Simulação de rascunho — requer revisão médica' }: { children?: ReactNode }) {
+export function AiDraftBadge({ children = 'Gerado por IA · rascunho para revisão médica' }: { children?: ReactNode }) {
   return (
     <span
       role="status"

@@ -6,5 +6,5 @@ export default async function DoctorPatientPage({ params }: { params: Promise<{ 
   const { patientId } = await params;
   if (!getDemoPatient(patientId)) notFound();
 
-  return <DoctorWorkspace initialView="Pacientes" patientId={patientId} />;
+  return <DoctorWorkspace initialView="Pacientes" patientId={patientId} patientDetail />;
 }

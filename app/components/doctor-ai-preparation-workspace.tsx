@@ -211,8 +211,7 @@ function AiPreparationEditor({
     <section aria-labelledby="ai-preparation-questions-title" className="rounded-2xl border border-[#c9d8ec] bg-[#f7faff] p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#456b9c]">Revisão item a item</p>
-          <h4 id="ai-preparation-questions-title" className="mt-2 text-lg font-semibold text-[#17372f]">Perguntas sugeridas para a consulta</h4>
+          <h4 id="ai-preparation-questions-title" className="text-lg font-semibold text-[#17372f]">Perguntas sugeridas para a consulta</h4>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">A IA organiza perguntas a partir das fontes. O médico escolhe o que entra na pauta e registra por que descartou o restante.</p>
         </div>
         <Status tone={latestReview ? 'green' : 'amber'}>
@@ -239,7 +238,7 @@ function AiPreparationEditor({
                   </div>
                   <h5 className="mt-3 text-sm font-bold leading-6 text-[#17372f]">{question.label}</h5>
                   <p id={descriptionId} className="mt-1 text-xs leading-5 text-[#60766f]">{question.why}</p>
-                  <p className="mt-2 break-all text-[11px] font-semibold text-[#789087]">Fonte: {question.sourceIds.join(', ')}</p>
+                  <p className="mt-2 break-all text-[11px] font-semibold text-[#526a62]">Fonte: {question.sourceIds.join(', ')}</p>
                 </div>
                 <div className="flex shrink-0 gap-2" role="group" aria-label={`Decisão sobre: ${question.label}`}>
                   <button
@@ -310,12 +309,54 @@ function AiPreparationEditor({
   );
 }
 
+function ConflictingSourcesState({ patientName, onNotify }: { patientName: string; onNotify?: (message: string) => void }) {
+  return (
+    <section id="doctor-ai-preparation-workspace" aria-labelledby="doctor-ai-preparation-title" className="border-t border-[#ead8ad] bg-[#fffdf8] p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 id="doctor-ai-preparation-title" className="text-2xl font-semibold tracking-[-0.03em] text-[#17372f]">Fontes conflitantes aguardam revisão</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">Dois originais atribuídos a {patientName} descrevem horários diferentes. A IA não escolhe qual prevalece, não combina os relatos e não sugere resolução.</p>
+        </div>
+        <Status tone="amber">Síntese bloqueada</Status>
+      </div>
+
+      <div className="mt-5 grid overflow-hidden rounded-2xl border border-[#dfe8e3] bg-[#e7eeea] lg:grid-cols-2">
+        <article className="bg-white p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <ClinicalLayerBadge layer="relato" />
+            <Status tone="gray">Original preservado</Status>
+          </div>
+          <h4 className="mt-4 text-base font-semibold text-[#17372f]">Pré-consulta por texto</h4>
+          <blockquote className="mt-3 border-l-2 border-[#8bc6b9] pl-4 text-sm leading-6 text-[#405d54]">“Nos últimos dias consegui antecipar o jantar para perto de 19h30.”</blockquote>
+          <p className="mt-4 text-xs font-semibold text-[#526a62]">Autora: {patientName} · 1 set 2026 · pre-001 · v2</p>
+        </article>
+        <article className="border-t border-[#dfe8e3] bg-white p-5 lg:border-l lg:border-t-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <ClinicalLayerBadge layer="fato" />
+            <Status tone="gray">Registro confirmado</Status>
+          </div>
+          <h4 className="mt-4 text-base font-semibold text-[#17372f]">Diário de alimentação</h4>
+          <p className="mt-3 text-sm leading-6 text-[#405d54]">Jantar registrado às 20h32, com confirmação manual da paciente no mesmo dia.</p>
+          <p className="mt-4 text-xs font-semibold text-[#526a62]">Origem: diário guiado · 31 ago 2026 · diary-042 · v1</p>
+        </article>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4 rounded-xl border border-[#ead8ad] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><h4 className="text-sm font-bold text-[#704f10]">Próximo passo exclusivamente humano</h4><p className="mt-1 text-xs leading-5 text-[#60766f]">Abrir os dois originais, conversar com a paciente e registrar qual contexto explica a divergência. Nenhuma síntese foi gerada.</p></div>
+        <button type="button" onClick={() => onNotify?.('Revisão médica das fontes conflitantes aberta no mock.')} className="min-h-11 shrink-0 rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Revisar originais</button>
+      </div>
+    </section>
+  );
+}
+
 export function DoctorAiPreparationWorkspace({
+  conflictMode = false,
   encounterId,
   onNotify,
   patientId,
   patientName,
 }: {
+  conflictMode?: boolean;
   encounterId: string;
   onNotify?: (message: string) => void;
   patientId: string;
@@ -499,13 +540,16 @@ export function DoctorAiPreparationWorkspace({
   if (!hydrated) {
     return (
       <section aria-labelledby="doctor-ai-preparation-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#456b9c]">Preparação assistida</p>
-        <h3 id="doctor-ai-preparation-title" className="mt-2 text-xl font-semibold">Carregando fontes da sessão...</h3>
+        <h3 id="doctor-ai-preparation-title" className="text-xl font-semibold">Carregando fontes da sessão...</h3>
       </section>
     );
   }
 
   if (!preparation) return null;
+
+  if (conflictMode) {
+    return <ConflictingSourcesState patientName={patientName} onNotify={onNotify} />;
+  }
 
   const hasStaticAssistedScenario = dossier?.records.some((record) => record.assistanceMode === 'assisted') ?? false;
   const assistanceAllowed = latestSubmission
@@ -523,8 +567,7 @@ export function DoctorAiPreparationWorkspace({
       <section aria-labelledby="doctor-ai-preparation-title" className="border-t border-[#e7eeea] bg-[#f8faf9] p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Preparação da consulta</p>
-            <h3 id="doctor-ai-preparation-title" className="mt-2 text-xl font-semibold text-[#17372f]">Fluxo manual preservado</h3>
+            <h3 id="doctor-ai-preparation-title" className="text-xl font-semibold text-[#17372f]">Fluxo manual preservado</h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">A assistência de IA não está autorizada ou não há fontes suficientes. O médico continua com os originais e as lacunas visíveis.</p>
           </div>
           <Status tone="gray">Sem geração assistida</Status>
@@ -536,7 +579,7 @@ export function DoctorAiPreparationWorkspace({
               {preparation.sources.slice(0, 4).map((source) => (
                 <li key={`${source.id}-${source.version}`} className="rounded-xl bg-[#f4f7f5] p-3">
                   <p className="text-sm font-bold text-[#405d54]">{source.label}</p>
-                  <p className="mt-1 text-xs text-[#698078]">{source.id} · v{source.version} · {source.date}</p>
+                  <p className="mt-1 text-xs text-[#526a62]">{source.id} · v{source.version} · {source.date}</p>
                 </li>
               ))}
             </ul>
@@ -582,7 +625,7 @@ export function DoctorAiPreparationWorkspace({
           ['Contradições confirmadas', '0'],
         ].map(([label, value]) => (
           <div key={label} className="bg-white p-4">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">{label}</dt>
+            <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#526a62]">{label}</dt>
             <dd className="mt-1 text-xl font-bold text-[#17372f]">{value}</dd>
           </div>
         ))}
@@ -590,18 +633,17 @@ export function DoctorAiPreparationWorkspace({
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
         <section aria-labelledby="ai-preparation-facts-title" className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Camadas separadas</p>
-          <h4 id="ai-preparation-facts-title" className="mt-2 text-lg font-semibold text-[#17372f]">O que as fontes dizem</h4>
+          <h4 id="ai-preparation-facts-title" className="text-lg font-semibold text-[#17372f]">O que as fontes dizem</h4>
           <div className="mt-4 space-y-3">
             {preparation.facts.map((source) => (
               <article key={`${source.id}-${source.version}`} className="rounded-xl border border-[#e1eae6] bg-[#fbfdfc] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <ClinicalLayerBadge layer={sourceLayer(source.kind)} />
-                  <span className="text-[11px] font-semibold text-[#789087]">{source.date}</span>
+                  <span className="text-[11px] font-semibold text-[#526a62]">{source.date}</span>
                 </div>
                 <p className="mt-3 text-sm font-bold text-[#405d54]">{source.label}</p>
                 <p className="mt-1 text-sm leading-6 text-[#526a62]">{source.summary}</p>
-                <p className="mt-2 break-all text-[11px] font-semibold text-[#789087]">{source.id} · v{source.version}</p>
+                <p className="mt-2 break-all text-[11px] font-semibold text-[#526a62]">{source.id} · v{source.version}</p>
               </article>
             ))}
           </div>
@@ -610,8 +652,7 @@ export function DoctorAiPreparationWorkspace({
         <section aria-labelledby="ai-preparation-gaps-title" className="rounded-2xl border border-[#ead8ad] bg-[#fffdf8] p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#825b0b]">Não preencher automaticamente</p>
-              <h4 id="ai-preparation-gaps-title" className="mt-2 text-lg font-semibold text-[#17372f]">Lacunas e contradições</h4>
+              <h4 id="ai-preparation-gaps-title" className="text-lg font-semibold text-[#17372f]">Lacunas e contradições</h4>
             </div>
             <Status tone="amber">{preparation.gaps.length} lacunas</Status>
           </div>
@@ -646,12 +687,12 @@ export function DoctorAiPreparationWorkspace({
             <article key={`${source.id}-${source.version}`} className="rounded-xl bg-[#f4f7f5] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <ClinicalLayerBadge layer={sourceLayer(source.kind)} />
-                <span className="text-[11px] font-semibold text-[#789087]">{source.date}</span>
+                <span className="text-[11px] font-semibold text-[#526a62]">{source.date}</span>
               </div>
               <p className="mt-3 text-sm font-bold text-[#405d54]">{source.label}</p>
-              <p className="mt-1 break-all text-[11px] font-semibold text-[#789087]">{source.id} · v{source.version}</p>
+              <p className="mt-1 break-all text-[11px] font-semibold text-[#526a62]">{source.id} · v{source.version}</p>
               <p className="mt-2 text-xs leading-5 text-[#60766f]">Estado: {source.state}</p>
-              <p className="mt-2 text-[11px] leading-5 text-[#789087]">Limite: {source.limitation}</p>
+              <p className="mt-2 text-[11px] leading-5 text-[#526a62]">Limite: {source.limitation}</p>
             </article>
           ))}
         </div>

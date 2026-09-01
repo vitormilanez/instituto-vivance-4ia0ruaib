@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-01T21:37:02Z",
+  "title": "Design System: Instituto Vivans",
+  "extensions": {
+    "colorMeta": {
+      "evergreen-ink": {
+        "role": "primary",
+        "displayName": "Evergreen Ink",
+        "canonical": "#17372f",
+        "tonalRamp": ["oklch(15% 0.0408 175.1)", "oklch(27% 0.0408 175.1)", "oklch(39% 0.0408 175.1)", "oklch(51% 0.0408 175.1)", "oklch(63% 0.0408 175.1)", "oklch(75% 0.0408 175.1)", "oklch(87% 0.0408 175.1)", "oklch(95% 0.0408 175.1)"]
+      },
+      "institutional-green": {
+        "role": "primary",
+        "displayName": "Institutional Green",
+        "canonical": "#0b7b68",
+        "tonalRamp": ["oklch(15% 0.0948 176.6)", "oklch(27% 0.0948 176.6)", "oklch(39% 0.0948 176.6)", "oklch(51% 0.0948 176.6)", "oklch(63% 0.0948 176.6)", "oklch(75% 0.0948 176.6)", "oklch(87% 0.0948 176.6)", "oklch(95% 0.0948 176.6)"]
+      },
+      "institutional-green-strong": {
+        "role": "primary",
+        "displayName": "Institutional Green Strong",
+        "canonical": "#0b6a5b",
+        "tonalRamp": ["oklch(15% 0.0836 178.1)", "oklch(27% 0.0836 178.1)", "oklch(39% 0.0836 178.1)", "oklch(51% 0.0836 178.1)", "oklch(63% 0.0836 178.1)", "oklch(75% 0.0836 178.1)", "oklch(87% 0.0836 178.1)", "oklch(95% 0.0836 178.1)"]
+      },
+      "editorial-green": {
+        "role": "primary",
+        "displayName": "Editorial Green",
+        "canonical": "#2e6253",
+        "tonalRamp": ["oklch(15% 0.0616 172.3)", "oklch(27% 0.0616 172.3)", "oklch(39% 0.0616 172.3)", "oklch(51% 0.0616 172.3)", "oklch(63% 0.0616 172.3)", "oklch(75% 0.0616 172.3)", "oklch(87% 0.0616 172.3)", "oklch(95% 0.0616 172.3)"]
+      },
+      "body-ink": {
+        "role": "neutral",
+        "displayName": "Body Ink",
+        "canonical": "#405d54",
+        "tonalRamp": ["oklch(15% 0.0375 173.3)", "oklch(27% 0.0375 173.3)", "oklch(39% 0.0375 173.3)", "oklch(51% 0.0375 173.3)", "oklch(63% 0.0375 173.3)", "oklch(75% 0.0375 173.3)", "oklch(87% 0.0375 173.3)", "oklch(95% 0.0375 173.3)"]
+      },
+      "supporting-ink": {
+        "role": "neutral",
+        "displayName": "Supporting Ink",
+        "canonical": "#526a62",
+        "tonalRamp": ["oklch(15% 0.0312 172.6)", "oklch(27% 0.0312 172.6)", "oklch(39% 0.0312 172.6)", "oklch(51% 0.0312 172.6)", "oklch(63% 0.0312 172.6)", "oklch(75% 0.0312 172.6)", "oklch(87% 0.0312 172.6)", "oklch(95% 0.0312 172.6)"]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#60766f",
+        "tonalRamp": ["oklch(15% 0.0281 173.9)", "oklch(27% 0.0281 173.9)", "oklch(39% 0.0281 173.9)", "oklch(51% 0.0281 173.9)", "oklch(63% 0.0281 173.9)", "oklch(75% 0.0281 173.9)", "oklch(87% 0.0281 173.9)", "oklch(95% 0.0281 173.9)"]
+      },
+      "mist-canvas": {
+        "role": "neutral",
+        "displayName": "Mist Canvas",
+        "canonical": "#f4f7f5",
+        "tonalRamp": ["oklch(15% 0.0041 157.2)", "oklch(27% 0.0041 157.2)", "oklch(39% 0.0041 157.2)", "oklch(51% 0.0041 157.2)", "oklch(63% 0.0041 157.2)", "oklch(75% 0.0041 157.2)", "oklch(87% 0.0041 157.2)", "oklch(95% 0.0041 157.2)"]
+      },
+      "white-surface": {
+        "role": "neutral",
+        "displayName": "White Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"]
+      },
+      "soft-border": {
+        "role": "neutral",
+        "displayName": "Soft Border",
+        "canonical": "#dfe8e3",
+        "tonalRamp": ["oklch(15% 0.0117 162)", "oklch(27% 0.0117 162)", "oklch(39% 0.0117 162)", "oklch(51% 0.0117 162)", "oklch(63% 0.0117 162)", "oklch(75% 0.0117 162)", "oklch(87% 0.0117 162)", "oklch(95% 0.0117 162)"]
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Control Border",
+        "canonical": "#d7e3df",
+        "tonalRamp": ["oklch(15% 0.0139 174.1)", "oklch(27% 0.0139 174.1)", "oklch(39% 0.0139 174.1)", "oklch(51% 0.0139 174.1)", "oklch(63% 0.0139 174.1)", "oklch(75% 0.0139 174.1)", "oklch(87% 0.0139 174.1)", "oklch(95% 0.0139 174.1)"]
+      },
+      "accent-border": {
+        "role": "neutral",
+        "displayName": "Accent Border",
+        "canonical": "#bfd4cd",
+        "tonalRamp": ["oklch(15% 0.0245 173.7)", "oklch(27% 0.0245 173.7)", "oklch(39% 0.0245 173.7)", "oklch(51% 0.0245 173.7)", "oklch(63% 0.0245 173.7)", "oklch(75% 0.0245 173.7)", "oklch(87% 0.0245 173.7)", "oklch(95% 0.0245 173.7)"]
+      },
+      "divider-mist": {
+        "role": "neutral",
+        "displayName": "Divider Mist",
+        "canonical": "#e7eeea",
+        "tonalRamp": ["oklch(15% 0.0091 161.3)", "oklch(27% 0.0091 161.3)", "oklch(39% 0.0091 161.3)", "oklch(51% 0.0091 161.3)", "oklch(63% 0.0091 161.3)", "oklch(75% 0.0091 161.3)", "oklch(87% 0.0091 161.3)", "oklch(95% 0.0091 161.3)"]
+      },
+      "mint-soft": {
+        "role": "secondary",
+        "displayName": "Mint Soft",
+        "canonical": "#e8f4f0",
+        "tonalRamp": ["oklch(15% 0.0137 174.2)", "oklch(27% 0.0137 174.2)", "oklch(39% 0.0137 174.2)", "oklch(51% 0.0137 174.2)", "oklch(63% 0.0137 174.2)", "oklch(75% 0.0137 174.2)", "oklch(87% 0.0137 174.2)", "oklch(95% 0.0137 174.2)"]
+      },
+      "mint-hover": {
+        "role": "secondary",
+        "displayName": "Mint Hover",
+        "canonical": "#edf7f4",
+        "tonalRamp": ["oklch(15% 0.0113 176.3)", "oklch(27% 0.0113 176.3)", "oklch(39% 0.0113 176.3)", "oklch(51% 0.0113 176.3)", "oklch(63% 0.0113 176.3)", "oklch(75% 0.0113 176.3)", "oklch(87% 0.0113 176.3)", "oklch(95% 0.0113 176.3)"]
+      },
+      "green-state-border": {
+        "role": "secondary",
+        "displayName": "Green State Border",
+        "canonical": "#b9d8cf",
+        "tonalRamp": ["oklch(15% 0.0352 176)", "oklch(27% 0.0352 176)", "oklch(39% 0.0352 176)", "oklch(51% 0.0352 176)", "oklch(63% 0.0352 176)", "oklch(75% 0.0352 176)", "oklch(87% 0.0352 176)", "oklch(95% 0.0352 176)"]
+      },
+      "amber-soft": {
+        "role": "secondary",
+        "displayName": "Amber Soft",
+        "canonical": "#fff4d8",
+        "tonalRamp": ["oklch(15% 0.0384 89.1)", "oklch(27% 0.0384 89.1)", "oklch(39% 0.0384 89.1)", "oklch(51% 0.0384 89.1)", "oklch(63% 0.0384 89.1)", "oklch(75% 0.0384 89.1)", "oklch(87% 0.0384 89.1)", "oklch(95% 0.0384 89.1)"]
+      },
+      "amber-ink": {
+        "role": "secondary",
+        "displayName": "Amber Ink",
+        "canonical": "#825b0b",
+        "tonalRamp": ["oklch(15% 0.1002 78.3)", "oklch(27% 0.1002 78.3)", "oklch(39% 0.1002 78.3)", "oklch(51% 0.1002 78.3)", "oklch(63% 0.1002 78.3)", "oklch(75% 0.1002 78.3)", "oklch(87% 0.1002 78.3)", "oklch(95% 0.1002 78.3)"]
+      },
+      "rose-soft": {
+        "role": "secondary",
+        "displayName": "Rose Soft",
+        "canonical": "#fdecea",
+        "tonalRamp": ["oklch(15% 0.0187 25.6)", "oklch(27% 0.0187 25.6)", "oklch(39% 0.0187 25.6)", "oklch(51% 0.0187 25.6)", "oklch(63% 0.0187 25.6)", "oklch(75% 0.0187 25.6)", "oklch(87% 0.0187 25.6)", "oklch(95% 0.0187 25.6)"]
+      },
+      "rose-ink": {
+        "role": "secondary",
+        "displayName": "Rose Ink",
+        "canonical": "#9c453f",
+        "tonalRamp": ["oklch(15% 0.1176 26.1)", "oklch(27% 0.1176 26.1)", "oklch(39% 0.1176 26.1)", "oklch(51% 0.1176 26.1)", "oklch(63% 0.1176 26.1)", "oklch(75% 0.1176 26.1)", "oklch(87% 0.1176 26.1)", "oklch(95% 0.1176 26.1)"]
+      },
+      "rose-state-border": {
+        "role": "secondary",
+        "displayName": "Rose State Border",
+        "canonical": "#efc7c3",
+        "tonalRamp": ["oklch(15% 0.046 24.8)", "oklch(27% 0.046 24.8)", "oklch(39% 0.046 24.8)", "oklch(51% 0.046 24.8)", "oklch(63% 0.046 24.8)", "oklch(75% 0.046 24.8)", "oklch(87% 0.046 24.8)", "oklch(95% 0.046 24.8)"]
+      },
+      "blue-soft": {
+        "role": "secondary",
+        "displayName": "Blue Soft",
+        "canonical": "#edf3fb",
+        "tonalRamp": ["oklch(15% 0.0125 255.5)", "oklch(27% 0.0125 255.5)", "oklch(39% 0.0125 255.5)", "oklch(51% 0.0125 255.5)", "oklch(63% 0.0125 255.5)", "oklch(75% 0.0125 255.5)", "oklch(87% 0.0125 255.5)", "oklch(95% 0.0125 255.5)"]
+      },
+      "blue-ink": {
+        "role": "secondary",
+        "displayName": "Blue Ink",
+        "canonical": "#456b9c",
+        "tonalRamp": ["oklch(15% 0.0893 255.3)", "oklch(27% 0.0893 255.3)", "oklch(39% 0.0893 255.3)", "oklch(51% 0.0893 255.3)", "oklch(63% 0.0893 255.3)", "oklch(75% 0.0893 255.3)", "oklch(87% 0.0893 255.3)", "oklch(95% 0.0893 255.3)"]
+      },
+      "blue-state-border": {
+        "role": "secondary",
+        "displayName": "Blue State Border",
+        "canonical": "#c9d8ec",
+        "tonalRamp": ["oklch(15% 0.0321 255.6)", "oklch(27% 0.0321 255.6)", "oklch(39% 0.0321 255.6)", "oklch(51% 0.0321 255.6)", "oklch(63% 0.0321 255.6)", "oklch(75% 0.0321 255.6)", "oklch(87% 0.0321 255.6)", "oklch(95% 0.0321 255.6)"]
+      },
+      "neutral-soft": {
+        "role": "neutral",
+        "displayName": "Neutral Soft",
+        "canonical": "#f1f5f3",
+        "tonalRamp": ["oklch(15% 0.005 165)", "oklch(27% 0.005 165)", "oklch(39% 0.005 165)", "oklch(51% 0.005 165)", "oklch(63% 0.005 165)", "oklch(75% 0.005 165)", "oklch(87% 0.005 165)", "oklch(95% 0.005 165)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Editorial Display", "purpose": "Saudações e aberturas editoriais pontuais." },
+      "display-md": { "displayName": "Editorial Display Medium", "purpose": "Escala editorial a partir do breakpoint pequeno." },
+      "display-lg": { "displayName": "Editorial Display Large", "purpose": "Escala editorial em telas largas." },
+      "headline": { "displayName": "Workspace Headline", "purpose": "Títulos principais de área e identidade selecionada." },
+      "title": { "displayName": "Section Title", "purpose": "Títulos de seção, painel e diálogo." },
+      "metric": { "displayName": "Metric", "purpose": "Valores resumidos e comparações compactas." },
+      "stat": { "displayName": "Stat", "purpose": "Totais editoriais e resumos numéricos de alta hierarquia." },
+      "section-title": { "displayName": "Inner Section Title", "purpose": "Títulos internos abaixo da hierarquia de área." },
+      "card-title": { "displayName": "Card Title", "purpose": "Cabeçalhos de cartões e listas." },
+      "body-large": { "displayName": "Body Large", "purpose": "Introduções curtas e contexto com maior respiro." },
+      "body": { "displayName": "Operational Body", "purpose": "Descrição, contexto e metadados." },
+      "label": { "displayName": "State Label", "purpose": "Chips, estados e legendas curtas." },
+      "support-label": { "displayName": "Support Label", "purpose": "Descrição auxiliar em abas e metadados compactos." },
+      "action": { "displayName": "Action", "purpose": "Botões, abas e links operacionais." }
+    },
+    "shadows": [
+      { "name": "ambient-surface", "value": "0 10px 35px rgba(28, 55, 47, 0.05)", "purpose": "Elevação baixa de painéis especiais." },
+      { "name": "floating-menu", "value": "0 18px 48px rgba(23, 55, 47, 0.16)", "purpose": "Menu contextual acima da camada de leitura." },
+      { "name": "primary-action", "value": "0 12px 30px rgba(46, 98, 83, 0.20)", "purpose": "Destaque raro para ação editorial ou de entrada." }
+    ],
+    "motion": [
+      { "name": "state-colors", "value": "200ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Transições curtas de hover e mudança de cor." },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "Duração efetiva aplicada quando o sistema solicita movimento reduzido." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação humana principal em um fluxo operacional.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\"><svg class=\"ds-button-icon\" aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><rect x=\"3\" y=\"6\" width=\"13\" height=\"12\" rx=\"2.5\"></rect><path d=\"m16 10 5-3v10l-5-3\"></path></svg>Iniciar consulta online</button>",
+      "css": ".ds-button-primary { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; background: #17372f; color: #ffffff; padding: 0 16px; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; font-weight: 700; cursor: pointer; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-button-primary:hover { background: #24483e; } .ds-button-primary:focus-visible { outline: 2px solid #0b7b68; outline-offset: 2px; } .ds-button-primary:disabled { cursor: not-allowed; opacity: 0.45; } .ds-button-icon { width: 20px; height: 20px; flex: 0 0 20px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação secundária contida, adequada para abrir fontes ou solicitar informação.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\">Conferir fontes</button>",
+      "css": ".ds-button-secondary { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #bfd4cd; border-radius: 12px; background: #ffffff; color: #0b6a5b; padding: 0 16px; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; font-weight: 700; cursor: pointer; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-button-secondary:hover { background: #edf7f4; } .ds-button-secondary:focus-visible { outline: 2px solid #0b7b68; outline-offset: 2px; } .ds-button-secondary:disabled { cursor: not-allowed; opacity: 0.45; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo compacto com alvo de 44 px e foco externo visível.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Buscar paciente</span><input class=\"ds-field-input\" type=\"search\" placeholder=\"Buscar por nome ou foco\"></label>",
+      "css": ".ds-field { min-height: 44px; display: flex; align-items: center; border: 1px solid #d7e3df; border-radius: 12px; background: #ffffff; padding: 0 16px; color: #526a62; transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-field:hover { border-color: #bfd4cd; } .ds-field:focus-within { outline: 2px solid #0b7b68; outline-offset: 2px; } .ds-field-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .ds-field-input { width: 100%; border: 0; outline: 0; background: transparent; color: #17372f; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; } .ds-field-input::placeholder { color: #60766f; opacity: 1; }"
+    },
+    {
+      "name": "Dossier Navigation",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Links semânticos para áreas profundas, íntegros e roláveis no compacto.",
+      "html": "<nav class=\"ds-dossier-nav\" aria-label=\"Áreas do dossiê\"><a class=\"ds-dossier-tab\" aria-current=\"page\" href=\"#visao-geral\"><span class=\"ds-dossier-label\">Visão geral</span><span class=\"ds-dossier-description\">Decisão e pendências</span></a><a class=\"ds-dossier-tab\" href=\"#linha-do-tempo\"><span class=\"ds-dossier-label\">Linha do tempo</span><span class=\"ds-dossier-description\">Histórico rastreável</span></a></nav>",
+      "css": ".ds-dossier-nav { display: flex; gap: 4px; overflow-x: auto; border: 1px solid #dfe8e3; border-radius: 16px; background: #ffffff; padding: 6px; } .ds-dossier-tab { min-height: 48px; min-width: 155px; display: flex; flex: 1 0 155px; flex-direction: column; justify-content: center; border-radius: 12px; padding: 0 16px; color: #405d54; text-decoration: none; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dossier-tab:hover { background: #f4f7f5; } .ds-dossier-tab:focus-visible { outline: 2px solid #0b7b68; outline-offset: 2px; } .ds-dossier-tab[aria-current=\"page\"] { background: #17372f; color: #ffffff; } .ds-dossier-label { font-size: 14px; line-height: 20px; font-weight: 700; } .ds-dossier-description { margin-top: 2px; color: #526a62; font-size: 11px; line-height: 16px; } .ds-dossier-tab[aria-current=\"page\"] .ds-dossier-description { color: #c7ddd6; }"
+    },
+    {
+      "name": "Status Chips",
+      "kind": "chip",
+      "refersTo": "status-green",
+      "description": "Família semântica com texto explícito para conclusão, revisão, erro, informação e neutralidade.",
+      "html": "<div class=\"ds-status-row\"><span class=\"ds-status ds-status-green\">Revisado</span><span class=\"ds-status ds-status-amber\">Requer revisão</span><span class=\"ds-status ds-status-rose\">Erro localizado</span><span class=\"ds-status ds-status-blue\">Rascunho assistido</span><span class=\"ds-status ds-status-neutral\">Dados fictícios</span></div>",
+      "css": ".ds-status-row { display: flex; flex-wrap: wrap; gap: 8px; } .ds-status { display: inline-flex; align-items: center; border-radius: 9999px; padding: 6px 12px; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; } .ds-status-green { background: #e8f4f0; color: #0b6a5b; } .ds-status-amber { background: #fff4d8; color: #825b0b; } .ds-status-rose { background: #fdecea; color: #9c453f; } .ds-status-blue { background: #edf3fb; color: #456b9c; } .ds-status-neutral { background: #f1f5f3; color: #526a62; }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contêiner plano para resumo, contexto e ações relacionadas.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Situação do cuidado</h3><p class=\"ds-card-body\">Contexto e metadados permanecem agrupados em uma superfície clara.</p></article>",
+      "css": ".ds-card { border: 1px solid #dfe8e3; border-radius: 16px; background: #ffffff; padding: 20px; color: #17372f; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; } .ds-card-title { margin: 0; color: #17372f; font-size: 18px; line-height: 28px; font-weight: 600; } .ds-card-body { margin: 8px 0 0; color: #60766f; font-size: 14px; line-height: 24px; }"
+    },
+    {
+      "name": "Clinical Layer Badge",
+      "kind": "chip",
+      "refersTo": "status-blue",
+      "description": "Camada clínica explícita com ponto, borda e rótulo de origem ou revisão.",
+      "html": "<span class=\"ds-clinical-badge ds-clinical-badge-ai\"><span class=\"ds-clinical-dot\" aria-hidden=\"true\"></span>Gerado por IA · rascunho</span>",
+      "css": ".ds-clinical-badge { min-height: 28px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #c9d8ec; border-radius: 9999px; background: #edf3fb; padding: 4px 12px; color: #456b9c; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; } .ds-clinical-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 9999px; background: #6997d4; }"
+    },
+    {
+      "name": "Review Strip",
+      "kind": "custom",
+      "refersTo": "review-strip",
+      "description": "Faixa de alto contraste que liga estado, fonte, mudança e ação humana.",
+      "html": "<section class=\"ds-review-strip\"><div class=\"ds-review-content\"><div class=\"ds-review-meta\"><span class=\"ds-review-status\">Requer revisão humana</span><span class=\"ds-review-source\">Fonte: registros confirmados</span></div><h2 class=\"ds-review-title\">O que revisar agora</h2><p class=\"ds-review-body\">Mudança observada no período, apresentada sem converter associação em causa.</p></div><button class=\"ds-review-action\" type=\"button\">Conferir fontes</button></section>",
+      "css": ".ds-review-strip { display: grid; gap: 12px; border-radius: 16px; background: #17372f; padding: 16px; color: #ffffff; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; } .ds-review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .ds-review-status { display: inline-flex; align-items: center; border-radius: 9999px; background: #fff4d8; padding: 6px 12px; color: #825b0b; font-size: 12px; line-height: 16px; font-weight: 700; } .ds-review-source { color: #b9d6cd; font-size: 12px; line-height: 16px; font-weight: 600; } .ds-review-title { margin: 12px 0 0; color: #ffffff; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.02em; } .ds-review-body { max-width: 720px; margin: 8px 0 0; color: #d3e4df; font-size: 14px; line-height: 24px; } .ds-review-action { min-height: 44px; border: 0; border-radius: 12px; background: #ffffff; padding: 0 16px; color: #17372f; font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif; font-size: 14px; line-height: 20px; font-weight: 700; cursor: pointer; transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-review-action:hover { background: #edf7f4; } .ds-review-action:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; } @media (min-width: 768px) { .ds-review-strip { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 24px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Clareza clínica contínua",
+    "overview": "O sistema se comporta como um workspace clínico sereno: verde institucional funcional, superfícies brancas sobre uma névoa esverdeada, bordas suaves e pouca profundidade. A expressão vem da precisão da hierarquia, não de decoração; o contraste mais forte aparece apenas quando há estado, seleção, evidência ou ação humana a distinguir.\n\nEm superfícies longitudinais, a leitura visual avança de pessoa e contexto para mudança, pendência, fonte e ação. Conteúdo aprofundado permanece agrupado em regiões claras e familiares, com densidade operacional suficiente para comparar sem transformar cada módulo em um concorrente visual.",
+    "keyCharacteristics": [
+      "Verde institucional raro e funcional sobre superfícies brancas e névoa.",
+      "Material plano, bordas suaves e profundidade reservada a sobreposições.",
+      "Geist para operação; Playfair apenas em momentos editoriais.",
+      "Controles familiares com altura mínima de 44 px e estados explícitos.",
+      "Hierarquia por pessoa, mudança, pendência, fonte e ação."
+    ],
+    "rules": [
+      { "name": "The Clinical Contrast Rule", "body": "Reserve o verde institucional e as cores semânticas para seleção, estado, foco, evidência e ação; grandes áreas permanecem brancas ou em névoa clara.", "section": "colors" },
+      { "name": "The Operational First Rule", "body": "Geist conduz toda tarefa, controle, tabela, estado e evidência; Playfair aparece somente em momentos genuinamente editoriais.", "section": "typography" },
+      { "name": "The Progressive Compression Rule", "body": "Ao reduzir a largura, empilhe regiões e permita rolagem local de abas ou filtros; não comprima controles, texto ou alvos abaixo da leitura confortável.", "section": "layout" },
+      { "name": "The Flat-by-Default Rule", "body": "Use borda e contraste tonal para estruturar a interface; sombra só comunica uma camada que de fato se eleva.", "section": "elevation" },
+      { "name": "The Familiar Control Rule", "body": "Toda ação essencial preserva pelo menos 44 px de altura, foco visível e um estado compreensível sem depender de hover.", "section": "components" }
+    ],
+    "dos": [
+      "Do preserve superfícies brancas, bordas suaves e espaço como estrutura principal.",
+      "Do reserve o verde mais forte para foco, seleção, ação e indicadores realmente funcionais.",
+      "Do mantenha rótulo, origem ou descrição junto de toda cor semântica.",
+      "Do use links semânticos quando a área possui histórico navegável ou endereço próprio.",
+      "Do deixe abas e filtros rolarem horizontalmente antes de reduzir o alvo de toque."
+    ],
+    "donts": [
+      "Don't use Playfair em controles, tabelas, chips, métricas clínicas ou texto operacional.",
+      "Don't transforme cada cartão em uma camada elevada; a maior parte das superfícies permanece plana.",
+      "Don't use verde, âmbar, rosa ou azul como decoração sem função de estado ou hierarquia.",
+      "Don't comprima controles abaixo de 44 px nem remova o foco visível.",
+      "Don't faça resumo, derivado ou estado visual competir com a fonte original que o sustenta."
+    ]
+  }
+}

@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
@@ -21,10 +20,12 @@ import {
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
-import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
-import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
 import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
-import { LongitudinalDossier } from './longitudinal-dossier';
+import {
+  PatientCohort,
+  PatientLongitudinalWorkspace,
+  type PatientWorkspaceProfile,
+} from './doctor-patient-longitudinal';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
@@ -250,7 +251,7 @@ const appointments: Appointment[] = [
   },
 ];
 
-const patients = [
+const patients: PatientWorkspaceProfile[] = [
   {
     id: DEFAULT_PATIENT_ID,
     nextEncounterId: DEFAULT_ENCOUNTER_ID,
@@ -413,112 +414,18 @@ const patients = [
   },
 ];
 
-const marinaDocuments = [
-  {
-    title: 'Síntese da primeira consulta',
-    category: 'Primeira consulta',
-    meta: 'PDF · 1 página · 12 ago',
-    status: 'Revisão pendente',
-    tone: 'amber' as const,
-    href: '/docs/doc-demo-001.pdf',
-  },
-  {
-    title: 'Relatório de evolução quinzenal',
-    category: 'Evolução',
-    meta: 'PDF · 1 página · atualizado hoje',
-    status: 'Revisado',
-    tone: 'green' as const,
-    href: '/docs/doc-demo-002.pdf',
-  },
-  {
-    title: 'Plano de cuidado compartilhado',
-    category: 'Plano de cuidado',
-    meta: 'PDF · 1 página · versão 1.2',
-    status: 'Aprovação médica',
-    tone: 'amber' as const,
-    href: '/docs/doc-demo-003.pdf',
-  },
-];
-
-const intelligenceTabs = ['Padrões exploratórios', 'Conversas sintetizadas', 'Fotos e análise'] as const;
-type IntelligenceTab = (typeof intelligenceTabs)[number];
-
-const marinaConversations = [
-  {
-    when: 'Hoje · 09:18',
-    channel: 'Pré-consulta por texto · 4 min',
-    title: 'Sono melhorou, mas ainda há despertares',
-    summary: 'Marina relata duas noites melhores, mantém cansaço ao acordar e quer entender se o horário do jantar interfere no sono.',
-    topics: ['Sono', 'Energia', 'Jantar'],
-    openItem: 'Perguntar quantas vezes desperta e se volta a dormir rapidamente.',
-  },
-  {
-    when: 'Ontem · 20:08',
-    channel: 'Chat · 8 mensagens',
-    title: 'Boa saciedade após o jantar',
-    summary: 'Registrou o jantar completo e disse que não sentiu necessidade de beliscar mais tarde. A foto da refeição ainda aguarda confirmação.',
-    topics: ['Saciedade', 'Foto do prato'],
-    openItem: 'Confirmar preparo, porção aproximada e bebida consumida.',
-  },
-  {
-    when: '23 ago · 18:42',
-    channel: 'Check-in · 4 respostas',
-    title: 'Energia mais baixa em dia de pouco sono',
-    summary: 'Relatou energia 2 de 5 após uma noite curta. Não informou novo sintoma e manteve o plano demonstrativo sem alterações.',
-    topics: ['Energia', 'Sono', 'Adesão'],
-    openItem: 'Validar se houve mudança de rotina, estresse ou consumo de cafeína.',
-  },
-];
-
-const marinaMeals = [
-  {
-    image: '/meals/almoco-equilibrado.jpg',
-    alt: 'Prato demonstrativo com frango grelhado, arroz integral, feijão preto, salada e abóbora assada.',
-    meal: 'Almoço',
-    when: 'Ontem · 12:34',
-    status: 'Confirmada pela paciente',
-    tone: 'green' as const,
-    recognized: 'Frango, arroz integral, feijão, folhas, tomate e abóbora.',
-    analysis: 'Boa variedade visual de grupos alimentares. A IA não estima adequação clínica sem confirmar porção, preparo, molho e bebida.',
-    confidence: 'Alta confiança no reconhecimento visual',
-    questions: ['A porção exibida foi consumida inteira?', 'Houve óleo, molho ou bebida fora da foto?'],
-  },
-  {
-    image: '/meals/jantar-omelete.jpg',
-    alt: 'Prato demonstrativo com omelete de legumes, batata-doce, brócolis e salada verde.',
-    meal: 'Jantar',
-    when: 'Ontem · 19:46',
-    status: 'Aguardando confirmação',
-    tone: 'amber' as const,
-    recognized: 'Omelete com vegetais, batata-doce, brócolis e salada.',
-    analysis: 'A composição aparente se aproxima do combinado, mas ingredientes, quantidade de ovos e método de preparo precisam ser confirmados.',
-    confidence: 'Confiança moderada no preparo',
-    questions: ['Quantos ovos foram usados?', 'A batata-doce foi assada com óleo?'],
-  },
-  {
-    image: '/meals/cafe-da-manha.jpg',
-    alt: 'Café da manhã demonstrativo com iogurte, mamão, aveia, chia e café preto.',
-    meal: 'Café da manhã',
-    when: '24 ago · 07:52',
-    status: 'Aguardando confirmação',
-    tone: 'amber' as const,
-    recognized: 'Iogurte, mamão, aveia, chia e café preto.',
-    analysis: 'Os itens foram reconhecidos com boa confiança. Tipo de iogurte, quantidades e adições não visíveis mudam qualquer interpretação.',
-    confidence: 'Alta confiança nos itens visíveis',
-    questions: ['Qual era o tipo de iogurte?', 'Houve açúcar ou outro ingrediente não visível?'],
-  },
-];
-
 export default function DoctorWorkspace({
   initialView = 'Visão geral',
   patientId = DEFAULT_PATIENT_ID,
   encounterId,
   routeMode = 'workspace',
+  patientDetail = false,
 }: {
   initialView?: DoctorView;
   patientId?: string;
   encounterId?: string;
   routeMode?: ClinicalRouteMode;
+  patientDetail?: boolean;
 }) {
   const router = useRouter();
   const view = initialView;
@@ -596,26 +503,26 @@ export default function DoctorWorkspace({
           </div>
           <div className="mt-4 rounded-2xl border border-[#dfe8e3] bg-[#f8faf9] p-4">
             <p className="text-xs font-bold text-[#45655c]">IA com revisão médica</p>
-            <p className="mt-2 text-xs leading-5 text-[#698078]">Sugestões nunca são enviadas ao paciente sem sua aprovação.</p>
+            <p className="mt-2 text-xs leading-5 text-[#526a62]">Sugestões nunca são enviadas ao paciente sem sua aprovação.</p>
           </div>
         </aside>
 
         <main id="main-content" className="min-w-0 px-4 pb-12 pt-6 sm:px-5 lg:px-9 lg:pt-9">
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Navegação do médico">
+          {!patientDetail && <div className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Navegação do médico">
             {doctorNavigation.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
                 aria-current={view === item.label ? 'page' : undefined}
                 className={cn(
-                  'flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-semibold',
+                  'flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
                   view === item.label ? 'bg-[#17372f] text-white' : 'border border-[#dfe8e3] bg-white text-[#60766f]'
                 )}
               >
                 {item.label}
               </Link>
             ))}
-          </div>
+          </div>}
 
           {view === 'Visão geral' && (
             <Overview
@@ -630,6 +537,7 @@ export default function DoctorWorkspace({
           {view === 'Pacientes' && (
             <Patients
               patientId={patientId}
+              patientDetail={patientDetail}
               onSelectPatient={(selectedPatientId) => router.push(getPatientDossierHref(selectedPatientId))}
               onStartConsultation={(selectedPatientId, selectedEncounterId) => router.push(getConsultationHref(selectedPatientId, selectedEncounterId))}
               onOpenPreparation={(selectedPatientId, selectedEncounterId) => router.push(getPreConsultationHref(selectedPatientId, selectedEncounterId))}
@@ -852,7 +760,7 @@ function Overview({
                 <ClinicalLayerBadge layer="relato" />
                 <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#0b6a5b]">Objetivo nas palavras da paciente</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#17372f]">{latestSubmission ? `“${latestSubmission.objective}”` : 'Nenhuma pré-consulta foi enviada nesta sessão demonstrativa.'}</p>
-                <p className="mt-2 text-xs text-[#698078]">{latestSubmission ? `Versão ${latestSubmission.version} · enviada em ${latestSubmission.submittedAt} · ciência registrada` : 'O atendimento pode continuar manualmente, sem bloquear a consulta.'}</p>
+                <p className="mt-2 text-xs text-[#526a62]">{latestSubmission ? `Versão ${latestSubmission.version} · enviada em ${latestSubmission.submittedAt} · ciência registrada` : 'O atendimento pode continuar manualmente, sem bloquear a consulta.'}</p>
               </div>
               <h3 className="mt-5 text-sm font-bold">Organização para revisão médica</h3>
               {activeReview ? (
@@ -861,7 +769,7 @@ function Overview({
                     {activeReview.status === 'approved' ? 'Aprovado para a consulta' : activeReview.status === 'rejected' ? 'Rascunho rejeitado' : 'Rascunho em revisão'}
                   </Status>
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#526a62]">{activeReview.content}</p>
-                  <p className="mt-3 text-xs text-[#698078]">Versão de revisão {activeReview.version} · atualizada em {activeReview.updatedAt}</p>
+                  <p className="mt-3 text-xs text-[#526a62]">Versão de revisão {activeReview.version} · atualizada em {activeReview.updatedAt}</p>
                 </div>
               ) : latestSubmission?.structuredDraft ? (
                 <div className="mt-3 rounded-2xl border border-[#c9d8ec] bg-[#f7f9fc] p-4">
@@ -887,7 +795,7 @@ function Overview({
               </div>
             </div>
             <div className="rounded-2xl bg-[#f4f7f5] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#698078]">Antes da consulta</p>
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#526a62]">Antes da consulta</p>
               <ol className="mt-4 space-y-3 text-sm text-[#405d54]">
                 {preparationChecklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#0b7b68]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}
               </ol>
@@ -910,8 +818,8 @@ function Overview({
                   <span aria-hidden="true" className={cn('mt-1.5 size-2.5 shrink-0 rounded-full', item.tone === 'amber' ? 'bg-[#e49d45]' : item.tone === 'rose' ? 'bg-[#db766f]' : 'bg-[#6997d4]')} />
                   <span className="min-w-0">
                     <strong className="block text-sm group-hover:text-[#0b7b68]">{item.patient}</strong>
-                    <span className="mt-1 block text-xs leading-5 text-[#698078]">{item.detail}</span>
-                    <span className="mt-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a9c96]">{item.tag}</span>
+                    <span className="mt-1 block text-xs leading-5 text-[#526a62]">{item.detail}</span>
+                    <span className="mt-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#526a62]">{item.tag}</span>
                   </span>
                 </span>
               </button>
@@ -928,7 +836,7 @@ function Overview({
         <div className="divide-y divide-[#e7eeea]">
           {reportQueue.map((report) => (
             <button type="button" key={report[0]} onClick={onReports} className="grid min-h-20 w-full cursor-pointer gap-2 px-5 py-4 text-left transition-colors hover:bg-[#f8faf9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0b7b68] sm:grid-cols-[1fr_1fr_auto] sm:items-center sm:px-6">
-              <div><strong className="text-sm text-[#17372f]">{report[0]}</strong><p className="mt-1 text-xs text-[#698078]">{report[1]}</p></div>
+              <div><strong className="text-sm text-[#17372f]">{report[0]}</strong><p className="mt-1 text-xs text-[#526a62]">{report[1]}</p></div>
               <Status tone={report[3]}>{report[2]}</Status>
               <span className="text-xs font-bold text-[#0b6a5b]">Revisar →</span>
             </button>
@@ -943,7 +851,7 @@ function DayAgendaTimeline({ onOpenAppointment }: { onOpenAppointment: (appointm
   return (
     <section id="agenda-do-dia" className="mt-6 scroll-mt-24 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
       <div className="flex flex-col gap-3 border-b border-[#e7eeea] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Agenda aberta</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Hoje, consulta por consulta</h2><p className="mt-1 text-xs text-[#698078]">Clique em um nome para abrir a pré-consulta daquele paciente.</p></div>
+        <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Agenda aberta</p><h2 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Hoje, consulta por consulta</h2><p className="mt-1 text-xs text-[#526a62]">Clique em um nome para abrir a pré-consulta daquele paciente.</p></div>
         <Status>5 consultas</Status>
       </div>
       <div className="px-4 py-3 sm:px-6">
@@ -958,7 +866,7 @@ function DayAgendaTimeline({ onOpenAppointment }: { onOpenAppointment: (appointm
               </span>
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2"><strong className="text-sm text-[#17372f] group-hover:text-[#0b6a5b]">{appointment.patient}</strong>{isNext && <span className="rounded-full bg-[#0b7b68] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white">Próxima</span>}</span>
-                <span className="mt-1 block text-xs text-[#698078]">{appointment.type}</span>
+                <span className="mt-1 block text-xs text-[#526a62]">{appointment.type}</span>
                 <span className={cn('mt-2 block text-[11px] font-bold', appointment.preVisitTone === 'rose' ? 'text-[#9c453f]' : appointment.preVisitTone === 'amber' ? 'text-[#986415]' : appointment.preVisitTone === 'blue' ? 'text-[#5578a9]' : 'text-[#0b6a5b]')}>{appointment.preVisit}</span>
               </span>
               <span className="hidden items-center gap-3 sm:flex"><Status tone={appointment.statusTone}>{appointment.status}</Status><span className="text-xs font-bold text-[#0b6a5b]">Abrir preparo →</span></span>
@@ -986,6 +894,7 @@ function Agenda({ onOpenAppointment, onNotify }: { onOpenAppointment: (appointme
 
 function Patients({
   patientId,
+  patientDetail,
   onSelectPatient,
   onStartConsultation,
   onOpenPreparation,
@@ -993,17 +902,14 @@ function Patients({
   onNotify,
 }: {
   patientId: string;
+  patientDetail: boolean;
   onSelectPatient: (patientId: string) => void;
   onStartConsultation: (patientId: string, encounterId: string) => void;
   onOpenPreparation: (patientId: string, encounterId: string) => void;
   onMessage: (patientId: string) => void;
   onNotify: (text: string) => void;
 }) {
-  const [intelligenceTab, setIntelligenceTab] = useState<IntelligenceTab>('Padrões exploratórios');
-  const [selectedMealIndex, setSelectedMealIndex] = useState<number | null>(null);
-  const selectedIndex = patients.findIndex((patient) => patient.id === patientId);
-  const selected = selectedIndex >= 0 ? patients[selectedIndex] : null;
-  const selectedMeal = selectedMealIndex === null ? null : marinaMeals[selectedMealIndex];
+  const selected = patients.find((patient) => patient.id === patientId) ?? null;
 
   if (!selected) {
     return (
@@ -1018,464 +924,20 @@ function Patients({
     );
   }
 
-  const openConsultation = () => {
-    if (selected.id === DEFAULT_PATIENT_ID) {
-      onStartConsultation(selected.id, selected.nextEncounterId);
-      return;
-    }
-
-    onOpenPreparation(selected.id, selected.nextEncounterId);
-  };
+  if (!patientDetail) {
+    return <PatientCohort patients={patients} onSelectPatient={onSelectPatient} />;
+  }
 
   return (
-    <>
-      <Heading
-        eyebrow="Carteira ativa"
-        title="Pacientes"
-        description="Evolução, próximos passos e sinais fora do padrão individual."
-        action={
-          <label className="flex min-h-11 items-center rounded-xl border border-[#d7e3df] bg-white px-4 text-sm text-[#698078]">
-            <span className="sr-only">Buscar paciente</span>
-            <input type="search" className="w-44 bg-transparent outline-none" placeholder="Buscar paciente" />
-          </label>
-        }
-      />
-      <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {patients.map((patient, index) => (
-          <button
-            type="button"
-            key={patient.id}
-            aria-pressed={selectedIndex === index}
-            onClick={() => {
-              setIntelligenceTab('Padrões exploratórios');
-              setSelectedMealIndex(null);
-              onSelectPatient(patient.id);
-            }}
-            className={cn(
-              'cursor-pointer rounded-3xl border bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc8bd] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
-              selectedIndex === index ? 'border-[#8bbcaf] ring-2 ring-[#dceee9]' : 'border-[#dfe8e3]',
-            )}
-          >
-            <span className="flex items-start justify-between gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b]">{patient.initials}</span>
-              <Status tone={patient.tone}>{patient.attention}</Status>
-            </span>
-            <strong className="mt-5 block text-base">{patient.name}</strong>
-            <span className="mt-1 block text-sm text-[#698078]">{patient.focus}</span>
-            <span className="mt-5 block text-2xl font-semibold tracking-[-0.04em]">{patient.progress}</span>
-            <span className="mt-1 block text-xs text-[#8a9c96]">desde o último ciclo</span>
-            <span className="mt-5 grid grid-cols-2 gap-2 border-t border-[#e7eeea] pt-4">
-              <span>
-                <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a9c96]">Relatórios</span>
-                <span className="mt-1 block text-sm font-bold text-[#405d54]">{patient.reportCount}</span>
-              </span>
-              <span>
-                <span className="block text-[11px] font-bold uppercase tracking-[0.08em] text-[#8a9c96]">Receitas</span>
-                <span className="mt-1 block text-sm font-bold text-[#405d54]">{patient.prescriptionCount}</span>
-              </span>
-            </span>
-            <span className="mt-4 block min-h-11 rounded-xl border border-[#c9ddd6] px-4 py-3 text-center text-sm font-bold text-[#0b6a5b]">
-              {selectedIndex === index ? 'Paciente selecionado' : 'Ver detalhes'}
-            </span>
-          </button>
-        ))}
-      </section>
-
-      <section aria-labelledby="selected-patient-title" className="mt-6 overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
-        <div className="flex flex-col gap-5 border-b border-[#e7eeea] p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-base font-bold text-[#0b6a5b]">{selected.initials}</span>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 id="selected-patient-title" className="text-2xl font-semibold tracking-[-0.03em]">{selected.name}</h2>
-                <Status tone="gray">Dados demonstrativos</Status>
-              </div>
-              <p className="mt-1 text-sm text-[#698078]">{selected.focus} · {selected.cycle}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={() => onMessage(selected.id)} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-              Enviar mensagem
-            </button>
-            <button type="button" onClick={openConsultation} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white hover:bg-[#24483e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-              {selected.id === DEFAULT_PATIENT_ID ? 'Abrir consulta' : 'Ver preparo'}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-px bg-[#e7eeea] sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ['Ciclo de cuidado', selected.cycle],
-            ['Último contato', selected.lastContact],
-            ['Próxima consulta', selected.nextConsultation],
-            ['Adesão atual', selected.adherence],
-          ].map((item) => (
-            <div key={item[0]} className="bg-[#f8faf9] px-5 py-4 sm:px-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-[#789087]">{item[0]}</p>
-              <p className="mt-1.5 text-sm font-bold text-[#2d4d44]">{item[1]}</p>
-            </div>
-          ))}
-        </div>
-
-        <DoctorCareCycleSummary
-          key={`summary-${selected.id}`}
-          patientId={selected.id}
-          encounterId={getDefaultEncounterId(selected.id)}
-        />
-
-        <DoctorAiPreparationWorkspace
-          key={`ai-preparation-${selected.id}`}
-          patientId={selected.id}
-          patientName={selected.name}
-          encounterId={getDefaultEncounterId(selected.id)}
-          onNotify={onNotify}
-        />
-
-        <LongitudinalDossier key={selected.id} patientId={selected.id} patientName={selected.name} />
-
-        <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)_minmax(280px,0.9fr)]">
-          <article className="rounded-2xl border border-[#dfe8e3] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Relatório mais recente</p>
-                <h3 className="mt-2 text-lg font-semibold">{selected.report.title}</h3>
-                <p className="mt-1 text-xs text-[#789087]">{selected.report.period}</p>
-              </div>
-              <Status tone={selected.report.status.includes('aprovação') ? 'amber' : selected.report.status === 'Processando' ? 'blue' : selected.report.status === 'Aguardando dados' ? 'gray' : 'green'}>
-                {selected.report.status}
-              </Status>
-            </div>
-            <p className="mt-4 text-sm leading-6 text-[#526a62]">{selected.report.summary}</p>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {selected.report.metrics.map((metric) => (
-                <div key={metric[0]} className="rounded-xl bg-[#f4f7f5] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[#789087]">{metric[0]}</p>
-                  <p className="mt-1 text-sm font-bold text-[#2d4d44]">{metric[1]}</p>
-                </div>
-              ))}
-            </div>
-            <button type="button" onClick={() => onNotify(`Relatório demonstrativo de ${selected.name} aberto para revisão.`)} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-              Abrir relatório completo
-            </button>
-          </article>
-
-          <article className="rounded-2xl border border-[#dfe8e3] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Receitas</p>
-              <Status tone={selected.prescription.status === 'Ativa' ? 'green' : selected.prescription.status === 'Requer revisão' ? 'rose' : 'gray'}>
-                {selected.prescription.status}
-              </Status>
-            </div>
-            <h3 className="mt-4 text-lg font-semibold">{selected.prescription.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-[#526a62]">{selected.prescription.detail}</p>
-            <div className="mt-4 rounded-xl bg-[#f4f7f5] p-4">
-              <p className="text-xs leading-5 text-[#60766f]">{selected.prescription.note}</p>
-            </div>
-            <button type="button" onClick={() => onNotify(`Histórico demonstrativo de receitas de ${selected.name} aberto.`)} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-              Ver receitas e histórico
-            </button>
-          </article>
-
-          <article className="rounded-2xl bg-[#17372f] p-5 text-white">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#9fd6c8]">Insight assistido por IA</p>
-              <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#d9eee8]">Revisão médica</span>
-            </div>
-            <h3 className="mt-5 text-lg font-semibold leading-6">{selected.insight.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-[#d3e4df]">{selected.insight.detail}</p>
-            <p className="mt-4 border-t border-white/15 pt-4 text-xs leading-5 text-[#a9c6be]">{selected.insight.basis}</p>
-            <button type="button" onClick={() => onNotify('Insight marcado para discutir na próxima consulta.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
-              Marcar para próxima consulta
-            </button>
-          </article>
-        </div>
-
-        <section aria-labelledby="smart-dossier-title" className="border-t border-[#e7eeea] bg-[#f8faf9] p-5 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Documentos demonstrativos</p>
-              <h3 id="smart-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Documentos do ciclo</h3>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#60766f]">Arquivos fictícios organizados por etapa do acompanhamento. Eles não representam documentos de prontuário nem integrações ativas.</p>
-            </div>
-            <Status tone={selected.id === DEFAULT_PATIENT_ID ? 'green' : 'gray'}>{selected.id === DEFAULT_PATIENT_ID ? '3 PDFs do mock' : 'Sem arquivos disponíveis'}</Status>
-          </div>
-
-          {selected.id === DEFAULT_PATIENT_ID ? (
-            <>
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-                {marinaDocuments.map((document) => (
-                  <article key={document.href} className="flex min-h-52 flex-col rounded-2xl border border-[#d7e3df] bg-white p-5 shadow-[0_8px_22px_rgba(28,55,47,0.035)]">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e8f4f0] text-xs font-black tracking-[0.08em] text-[#0b6a5b]">PDF</span>
-                      <Status tone={document.tone}>{document.status}</Status>
-                    </div>
-                    <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.09em] text-[#789087]">{document.category}</p>
-                    <h4 className="mt-1 text-base font-bold leading-6 text-[#17372f]">{document.title}</h4>
-                    <p className="mt-2 text-xs text-[#789087]">{document.meta}</p>
-                    <a href={document.href} target="_blank" rel="noreferrer" className="mt-auto flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#bfd4cd] px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                      Abrir PDF demonstrativo
-                    </a>
-                  </article>
-                ))}
-              </div>
-              <article className="mt-4 flex flex-col gap-4 rounded-2xl border border-[#d7e3df] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <div className="flex items-center gap-4">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#17372f] text-[10px] font-black tracking-[0.08em] text-white">RX</span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-[#17372f]">Receita digital #RX-1042</h4>
-                      <Status>Ativa</Status>
-                    </div>
-                    <p className="mt-1 text-xs leading-5 text-[#698078]">Emitida na última consulta · validade até 26 set · trilha de envio disponível</p>
-                  </div>
-                </div>
-                <button type="button" onClick={() => onNotify('Receita demonstrativa e histórico de acessos abertos.')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                  Ver receita e histórico
-                </button>
-              </article>
-            </>
-          ) : (
-            <div className="mt-5 rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-6 text-center">
-              <p className="text-sm font-bold text-[#405d54]">Nenhum documento demonstrativo disponível para {selected.name}.</p>
-              <p className="mt-1 text-xs text-[#789087]">O histórico longitudinal acima continua separado dos PDFs deste ciclo.</p>
-            </div>
-          )}
-        </section>
-
-        <section aria-labelledby="clinical-copilot-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Exploração multimodal</p>
-              <h3 id="clinical-copilot-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Contexto complementar, separado da pauta médica</h3>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-[#60766f]">Conversas, fotos e padrões demonstrativos ficam disponíveis para exploração. A pauta rastreável e revisável permanece na preparação assistida acima.</p>
-            </div>
-            <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-2 text-xs font-bold text-[#526a62]">{selected.id === DEFAULT_PATIENT_ID ? '6 fontes demonstrativas · mock' : 'Sem fontes suficientes'}</span>
-          </div>
-
-          <div role="tablist" aria-label="Visões do copiloto clínico" className="mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-[#d7e3df] bg-white p-2">
-            {intelligenceTabs.map((tab) => (
-              <button
-                type="button"
-                role="tab"
-                key={tab}
-                aria-selected={intelligenceTab === tab}
-                aria-controls="patient-intelligence-panel"
-                onClick={() => setIntelligenceTab(tab)}
-                className={cn(
-                  'min-h-11 shrink-0 cursor-pointer rounded-xl px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
-                  intelligenceTab === tab ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#edf7f4] hover:text-[#0b6a5b]',
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div id="patient-intelligence-panel" role="tabpanel" className="mt-5">
-            {selected.id !== DEFAULT_PATIENT_ID ? (
-              <div className="rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-8 text-center">
-                <p className="text-sm font-bold text-[#405d54]">Ainda não há contexto suficiente para compor esta visão de {selected.name}.</p>
-                <p className="mt-2 text-xs leading-5 text-[#789087]">O copiloto só organiza dados disponíveis e não preenche lacunas com inferências.</p>
-              </div>
-            ) : (
-              <>
-                {intelligenceTab === 'Padrões exploratórios' && (
-                  <div className="space-y-5">
-                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,1fr)_minmax(260px,0.9fr)]">
-                      <article className="rounded-2xl bg-[#17372f] p-5 text-white">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Briefing da próxima consulta</p>
-                            <h4 className="mt-2 text-lg font-semibold">Exemplo estático de temas recorrentes</h4>
-                          </div>
-                          <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#d9eee8]">Revisar hoje</span>
-                        </div>
-                        <ol className="mt-5 space-y-3">
-                          {['Entender despertares e energia ao acordar', 'Revisar duas refeições ainda não confirmadas', 'Validar exame anexado e meta da quinzena'].map((item, index) => (
-                            <li key={item} className="flex items-start gap-3 text-sm leading-5 text-[#d3e4df]">
-                              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-bold text-white">{index + 1}</span>
-                              <span className="pt-1">{item}</span>
-                            </li>
-                          ))}
-                        </ol>
-                        <button type="button" onClick={() => document.getElementById('doctor-ai-preparation-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
-                          Ir ao preparo rastreável
-                        </button>
-                      </article>
-
-                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Padrões multimodais explicáveis</p>
-                        <div className="mt-4 divide-y divide-[#e7eeea]">
-                          <div className="pb-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-bold">Sono curto e energia</h4><Status tone="amber">Hipótese</Status></div>
-                            <p className="mt-2 text-sm leading-6 text-[#526a62]">Energia menor apareceu em 3 de 4 dias após noites abaixo de seis horas.</p>
-                            <p className="mt-2 text-[11px] font-semibold text-[#8a9c96]">Base: 14 noites + 11 check-ins</p>
-                          </div>
-                          <div className="pt-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-bold">Registro do jantar e saciedade</h4><Status tone="blue">Observação</Status></div>
-                            <p className="mt-2 text-sm leading-6 text-[#526a62]">Dias com refeição confirmada tiveram relatos mais completos de saciedade.</p>
-                            <p className="mt-2 text-[11px] font-semibold text-[#8a9c96]">Base: 7 registros demonstrativos</p>
-                          </div>
-                        </div>
-                        <p className="mt-4 rounded-xl bg-[#fff4d8] p-3 text-xs leading-5 text-[#825b0b]">Associação não significa causa. O médico decide se vale investigar.</p>
-                      </article>
-
-                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                        <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Lacunas detectadas</p><Status tone="rose">3 itens</Status></div>
-                        <div className="mt-4 space-y-3">
-                          {[
-                            ['Exame anexado', 'Ainda sem revisão médica'],
-                            ['2 refeições', 'Aguardam confirmação da paciente'],
-                            ['Receita ativa', 'Vence em 31 dias'],
-                          ].map((item) => (
-                            <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
-                              <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
-                              <p className="mt-1 text-xs text-[#789087]">{item[1]}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <button type="button" onClick={() => onNotify('Pendências adicionadas à caixa de revisão médica.')} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                          Revisar pendências
-                        </button>
-                      </article>
-                    </div>
-
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Narrativa da paciente</p>
-                        <blockquote className="mt-4 border-l-2 border-[#8bc6b9] pl-4 text-base font-semibold leading-7 text-[#2d4d44]">“Estou conseguindo seguir sem sentir que vivo de dieta. Quero dormir a noite inteira e acordar com mais energia.”</blockquote>
-                        <p className="mt-3 text-xs leading-5 text-[#789087]">Síntese de 7 conversas · palavras reorganizadas pela IA · trechos originais preservados.</p>
-                      </article>
-                      <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Capacidades de IA no cuidado</p>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {[
-                            ['Rastreabilidade', 'Cada insight mostra de onde veio.'],
-                            ['Linguagem simples', 'Uma versão médica e outra para a paciente.'],
-                            ['Contradições', 'Sinaliza divergências entre relato e registros.'],
-                            ['Pós-consulta', 'Gera resumo, tarefas e lembretes após aprovação.'],
-                          ].map((item) => (
-                            <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
-                              <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
-                              <p className="mt-1 text-xs leading-5 text-[#789087]">{item[1]}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </article>
-                    </div>
-                  </div>
-                )}
-
-                {intelligenceTab === 'Conversas sintetizadas' && (
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
-                    <div className="space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {[['Conversas lidas', '7'], ['Mensagens', '18'], ['Questões abertas', '3']].map((item) => (
-                          <div key={item[0]} className="rounded-xl border border-[#dfe8e3] bg-white p-4">
-                            <p className="text-xs font-semibold text-[#789087]">{item[0]}</p>
-                            <p className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#17372f]">{item[1]}</p>
-                          </div>
-                        ))}
-                      </div>
-                      {marinaConversations.map((conversation) => (
-                        <article key={conversation.when} className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#0b7b68]">{conversation.when}</p><h4 className="mt-1 text-base font-bold text-[#17372f]">{conversation.title}</h4></div>
-                            <span className="text-xs font-semibold text-[#789087]">{conversation.channel}</span>
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-[#526a62]">{conversation.summary}</p>
-                          <div className="mt-3 flex flex-wrap gap-2">{conversation.topics.map((topic) => <Status key={topic} tone="gray">{topic}</Status>)}</div>
-                          <div className="mt-4 rounded-xl bg-[#fff4d8] p-3">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#825b0b]">Pergunta que ficou aberta</p>
-                            <p className="mt-1 text-xs leading-5 text-[#704f10]">{conversation.openItem}</p>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                    <aside className="h-fit rounded-2xl bg-[#17372f] p-5 text-white xl:sticky xl:top-24">
-                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Síntese das últimas conversas</p>
-                      <h4 className="mt-3 text-lg font-semibold">O foco espontâneo mudou de peso para energia e sono.</h4>
-                      <p className="mt-3 text-sm leading-6 text-[#d3e4df]">A paciente mantém boa adesão percebida e busca entender os despertares, sem pedir alteração de conduta.</p>
-                      <div className="mt-5 border-t border-white/15 pt-4">
-                        <p className="text-xs font-bold text-white">Próxima melhor pergunta</p>
-                        <p className="mt-2 text-sm leading-6 text-[#d3e4df]">“O que acontece antes, durante e depois de cada despertar?”</p>
-                      </div>
-                      <button type="button" onClick={() => onNotify('Trechos originais e horários usados na síntese abertos.')} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
-                        Ver trechos usados
-                      </button>
-                    </aside>
-                  </div>
-                )}
-
-                {intelligenceTab === 'Fotos e análise' && (
-                  <div>
-                    <div className="flex flex-col gap-3 rounded-2xl border border-[#c9ddd6] bg-[#edf7f4] p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div><h4 className="text-sm font-bold text-[#17372f]">3 refeições analisadas · 2 aguardam confirmação</h4><p className="mt-1 text-xs leading-5 text-[#60766f]">A IA reconhece itens visíveis e formula perguntas; não calcula adequação clínica como fato.</p></div>
-                      <Status tone="amber">Revisão humana</Status>
-                    </div>
-                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {marinaMeals.map((meal, index) => (
-                        <article key={meal.image} className="overflow-hidden rounded-2xl border border-[#dfe8e3] bg-white">
-                          <div className="relative aspect-[4/3] overflow-hidden bg-[#e8eeeb]">
-                            <Image src={meal.image} alt={meal.alt} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
-                            <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-[#17372f] shadow-sm">{meal.meal}</span>
-                          </div>
-                          <div className="p-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-[#789087]">{meal.when}</p><Status tone={meal.tone}>{meal.status}</Status></div>
-                            <h4 className="mt-3 text-sm font-bold text-[#17372f]">Itens reconhecidos</h4>
-                            <p className="mt-1 text-sm leading-6 text-[#526a62]">{meal.recognized}</p>
-                            <p className="mt-3 text-[11px] font-semibold text-[#789087]">{meal.confidence}</p>
-                            <button type="button" onClick={() => setSelectedMealIndex(index)} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                              Abrir foto e análise
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                    <p className="mt-4 text-xs leading-5 text-[#789087]">Estimativa visual demonstrativa. Itens ocultos, porções e preparo podem estar incorretos; paciente e médico confirmam antes de qualquer uso.</p>
-                  </div>
-                )}
-
-              </>
-            )}
-          </div>
-        </section>
-
-        <p className="border-t border-[#e7eeea] bg-[#f4f7f5] px-5 py-4 text-xs leading-5 text-[#789087] sm:px-6">
-          Conteúdo demonstrativo. Relatórios, receitas e insights exigem revisão médica e não representam prontuário real.
-        </p>
-      </section>
-
-      {selectedMeal && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102a24]/55 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="meal-analysis-title" onClick={() => setSelectedMealIndex(null)}>
-          <div className="max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl" onClick={(event) => event.stopPropagation()}>
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dfe8e3] bg-white px-5 py-4 sm:px-6">
-              <div><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Análise visual demonstrativa</p><h3 id="meal-analysis-title" className="mt-1 text-xl font-semibold">{selectedMeal.meal} · {selectedMeal.when}</h3></div>
-              <button type="button" onClick={() => setSelectedMealIndex(null)} aria-label="Fechar análise da refeição" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
-            </div>
-            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-              <div className="relative min-h-[320px] bg-[#edf2ef] m-4 overflow-hidden rounded-2xl sm:m-6 lg:min-h-[620px]"><Image src={selectedMeal.image} alt={selectedMeal.alt} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /></div>
-              <div className="p-5 sm:p-6">
-                <Status tone={selectedMeal.tone}>{selectedMeal.status}</Status>
-                <h4 className="mt-5 text-sm font-bold text-[#17372f]">Itens reconhecidos</h4>
-                <p className="mt-2 text-sm leading-6 text-[#526a62]">{selectedMeal.recognized}</p>
-                <h4 className="mt-5 text-sm font-bold text-[#17372f]">Leitura assistida</h4>
-                <p className="mt-2 text-sm leading-6 text-[#526a62]">{selectedMeal.analysis}</p>
-                <p className="mt-3 text-xs font-semibold text-[#789087]">{selectedMeal.confidence}</p>
-                <div className="mt-5 rounded-2xl bg-[#fff4d8] p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#825b0b]">Perguntas para confirmar</p>
-                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-5 text-[#704f10]">{selectedMeal.questions.map((question) => <li key={question}>{question}</li>)}</ul>
-                </div>
-                <button type="button" onClick={() => { setSelectedMealIndex(null); onNotify('Itens visíveis confirmados no mock da refeição.'); }} className="mt-5 min-h-11 w-full cursor-pointer rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                  Confirmar itens visíveis
-                </button>
-                <p className="mt-4 text-xs leading-5 text-[#789087]">A foto não revela quantidades exatas, ingredientes ocultos ou preparo. Nenhuma decisão clínica é automática.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <PatientLongitudinalWorkspace
+      patient={selected}
+      patients={patients}
+      onSelectPatient={onSelectPatient}
+      onStartConsultation={onStartConsultation}
+      onOpenPreparation={onOpenPreparation}
+      onMessage={onMessage}
+      onNotify={onNotify}
+    />
   );
 }
 
@@ -1549,8 +1011,8 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
             <Link href={getPatientMessagesHref(item.patientId)} key={item.patientId} aria-current={selected?.patientId === item.patientId ? 'page' : undefined} className={cn('flex min-h-20 w-full gap-3 border-t border-[#edf2ef] p-4 text-left', selected?.patientId === item.patientId ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item.initials}</span>
               <span className="min-w-0 flex-1">
-                <span className="flex justify-between gap-3"><strong className="text-sm">{item.name}</strong><small className="text-[#8a9c96]">{item.time}</small></span>
-                <span className="mt-1 block truncate text-xs text-[#698078]">{item.preview}</span>
+                <span className="flex justify-between gap-3"><strong className="text-sm">{item.name}</strong><small className="text-[#526a62]">{item.time}</small></span>
+                <span className="mt-1 block truncate text-xs text-[#526a62]">{item.preview}</span>
               </span>
             </Link>
           ))}
@@ -1559,13 +1021,13 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
           <div className="flex min-h-[470px] flex-col">
             <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:px-6">
               <span className="grid size-10 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{selected.initials}</span>
-              <div><p className="text-sm font-bold">{selected.name}</p><p className="text-xs text-[#698078]">{selected.context}</p></div>
+              <div><p className="text-sm font-bold">{selected.name}</p><p className="text-xs text-[#526a62]">{selected.context}</p></div>
             </div>
             <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6" aria-live="polite">
               <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm sm:max-w-[78%]">
                 <span className="mb-2 inline-flex rounded-full bg-[#edf7f4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0b6a5b]">Plano de cuidado</span>
                 <p>{selected.incoming}</p>
-                <p className="mt-2 text-[11px] text-[#8a9c96]">{selected.time} · exemplo fictício</p>
+                <p className="mt-2 text-[11px] text-[#526a62]">{selected.time} · exemplo fictício</p>
               </div>
               <div className="ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white sm:max-w-[78%]">
                 <span className="mb-2 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]">Plano de cuidado</span>
@@ -1589,7 +1051,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
                     {doctorConversationContextLabel[message.context]}
                   </span>
                   <p className="whitespace-pre-wrap break-words">{message.body}</p>
-                  <p className={cn('mt-2 text-[11px]', message.sender === 'doctor' ? 'text-[#b8d3cb]' : 'text-[#8a9c96]')}>
+                  <p className={cn('mt-2 text-[11px]', message.sender === 'doctor' ? 'text-[#b8d3cb]' : 'text-[#526a62]')}>
                     {message.sentAt} · {message.sender === 'doctor' ? 'Dr. Guilherme' : selected.name}
                   </p>
                 </div>
@@ -1622,7 +1084,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
                 <textarea id="doctor-message" value={value} maxLength={600} rows={2} onChange={(event) => setValue(event.target.value)} className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder={`Escreva sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`} />
                 <button type="submit" disabled={!canSend} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">Enviar</button>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#789087]"><p>Sessão demonstrativa; sem envio externo.</p><p>{value.length}/600</p></div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#526a62]"><p>Sessão demonstrativa; sem envio externo.</p><p>{value.length}/600</p></div>
             </form>
           </div>
         ) : (
@@ -1647,13 +1109,13 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
             ['Paulo Mendes', 'Semanal · processando'],
           ].map((item, index) => (
             <button type="button" key={item[0]} className={cn('w-full rounded-2xl border p-4 text-left', index === 0 ? 'border-[#8bbcaf] bg-[#edf7f4]' : 'border-[#dfe8e3] bg-white')}>
-              <strong className="block text-sm">{item[0]}</strong><span className="mt-1 block text-xs text-[#698078]">{item[1]}</span>
+              <strong className="block text-sm">{item[0]}</strong><span className="mt-1 block text-xs text-[#526a62]">{item[1]}</span>
             </button>
           ))}
         </div>
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-7">
           <div className="flex flex-col gap-4 border-b border-[#e7eeea] pb-6 sm:flex-row sm:items-start sm:justify-between">
-            <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Rascunho assistido por IA</p><h2 className="mt-2 text-2xl font-semibold">Evolução quinzenal · Marina Costa</h2><p className="mt-1 text-sm text-[#698078]">11–25 de agosto de 2026</p></div>
+            <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Rascunho assistido por IA</p><h2 className="mt-2 text-2xl font-semibold">Evolução quinzenal · Marina Costa</h2><p className="mt-1 text-sm text-[#526a62]">11–25 de agosto de 2026</p></div>
             <Status tone={approved ? 'green' : 'amber'}>{approved ? 'Aprovado' : 'Requer revisão'}</Status>
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -1661,7 +1123,7 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
               ['Peso', '−1,8 kg'],
               ['Adesão', '82%'],
               ['Sono médio', '6h12'],
-            ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-semibold text-[#698078]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p></div>)}
+            ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-semibold text-[#526a62]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p></div>)}
           </div>
           <div className="mt-6 space-y-5 text-sm leading-6 text-[#526a62]">
             <section><h3 className="font-bold text-[#17372f]">Síntese do período</h3><p className="mt-1">Evolução consistente de peso e boa adesão. A principal oportunidade é recuperar regularidade de sono antes de ampliar metas.</p></section>
@@ -1671,7 +1133,7 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
             <button type="button" className="min-h-11 rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b]">Editar texto</button>
             <button type="button" disabled={approved} onClick={onApprove} className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white disabled:bg-[#779a91]">{approved ? 'Relatório aprovado' : 'Aprovar e disponibilizar'}</button>
           </div>
-          <p className="mt-4 text-xs leading-5 text-[#8a9c96]">A IA organiza informações; a interpretação e a decisão permanecem com o médico.</p>
+          <p className="mt-4 text-xs leading-5 text-[#526a62]">A IA organiza informações; a interpretação e a decisão permanecem com o médico.</p>
         </article>
       </section>
     </>
@@ -1790,7 +1252,7 @@ function Consultation({
         </div>
         <div className="border-b border-[#dfe8e3] bg-white px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
-            {steps.map((item) => <button type="button" key={item[0]} onClick={() => setStep(item[0])} className={cn('min-h-12 shrink-0 border-b-2 px-3 text-sm font-bold', step === item[0] ? 'border-[#0b7b68] text-[#0b6a5b]' : 'border-transparent text-[#698078]')}>{item[1]}</button>)}
+            {steps.map((item) => <button type="button" key={item[0]} onClick={() => setStep(item[0])} className={cn('min-h-12 shrink-0 border-b-2 px-3 text-sm font-bold', step === item[0] ? 'border-[#0b7b68] text-[#0b6a5b]' : 'border-transparent text-[#526a62]')}>{item[1]}</button>)}
           </div>
         </div>
         <div className="p-4 sm:p-6">
@@ -1820,9 +1282,9 @@ function Consultation({
                   </div>
                 )}
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {appointment.metrics.map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#698078]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[0] === 'Sintoma' ? 'text-[#9c453f]' : item[0] === 'Anamnese' || (item[0] === 'Sono' && item[2].includes('abaixo')) ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
+                  {appointment.metrics.map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#526a62]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[0] === 'Sintoma' ? 'text-[#9c453f]' : item[0] === 'Anamnese' || (item[0] === 'Sono' && item[2].includes('abaixo')) ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
                 </div>
-                <div className={cn('mt-6 rounded-2xl border-l-4 p-4', appointment.preVisitTone === 'rose' ? 'border-[#d36c64] bg-[#fdf0ef]' : appointment.preVisitTone === 'green' ? 'border-[#55aa96] bg-[#edf7f4]' : 'border-[#e49d45] bg-[#fff8e9]')}><p className={cn('text-sm font-bold', appointment.preVisitTone === 'rose' ? 'text-[#8d3f39]' : appointment.preVisitTone === 'green' ? 'text-[#0b6a5b]' : 'text-[#6f4b0d]')}>{appointment.attentionTitle}</p><p className={cn('mt-1 text-sm leading-6', appointment.preVisitTone === 'rose' ? 'text-[#7e504c]' : appointment.preVisitTone === 'green' ? 'text-[#45655c]' : 'text-[#805f24]')}>{appointment.attentionDetail}</p></div>
+                <div className={cn('mt-6 rounded-2xl border p-4', appointment.preVisitTone === 'rose' ? 'border-[#efc7c3] bg-[#fdf0ef]' : appointment.preVisitTone === 'green' ? 'border-[#b9d8cf] bg-[#edf7f4]' : 'border-[#ead8ad] bg-[#fff8e9]')}><p className={cn('text-sm font-bold', appointment.preVisitTone === 'rose' ? 'text-[#8d3f39]' : appointment.preVisitTone === 'green' ? 'text-[#0b6a5b]' : 'text-[#6f4b0d]')}>{appointment.attentionTitle}</p><p className={cn('mt-1 text-sm leading-6', appointment.preVisitTone === 'rose' ? 'text-[#7e504c]' : appointment.preVisitTone === 'green' ? 'text-[#45655c]' : 'text-[#805f24]')}>{appointment.attentionDetail}</p></div>
               </section>
               <aside className="rounded-3xl bg-[#17372f] p-5 text-white">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1876,7 +1338,7 @@ function Consultation({
                     ['Próximo acompanhamento', activeFollowUpConfiguration ? `Cadência ligada ao plano v${activeFollowUpConfiguration.planVersion}` : latestPublishedCarePlan ? 'Ainda não configurado' : 'Disponível depois da publicação'],
                   ].map((item) => <div key={item[0]} className="flex flex-col justify-between gap-1 rounded-2xl bg-[#f4f7f5] p-4 sm:flex-row"><strong className="text-sm">{item[0]}</strong><span className="text-sm text-[#60766f]">{item[1]}</span></div>)}
                 </div>
-                <p className="mt-5 text-xs leading-5 text-[#8a9c96]">Nenhuma sugestão será tratada como prescrição automática.</p>
+                <p className="mt-5 text-xs leading-5 text-[#526a62]">Nenhuma sugestão será tratada como prescrição automática.</p>
               </section>
               <aside className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Próximo passo</p><h3 className="mt-3 text-xl font-semibold">Manter o cuidado vivo</h3><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">O app transforma o plano em pequenos compromissos e traz de volta somente o que merece atenção.</p>{latestCarePlan?.status !== 'published' ? <button type="button" onClick={() => setStep('plano')} className="mt-7 min-h-12 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Voltar e revisar o plano</button> : null}<button type="button" onClick={onComplete} className={cn('min-h-12 w-full cursor-pointer rounded-xl px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]', latestCarePlan?.status === 'published' ? 'mt-7 bg-white text-[#17372f]' : 'mt-2 border border-white/25 text-white')}>{latestCarePlan?.status === 'published' ? 'Concluir consulta' : 'Concluir mantendo como rascunho'}</button><button type="button" onClick={onClose} className="mt-2 min-h-11 w-full cursor-pointer text-sm font-semibold text-[#b8d3cb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0]">Salvar e sair</button></aside>
             </div>
@@ -1910,10 +1372,10 @@ function AlertDrawer({
             ['Plano atual', 'Regularizar sono e manter adesão'],
             ['Último contato', 'Ontem, 20:14'],
             ['Próxima consulta', 'Hoje, 10:30'],
-          ].map((row) => <div key={row[0]} className="flex justify-between gap-4 border-b border-[#e7eeea] py-3 text-sm"><span className="text-[#698078]">{row[0]}</span><strong className="text-right">{row[1]}</strong></div>)}
+          ].map((row) => <div key={row[0]} className="flex justify-between gap-4 border-b border-[#e7eeea] py-3 text-sm"><span className="text-[#526a62]">{row[0]}</span><strong className="text-right">{row[1]}</strong></div>)}
         </section>
         <div className="mt-8 space-y-3"><button type="button" onClick={onResolve} className="min-h-12 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white">Marcar como revisado</button><button type="button" className="min-h-12 w-full rounded-xl border border-[#bfd4cd] text-sm font-bold text-[#0b6a5b]">Enviar mensagem</button></div>
-        <p className="mt-5 text-xs leading-5 text-[#8a9c96]">Este alerta organiza prioridade; não representa diagnóstico ou emergência.</p>
+        <p className="mt-5 text-xs leading-5 text-[#526a62]">Este alerta organiza prioridade; não representa diagnóstico ou emergência.</p>
       </div>
     </div>
   );

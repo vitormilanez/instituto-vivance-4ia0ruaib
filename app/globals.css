@@ -37,6 +37,11 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+#patient-longitudinal-workspace :where(a, button, summary, select, input):focus-visible {
+  outline: 2px solid #0b7b68;
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

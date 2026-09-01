@@ -1,0 +1,67 @@
+# Product
+
+<!-- impeccable:product-schema 1 -->
+
+## Platform
+
+web
+
+## Users
+
+- Profissionais de saúde responsáveis por acompanhar pessoas em jornadas de emagrecimento e envelhecimento saudável.
+- Pacientes convidados para registrar contexto, acompanhar um plano publicado e conversar com a equipe dentro do protótipo.
+
+## Product Purpose
+
+O Instituto Vivans organiza o ciclo longitudinal `coleta -> sintese -> revisao medica -> orientacao -> acompanhamento`. O produto deve reduzir o tempo necessário para o profissional compreender o contexto de uma pessoa, revisar as fontes e preparar a próxima conversa, mantendo todas as decisões clínicas sob responsabilidade humana.
+
+O sucesso da área profissional é permitir que o médico identifique rapidamente quem está sendo acompanhado, o que mudou, o que precisa de revisão, quais fontes sustentam a informação e qual ação humana pode ser tomada em seguida.
+
+## Positioning
+
+O produto não tenta substituir o prontuário ou automatizar condutas. Ele combina contexto pré-consulta, evolução longitudinal e rascunhos rastreáveis em um workspace de revisão médica no qual o original permanece acessível ao lado de qualquer derivado.
+
+## Operating Context
+
+- Uso principal em desktop durante preparo, consulta e acompanhamento; tablet e mobile devem permitir leitura e ações essenciais.
+- O protótipo reúne pré-consulta, check-ins, diário, mensagens, documentos, planos, consultas e evolução.
+- Dados e integrações são demonstrativos. O prontuário oficial e eventuais sistemas externos permanecem fora do mock.
+- A experiência profissional deve priorizar exceções e itens para revisão, sem classificar risco ou urgência.
+
+## Capabilities and Constraints
+
+- A IA pode organizar fatos, resumir períodos, apontar lacunas e conflitos e sugerir perguntas para investigação.
+- A IA nunca diagnostica, prescreve, recomenda medicamentos ou suplementos, altera doses, determina urgência, escolhe conduta ou publica orientação diretamente ao paciente.
+- Conteúdo assistido segue `rascunho -> revisao medica -> aprovado -> publicado ou exportado -> nova versao`.
+- Aprovar é diferente de publicar ou exportar. Exportar manualmente não significa sincronizar.
+- Originais são preservados e ligados a resumos, revisões e versões derivadas.
+- O fluxo manual permanece disponível quando a IA está indisponível ou não autorizada.
+- O mock utiliza apenas dados fictícios e não deve alegar integrações, retenção ou monitoramento que não existam.
+
+## Brand Commitments
+
+- Nome público: Instituto Vivans.
+- Identidade atual preservada: verde institucional, superfícies claras, linguagem acolhedora e sóbria, controles arredondados e hierarquia orientada à leitura.
+- A interface profissional deve parecer confiável, elegante e funcional; expressão visual não pode competir com tarefa, estado ou evidência.
+
+## Evidence on Hand
+
+- Contexto do MVP e casos de uso em `Instituto_Vivance_Contexto_MVP_e_Casos_de_Uso.md` e nos artefatos de documentação do repositório.
+- Protótipo navegável em `app/`, com fluxos de profissional e paciente e estado demonstrativo em sessão.
+- Referências visuais fornecidas pelo usuário em 1 de setembro de 2026 e comparação isolada com o protótipo do Skip.
+- Não há evidência de prontuário oficial, integração clínica real, telemonitoramento contínuo ou validação clínica deste protótipo.
+
+## Product Principles
+
+1. A pessoa selecionada aparece antes da coorte e o contexto precede a ferramenta.
+2. Toda síntese volta à fonte; nenhuma inferência substitui a evidência original.
+3. A IA prepara e organiza, o profissional interpreta e decide.
+4. Ausência, conflito e baixa completude são estados visíveis, nunca preenchidos artificialmente.
+5. Rastreabilidade, privacidade e fluxo manual fazem parte da experiência, não de uma tela administrativa posterior.
+
+## Accessibility & Inclusion
+
+- A experiência deve funcionar por teclado, não depender apenas de cor ou hover e manter alvos de toque de pelo menos 44 px.
+- Gráficos precisam de resumo textual ou tabela equivalente.
+- A página deve permanecer utilizável a partir de 320 px, sem rolagem horizontal estrutural.
+- Linguagem em português do Brasil, objetiva e sem alarmismo clínico.
