@@ -3,6 +3,7 @@
 import { createContext, useContext } from 'react';
 import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
 import type {
+  CareAuditEvent,
   CarePlanDraftContent,
   CarePlanVersion,
   PreConsultationAnswers,
@@ -15,6 +16,7 @@ export interface CareDemoState {
   submissions: PreConsultationSubmission[];
   reviews: PreConsultationReview[];
   carePlans: CarePlanVersion[];
+  auditEvents: CareAuditEvent[];
 }
 
 export interface CareDemoStoreValue extends CareDemoState {
@@ -81,6 +83,7 @@ export interface CareDemoContextValue {
   activeReview: PreConsultationReview | null;
   reviewHistory: PreConsultationReview[];
   carePlans: CarePlanVersion[];
+  auditEvents: CareAuditEvent[];
   latestCarePlan: CarePlanVersion | null;
   activeCarePlan: CarePlanVersion | null;
   latestPublishedCarePlan: CarePlanVersion | null;
@@ -145,6 +148,9 @@ export function useCareDemo(
   const latestPublishedCarePlan = [...carePlans].reverse().find(
     (plan) => plan.status === 'published',
   ) ?? null;
+  const auditEvents = context.auditEvents
+    .filter((event) => event.patientId === patientId && event.encounterId === encounterId)
+    .toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso));
 
   return {
     hydrated: context.hydrated,
@@ -160,6 +166,7 @@ export function useCareDemo(
     latestCarePlan,
     activeCarePlan,
     latestPublishedCarePlan,
+    auditEvents,
     savePreConsultationDraft: (patch) =>
       context.savePreConsultationDraft(patientId, encounterId, patch),
     submitPreConsultation: () => context.submitPreConsultation(patientId, encounterId),

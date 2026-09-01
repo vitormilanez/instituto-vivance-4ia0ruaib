@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
+import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID, getDemoPatient } from './demo-routes';
 import {
   CareDemoContext,
   EMPTY_PRECONSULTATION_DRAFT,
@@ -10,6 +10,9 @@ import {
   type CareDemoStoreValue,
 } from './care-demo-store';
 import type {
+  CareAuditAction,
+  CareAuditActor,
+  CareAuditEvent,
   CarePlanAction,
   CarePlanDraftContent,
   CarePlanSourceMode,
@@ -64,13 +67,6 @@ function getInitialCarePlans(): CarePlanVersion[] {
     },
   ];
 }
-
-const emptyState: CareDemoState = {
-  draftsByEncounter: {},
-  submissions: [],
-  reviews: [],
-  carePlans: getInitialCarePlans(),
-};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -300,6 +296,198 @@ function normalizeCarePlan(value: unknown): CarePlanVersion | null {
   };
 }
 
+function isCareAuditAction(value: unknown): value is CareAuditAction {
+  return [
+    'pre-consultation-submitted',
+    'pre-consultation-review-started',
+    'pre-consultation-review-approved',
+    'pre-consultation-review-rejected',
+    'care-plan-created',
+    'care-plan-approved',
+    'care-plan-published',
+  ].includes(value as CareAuditAction);
+}
+
+function isCareAuditActor(value: unknown): value is CareAuditActor {
+  return value === 'patient' || value === 'doctor' || value === 'system';
+}
+
+function normalizeAuditEvent(value: unknown): CareAuditEvent | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    !isCareAuditAction(value.action) ||
+    !isCareAuditActor(value.actor) ||
+    typeof value.actorLabel !== 'string' ||
+    typeof value.occurredAt !== 'string' ||
+    typeof value.occurredAtIso !== 'string' ||
+    typeof value.relatedId !== 'string' ||
+    typeof value.relatedVersion !== 'number' ||
+    typeof value.summary !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    action: value.action,
+    actor: value.actor,
+    actorLabel: value.actorLabel,
+    occurredAt: value.occurredAt,
+    occurredAtIso: value.occurredAtIso,
+    relatedId: value.relatedId,
+    relatedVersion: value.relatedVersion,
+    summary: value.summary,
+    consentVersion: value.consentVersion === 'pre-consulta-texto-v1'
+      ? value.consentVersion
+      : null,
+    aiAssistanceAllowed: typeof value.aiAssistanceAllowed === 'boolean'
+      ? value.aiAssistanceAllowed
+      : null,
+  };
+}
+
+function getPatientAuditLabel(patientId: string) {
+  return `${getDemoPatient(patientId)?.name ?? 'Paciente demonstrativo'} · paciente`;
+}
+
+function getAuditEventsFromHistory(
+  submissions: PreConsultationSubmission[],
+  reviews: PreConsultationReview[],
+  carePlans: CarePlanVersion[],
+): CareAuditEvent[] {
+  const submissionEvents = submissions.map<CareAuditEvent>((submission) => ({
+    id: `audit-derived-${submission.id}-submitted`,
+    patientId: submission.patientId,
+    encounterId: submission.encounterId,
+    action: 'pre-consultation-submitted',
+    actor: 'patient',
+    actorLabel: getPatientAuditLabel(submission.patientId),
+    occurredAt: submission.submittedAt,
+    occurredAtIso: submission.submittedAtIso,
+    relatedId: submission.id,
+    relatedVersion: submission.version,
+    summary: 'Pré-consulta enviada com ciência registrada.',
+    consentVersion: submission.consentVersion,
+    aiAssistanceAllowed: submission.aiAssistanceAllowed,
+  }));
+
+  const reviewEvents = reviews.flatMap<CareAuditEvent>((review) => {
+    const events: CareAuditEvent[] = [{
+      id: `audit-derived-${review.id}-started`,
+      patientId: review.patientId,
+      encounterId: review.encounterId,
+      action: 'pre-consultation-review-started',
+      actor: 'doctor',
+      actorLabel: 'Dr. Guilherme Martins · médico responsável',
+      occurredAt: review.createdAt,
+      occurredAtIso: review.createdAtIso,
+      relatedId: review.id,
+      relatedVersion: review.version,
+      summary: 'Uma nova versão do preparo médico foi aberta para revisão.',
+      consentVersion: null,
+      aiAssistanceAllowed: null,
+    }];
+
+    if (review.status === 'draft') return events;
+
+    const occurredAt = review.reviewedAt ?? review.updatedAt;
+    const occurredAtIso = review.reviewedAtIso ?? review.updatedAtIso;
+    events.push({
+      id: `audit-derived-${review.id}-${review.status}`,
+      patientId: review.patientId,
+      encounterId: review.encounterId,
+      action: review.status === 'approved'
+        ? 'pre-consultation-review-approved'
+        : 'pre-consultation-review-rejected',
+      actor: 'doctor',
+      actorLabel: 'Dr. Guilherme Martins · médico responsável',
+      occurredAt,
+      occurredAtIso,
+      relatedId: review.id,
+      relatedVersion: review.version,
+      summary: review.status === 'approved'
+        ? 'Preparo revisado e aprovado para apoiar a consulta.'
+        : 'Preparo rejeitado; a versão original foi preservada.',
+      consentVersion: null,
+      aiAssistanceAllowed: null,
+    });
+    return events;
+  });
+
+  const planEvents = carePlans.flatMap<CareAuditEvent>((plan) => {
+    const events: CareAuditEvent[] = [{
+      id: `audit-derived-${plan.id}-created`,
+      patientId: plan.patientId,
+      encounterId: plan.encounterId,
+      action: 'care-plan-created',
+      actor: 'doctor',
+      actorLabel: plan.authoredBy,
+      occurredAt: plan.createdAt,
+      occurredAtIso: plan.createdAtIso,
+      relatedId: plan.id,
+      relatedVersion: plan.version,
+      summary: `Rascunho da versão ${plan.version} do plano criado.`,
+      consentVersion: null,
+      aiAssistanceAllowed: null,
+    }];
+
+    if (plan.approvedAt && plan.approvedAtIso) {
+      events.push({
+        id: `audit-derived-${plan.id}-approved`,
+        patientId: plan.patientId,
+        encounterId: plan.encounterId,
+        action: 'care-plan-approved',
+        actor: 'doctor',
+        actorLabel: plan.approvedBy ?? plan.authoredBy,
+        occurredAt: plan.approvedAt,
+        occurredAtIso: plan.approvedAtIso,
+        relatedId: plan.id,
+        relatedVersion: plan.version,
+        summary: `Versão ${plan.version} do plano aprovada pelo médico.`,
+        consentVersion: null,
+        aiAssistanceAllowed: null,
+      });
+    }
+
+    if (plan.publishedAt && plan.publishedAtIso) {
+      events.push({
+        id: `audit-derived-${plan.id}-published`,
+        patientId: plan.patientId,
+        encounterId: plan.encounterId,
+        action: 'care-plan-published',
+        actor: 'doctor',
+        actorLabel: plan.publishedBy ?? plan.authoredBy,
+        occurredAt: plan.publishedAt,
+        occurredAtIso: plan.publishedAtIso,
+        relatedId: plan.id,
+        relatedVersion: plan.version,
+        summary: `Versão ${plan.version} do plano publicada para a paciente.`,
+        consentVersion: null,
+        aiAssistanceAllowed: null,
+      });
+    }
+
+    return events;
+  });
+
+  return [...submissionEvents, ...reviewEvents, ...planEvents]
+    .toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso));
+}
+
+const initialCarePlans = getInitialCarePlans();
+const emptyState: CareDemoState = {
+  draftsByEncounter: {},
+  submissions: [],
+  reviews: [],
+  carePlans: initialCarePlans,
+  auditEvents: getAuditEventsFromHistory([], [], initialCarePlans),
+};
+
 function normalizeCurrentState(value: unknown): CareDemoState | null {
   if (!isRecord(value) || !isRecord(value.draftsByEncounter)) return null;
 
@@ -327,12 +515,22 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
         return normalized ? [normalized] : [];
       })
     : [];
+  const carePlans = parsedCarePlans.length > 0 ? parsedCarePlans : getInitialCarePlans();
+  const parsedAuditEvents = Array.isArray(value.auditEvents)
+    ? value.auditEvents.flatMap((event) => {
+        const normalized = normalizeAuditEvent(event);
+        return normalized ? [normalized] : [];
+      })
+    : [];
 
   return {
     draftsByEncounter,
     submissions,
     reviews,
-    carePlans: parsedCarePlans.length > 0 ? parsedCarePlans : getInitialCarePlans(),
+    carePlans,
+    auditEvents: parsedAuditEvents.length > 0
+      ? parsedAuditEvents
+      : getAuditEventsFromHistory(submissions, reviews, carePlans),
   };
 }
 
@@ -352,13 +550,16 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
       })
     : [];
 
+  const carePlans = getInitialCarePlans();
+
   return {
     draftsByEncounter: {
       [getCareDemoScopeKey(DEFAULT_PATIENT_ID, DEFAULT_ENCOUNTER_ID)]: draft,
     },
     submissions,
     reviews,
-    carePlans: getInitialCarePlans(),
+    carePlans,
+    auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans),
   };
 }
 
@@ -380,6 +581,50 @@ function formatSubmissionTime(date = new Date()) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+function getAuditActorLabel(actor: CareAuditActor, patientId: string) {
+  if (actor === 'patient') return getPatientAuditLabel(patientId);
+  if (actor === 'doctor') return 'Dr. Guilherme Martins · médico responsável';
+  return 'Sistema demonstrativo';
+}
+
+type AuditEventInput = Omit<
+  CareAuditEvent,
+  'id' | 'actorLabel' | 'consentVersion' | 'aiAssistanceAllowed'
+> & {
+  consentVersion?: CareAuditEvent['consentVersion'];
+  aiAssistanceAllowed?: CareAuditEvent['aiAssistanceAllowed'];
+};
+
+function createAuditEvent({
+  action,
+  actor,
+  patientId,
+  encounterId,
+  occurredAt,
+  occurredAtIso,
+  relatedId,
+  relatedVersion,
+  summary,
+  consentVersion = null,
+  aiAssistanceAllowed = null,
+}: AuditEventInput): CareAuditEvent {
+  return {
+    id: `audit-${action}-${Date.now()}-${relatedId}`,
+    patientId,
+    encounterId,
+    action,
+    actor,
+    actorLabel: getAuditActorLabel(actor, patientId),
+    occurredAt,
+    occurredAtIso,
+    relatedId,
+    relatedVersion,
+    summary,
+    consentVersion,
+    aiAssistanceAllowed,
+  };
 }
 
 function getDefaultCarePlanContent(): CarePlanDraftContent {
@@ -530,10 +775,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       } satisfies CarePlanVersion;
     };
 
-    const replaceCarePlan = (updated: CarePlanVersion) => {
+    const replaceCarePlan = (updated: CarePlanVersion, auditEvent?: CareAuditEvent) => {
       setState((current) => ({
         ...current,
         carePlans: current.carePlans.map((plan) => plan.id === updated.id ? updated : plan),
+        auditEvents: auditEvent ? [...current.auditEvents, auditEvent] : current.auditEvents,
       }));
       return updated;
     };
@@ -567,10 +813,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       return activeReview;
     };
 
-    const replaceReview = (updated: PreConsultationReview) => {
+    const replaceReview = (updated: PreConsultationReview, auditEvent?: CareAuditEvent) => {
       setState((current) => ({
         ...current,
         reviews: current.reviews.map((review) => review.id === updated.id ? updated : review),
+        auditEvents: auditEvent ? [...current.auditEvents, auditEvent] : current.auditEvents,
       }));
       return updated;
     };
@@ -581,6 +828,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       submissions: state.submissions,
       reviews: state.reviews,
       carePlans: state.carePlans,
+      auditEvents: state.auditEvents,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
         const scopeKey = getCareDemoScopeKey(patientId, encounterId);
         setState((current) => ({
@@ -610,10 +858,24 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           consentVersion: 'pre-consulta-texto-v1',
           structuredDraft: draft.aiAssistanceAllowed ? buildStructuredDraft(draft) : null,
         };
+        const auditEvent = createAuditEvent({
+          action: 'pre-consultation-submitted',
+          actor: 'patient',
+          patientId,
+          encounterId,
+          occurredAt: created.submittedAt,
+          occurredAtIso: created.submittedAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: 'Pré-consulta enviada com ciência registrada.',
+          consentVersion: created.consentVersion,
+          aiAssistanceAllowed: created.aiAssistanceAllowed,
+        });
 
         setState((current) => ({
           ...current,
           submissions: [...current.submissions, created],
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
 
         return created;
@@ -645,10 +907,22 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           reviewedBy: null,
           rejectionReason: null,
         };
+        const auditEvent = createAuditEvent({
+          action: 'pre-consultation-review-started',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.createdAt,
+          occurredAtIso: created.createdAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: 'Uma nova versão do preparo médico foi aberta para revisão.',
+        });
 
         setState((current) => ({
           ...current,
           reviews: [...current.reviews, created],
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;
       },
@@ -670,7 +944,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         const now = new Date();
         const timestamp = formatSubmissionTime(now);
         const timestampIso = now.toISOString();
-        return replaceReview({
+        const updated: PreConsultationReview = {
           ...review,
           content: content.trim(),
           status: 'approved',
@@ -680,7 +954,18 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           reviewedAtIso: timestampIso,
           reviewedBy: 'Dr. Guilherme Martins',
           rejectionReason: null,
-        });
+        };
+        return replaceReview(updated, createAuditEvent({
+          action: 'pre-consultation-review-approved',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: timestamp,
+          occurredAtIso: timestampIso,
+          relatedId: updated.id,
+          relatedVersion: updated.version,
+          summary: 'Preparo revisado e aprovado para apoiar a consulta.',
+        }));
       },
       rejectPreConsultationReview: (patientId, encounterId, content, reason) => {
         const review = requireDraftReview(patientId, encounterId);
@@ -690,7 +975,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         const now = new Date();
         const timestamp = formatSubmissionTime(now);
         const timestampIso = now.toISOString();
-        return replaceReview({
+        const updated: PreConsultationReview = {
           ...review,
           content,
           status: 'rejected',
@@ -700,7 +985,18 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           reviewedAtIso: timestampIso,
           reviewedBy: 'Dr. Guilherme Martins',
           rejectionReason: reason.trim(),
-        });
+        };
+        return replaceReview(updated, createAuditEvent({
+          action: 'pre-consultation-review-rejected',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: timestamp,
+          occurredAtIso: timestampIso,
+          relatedId: updated.id,
+          relatedVersion: updated.version,
+          summary: 'Preparo rejeitado; a versão e o relato original foram preservados.',
+        }));
       },
       startCarePlan: (patientId, encounterId, template) => {
         const plans = carePlansFor(patientId, encounterId);
@@ -710,9 +1006,21 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         if (activePlan) return activePlan;
 
         const created = createCarePlan(patientId, encounterId, plans.at(-1) ?? null, template);
+        const auditEvent = createAuditEvent({
+          action: 'care-plan-created',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.createdAt,
+          occurredAtIso: created.createdAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: `Rascunho da versão ${created.version} do plano criado.`,
+        });
         setState((current) => ({
           ...current,
           carePlans: [...current.carePlans, created],
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;
       },
@@ -722,9 +1030,21 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         if (activeDraft) return activeDraft;
 
         const created = createCarePlan(patientId, encounterId, plans.at(-1) ?? null, template);
+        const auditEvent = createAuditEvent({
+          action: 'care-plan-created',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.createdAt,
+          occurredAtIso: created.createdAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: `Rascunho da versão ${created.version} do plano criado.`,
+        });
         setState((current) => ({
           ...current,
           carePlans: [...current.carePlans, created],
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;
       },
@@ -756,7 +1076,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         const now = new Date();
         const timestamp = formatSubmissionTime(now);
         const timestampIso = now.toISOString();
-        return replaceCarePlan({
+        const updated: CarePlanVersion = {
           ...plan,
           status: 'approved',
           updatedAt: timestamp,
@@ -764,7 +1084,18 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           approvedBy: 'Dr. Guilherme Martins · médico responsável',
           approvedAt: timestamp,
           approvedAtIso: timestampIso,
-        });
+        };
+        return replaceCarePlan(updated, createAuditEvent({
+          action: 'care-plan-approved',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: timestamp,
+          occurredAtIso: timestampIso,
+          relatedId: updated.id,
+          relatedVersion: updated.version,
+          summary: `Versão ${updated.version} do plano aprovada pelo médico.`,
+        }));
       },
       publishCarePlan: (patientId, encounterId, planId) => {
         const plan = requireCarePlan(patientId, encounterId, planId);
@@ -787,6 +1118,17 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           publishedAt: timestamp,
           publishedAtIso: timestampIso,
         };
+        const auditEvent = createAuditEvent({
+          action: 'care-plan-published',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: timestamp,
+          occurredAtIso: timestampIso,
+          relatedId: published.id,
+          relatedVersion: published.version,
+          summary: `Versão ${published.version} do plano publicada para a paciente.`,
+        });
         setState((current) => ({
           ...current,
           carePlans: current.carePlans.map((candidate) => {
@@ -806,6 +1148,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
             }
             return candidate;
           }),
+          auditEvents: [...current.auditEvents, auditEvent],
         }));
         return published;
       },

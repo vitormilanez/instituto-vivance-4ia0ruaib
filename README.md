@@ -30,7 +30,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões e os planos criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, a auditoria de transições e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões, os planos e os registros de transição criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -44,6 +44,7 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - Aprovar a revisão da pré-consulta valida somente o preparo médico; não publica plano nem sincroniza prontuário.
 - O plano só chega à visão da paciente após rascunho, aprovação médica e publicação explícita; cada nova publicação preserva a versão anterior.
 - Publicação e transferência para prontuário são fluxos diferentes: este protótipo não envia dados ao Feegow nem a qualquer serviço externo.
+- A auditoria exibida no dossiê registra somente transições e ciência na sessão demonstrativa; não substitui trilha de auditoria de prontuário, autenticação ou evidência legal.
 - Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.

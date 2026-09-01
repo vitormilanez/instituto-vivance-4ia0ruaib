@@ -85,3 +85,30 @@ export interface CarePlanVersion extends CarePlanDraftContent {
   publishedAtIso: string | null;
   supersededByVersion: number | null;
 }
+
+export type CareAuditAction =
+  | 'pre-consultation-submitted'
+  | 'pre-consultation-review-started'
+  | 'pre-consultation-review-approved'
+  | 'pre-consultation-review-rejected'
+  | 'care-plan-created'
+  | 'care-plan-approved'
+  | 'care-plan-published';
+
+export type CareAuditActor = 'patient' | 'doctor' | 'system';
+
+export interface CareAuditEvent {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  action: CareAuditAction;
+  actor: CareAuditActor;
+  actorLabel: string;
+  occurredAt: string;
+  occurredAtIso: string;
+  relatedId: string;
+  relatedVersion: number;
+  summary: string;
+  consentVersion: 'pre-consulta-texto-v1' | null;
+  aiAssistanceAllowed: boolean | null;
+}

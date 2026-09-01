@@ -127,10 +127,21 @@ Ainda pendente no Lote 2:
 - Projetar rascunho, aprovação, publicação, autoria, data, origem e versão no dossiê longitudinal.
 - Manter a transferência manual ao Feegow explicitamente fora deste protótipo.
 
-### Lote 4 — Hardening do MVP-1
+### Lote 4 — Hardening do MVP-1 — primeira fatia implementada nesta branch
+
+Implementado neste incremento:
+
+- registrar de forma append-only, na sessão demonstrativa, as transições relevantes de pré-consulta, revisão e plano;
+- registrar a versão de ciência da pré-consulta e a decisão de autorizar ou não a organização assistida, sem copiar o relato clínico para o evento;
+- vincular cada evento ao paciente, atendimento, item de origem e versão;
+- recuperar de forma derivada o histórico de transições de sessões anteriores do protótipo quando ainda não houver registros de auditoria;
+- exibir a trilha separadamente no dossiê médico, com autoria, hora, referência opaca e limites explícitos;
+- manter a auditoria transitória em `sessionStorage`, sem apresentá-la como log de prontuário, autenticação, evidência legal ou sincronização externa.
+
+Ainda pendente neste lote:
 
 - Implementar autenticação, vínculos e papéis.
-- Adicionar auditoria, consentimentos versionados e direitos LGPD.
+- Implementar auditoria durável, consentimentos revogáveis, direitos LGPD e retenção com validação jurídica e de segurança.
 - Criar testes de autorização, identidade, recusa de IA e troca de versão.
 - Validar teclado, foco, responsividade, contraste e redução de movimento.
 - Remover afirmações de integrações que ainda não existam.
@@ -195,6 +206,16 @@ Ainda pendente no Lote 2:
 - Planos de um paciente não aparecem em outro contexto de paciente ou consulta.
 - Nenhuma ação de aprovação ou publicação envia conteúdo a prontuário, prescrição ou integração externa.
 - Build, lint, verificação de tipos e jornada visual de rascunho -> aprovação -> publicação passam.
+
+## Critérios de aceite da primeira fatia do Lote 4
+
+- O dossiê mostra uma trilha de auditoria separada do conteúdo clínico, sem repetir relatos da paciente ou texto de plano.
+- Toda pré-consulta enviada registra a versão de ciência e se a organização assistida foi autorizada.
+- Abrir, aprovar ou rejeitar um preparo, bem como criar, aprovar ou publicar um plano, acrescenta um evento com autoria, horário, referência e versão.
+- A trilha é filtrada por paciente e atendimento e não reutiliza eventos de outro contexto.
+- Sessões anteriores do protótipo recebem eventos derivados apenas de metadados já existentes, sem inventar conteúdo clínico novo.
+- A interface afirma claramente que o registro é transitório e não equivale a autenticação, prontuário, prova legal ou integração externa.
+- Build, lint, verificação de tipos e jornada visual passam.
 
 ## Itens explicitamente excluídos
 

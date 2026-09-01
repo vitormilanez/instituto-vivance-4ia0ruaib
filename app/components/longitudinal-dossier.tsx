@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
+import type { CareAuditAction, CareAuditEvent } from './care-demo-types';
 import { getDefaultEncounterId } from './demo-routes';
 import {
   getLongitudinalDossier,
@@ -73,11 +74,64 @@ function reviewStateLabel(status: 'draft' | 'approved' | 'rejected') {
   return 'Em edição';
 }
 
+const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' | 'amber' | 'blue' | 'gray' }> = {
+  'pre-consultation-submitted': { label: 'Pré-consulta enviada', tone: 'blue' },
+  'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
+  'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
+  'pre-consultation-review-rejected': { label: 'Preparo rejeitado', tone: 'gray' },
+  'care-plan-created': { label: 'Plano em rascunho', tone: 'amber' },
+  'care-plan-approved': { label: 'Plano aprovado', tone: 'blue' },
+  'care-plan-published': { label: 'Plano publicado', tone: 'green' },
+};
+
+function AuditTrail({ events }: { events: CareAuditEvent[] }) {
+  const visibleEvents = [...events].reverse().slice(0, 6);
+
+  return (
+    <section aria-labelledby="audit-trail-title" className="rounded-2xl border border-[#d7e3df] bg-white p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Registro de sessão</p>
+          <h4 id="audit-trail-title" className="mt-2 text-lg font-semibold text-[#17372f]">Auditoria de transições</h4>
+        </div>
+        <Status tone="gray">{events.length}</Status>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-[#60766f]">Registra quem confirmou cada mudança importante, sem repetir relatos ou conteúdo clínico.</p>
+
+      {visibleEvents.length > 0 ? (
+        <ol className="mt-4 space-y-3">
+          {visibleEvents.map((event) => {
+            const presentation = auditPresentation[event.action];
+            return (
+              <li key={event.id} className="rounded-xl bg-[#f4f7f5] p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <time dateTime={event.occurredAtIso} className="text-xs font-bold text-[#0b6a5b]">{event.occurredAt}</time>
+                    <p className="mt-1 text-xs font-bold leading-5 text-[#405d54]">{event.actorLabel}</p>
+                  </div>
+                  <Status tone={presentation.tone}>{presentation.label}</Status>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-[#526a62]">{event.summary}</p>
+                {event.consentVersion ? <p className="mt-2 text-[11px] leading-5 text-[#60766f]">Ciência {event.consentVersion} · IA {event.aiAssistanceAllowed ? 'autorizada' : 'não autorizada'}.</p> : null}
+                <p className="mt-2 break-all text-[10px] font-medium text-[#789087]">Referência: {event.relatedId} · v{event.relatedVersion}</p>
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <p className="mt-4 rounded-xl border border-dashed border-[#bfd4cd] bg-[#fbfdfc] p-4 text-xs leading-5 text-[#60766f]">Ainda não há transições registradas neste contexto. O protótipo não inventa eventos de auditoria.</p>
+      )}
+
+      <p className="mt-4 border-t border-[#e7eeea] pt-4 text-[11px] leading-5 text-[#789087]">Registro demonstrativo em `sessionStorage`; não é log de prontuário, prova legal, autenticação ou sincronização externa.</p>
+    </section>
+  );
+}
+
 export function LongitudinalDossier({ patientId, patientName }: { patientId: string; patientName: string }) {
   const [filter, setFilter] = useState<DossierFilter>('all');
   const dossier = getLongitudinalDossier(patientId);
   const encounterId = getDefaultEncounterId(patientId);
-  const { hydrated, submissions, reviews, carePlans } = useCareDemo(patientId, encounterId);
+  const { hydrated, submissions, reviews, carePlans, auditEvents } = useCareDemo(patientId, encounterId);
 
   const sessionRecords = useMemo<LongitudinalRecord[]>(() => {
     const submissionRecords = submissions.map<LongitudinalRecord>((submission) => ({
@@ -353,6 +407,8 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
             </ul>
             <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">Relato não vira fato, rascunho não vira decisão e confirmação manual não significa sincronização com prontuário.</p>
           </section>
+
+          <AuditTrail events={auditEvents} />
 
           <section aria-labelledby="dossier-gaps-title" className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
             <div className="flex items-center justify-between gap-3">
