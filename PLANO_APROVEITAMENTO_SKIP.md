@@ -62,9 +62,10 @@ Essa aprovação não publica conteúdo para a paciente e não representa sincro
 | Confirmação antes de publicar o plano | Aplicar com versão e autoria | MVP-1 |
 | Plano da paciente com ação, frequência e justificativa | Adaptar | MVP-1 |
 | Navegação modular médico/paciente | Aplicar gradualmente | MVP-1 |
-| Página Hoje | Adiar | MVP-2 |
-| Check-ins e atenção operacional | Adiar | MVP-2 |
-| Diário, evolução, mensagens e relatório assistido | Adiar | P1 |
+| Página Hoje | Aplicado com plano e registros da sessão | MVP-2 |
+| Check-ins e atenção operacional | Aplicado sem triagem ou urgência automática | MVP-2 |
+| Diário, evolução e mensagens | Aplicado em fatias demonstrativas longitudinais | MVP-2 |
+| Relatório assistido | Manter como demonstração até validar fontes e revisão | P1 |
 | PocketBase, migrations, seed e agente do Skip | Não reutilizar | Excluído |
 | Teleconsulta, receitas e evidências fictícias | Não reutilizar | Fora do MVP |
 
@@ -156,13 +157,39 @@ Implementado neste incremento:
 - projetar check-ins e confirmações no dossiê médico com fonte, autoria, versão, estado e limite de uso;
 - mostrar o check-in mais recente como contexto operacional para a próxima conversa, sem chamá-lo de alerta clínico, triagem ou urgência;
 - acrescentar à auditoria apenas o envio do check-in, sem repetir seu conteúdo.
+- permitir que o médico registre a leitura humana da fonte do check-in, sem converter leitura em decisão clínica;
+- configurar uma cadência demonstrativa vinculada à versão publicada mais recente do plano;
+- deixar explícito que a cadência vale apenas na sessão e não cria alerta, retenção durável ou monitoramento contínuo;
+- representar a ausência de novo registro como estado operacional, com contato exclusivamente manual e sem classificar risco ou urgência;
+- compartilhar o contexto guiado do diário com notas de 1 a 5, mantendo foto, autorrelato e limites da análise separados;
+- mostrar na evolução os fatos criados na sessão separados dos gráficos históricos fictícios;
+- projetar leitura, cadência, contato e diário no dossiê e na auditoria com origem, versão e autoria.
 
 Ainda pendente neste lote:
 
-- definir calendário, frequência e retenção de check-ins com validação clínica e de privacidade;
+- validar calendário, frequência e retenção de check-ins com médico, pacientes, privacidade e jurídico;
 - transformar regras operacionais em critérios aprovados pelo médico, explicáveis e testados;
-- projetar notificações, escalonamento humano e tratamento explícito de ausências, sem monitoramento de urgência;
+- projetar notificações reais, escalonamento humano e tratamento de ausências para além da simulação manual, sem monitoramento de urgência;
 - validar a jornada com pacientes e médico antes de ampliar indicadores, métricas ou integrações.
+
+### Lote 6 — Clareza e continuidade do produto — iniciado e funcional nesta branch
+
+- reduzir a navegação principal da paciente para `Hoje`, `Meu cuidado`, `Conversas` e `Evolução`;
+- reunir plano, diário e consultas em um hub amigável, preservando as URLs antigas como links internos compatíveis;
+- manter o item `Meu cuidado` ativo quando a paciente abre um de seus detalhes;
+- criar no painel médico um resumo curto que responde o que merece ação, qual é a evidência e qual deve ser o próximo passo humano;
+- ordenar esse resumo por regras determinísticas da sessão: fonte não lida, conversa sem resposta, ausência operacional e ciclo organizado;
+- vincular cada nova mensagem a plano, check-in, diário ou outro assunto;
+- compartilhar mensagens da sessão entre paciente e médico com autoria, versão e retenção explícita;
+- projetar mensagens no histórico longitudinal, mantendo somente metadados na trilha de auditoria;
+- preservar a conversa por paciente e atendimento, sem reutilizar mensagens de outro contexto.
+
+Ainda pendente neste lote:
+
+- validar os quatro destinos principais com pacientes em teste moderado;
+- definir leitura, entrega, anexos, disponibilidade da equipe e política de retenção antes de integrar um canal real;
+- substituir a regra demonstrativa de prioridade por configuração aprovada, testada e observável;
+- decompor `patient.tsx` e `doctor.tsx` em módulos menores antes de ampliar novas superfícies.
 
 ## Critérios de aceite do primeiro ciclo
 
@@ -236,7 +263,23 @@ Ainda pendente neste lote:
 - O dossiê médico recebe o autorrelato e as confirmações com autoria, fonte, versão e limites explícitos.
 - Marcar um sintoma novo pede leitura da fonte pelo médico, sem classificar risco, urgência, diagnóstico ou conduta.
 - A auditoria mostra o envio do check-in sem expor seus valores ou conteúdo clínico.
+- Registrar leitura preserva a fonte original e não afirma diagnóstico ou conduta.
+- A cadência fica vinculada a uma versão publicada do plano e não cria notificação real.
+- A ausência de check-in permite somente registrar um contato humano demonstrativo.
+- O diário registra respostas guiadas com ciência de compartilhamento e limites explícitos da foto.
+- A evolução distingue claramente os registros reais da sessão dos gráficos históricos fictícios.
 - Build, lint, verificação de tipos e jornada paciente -> médico passam.
+
+## Critérios de aceite do Lote 6
+
+- A navegação principal da paciente apresenta apenas quatro destinos e permanece legível em mobile.
+- Plano, diário e consultas continuam acessíveis pelo hub `Meu cuidado` e por suas URLs antigas.
+- O resumo médico mostra ação, evidência e próximo passo sem usar linguagem de risco, urgência ou decisão clínica automática.
+- Uma mensagem enviada pela paciente aparece para o médico no mesmo paciente, atendimento e contexto selecionado.
+- Uma resposta do médico aparece para a paciente sem perder o vínculo com plano, check-in, diário ou outro assunto.
+- O dossiê mostra o conteúdo da conversa como fonte longitudinal; a auditoria registra somente seus metadados.
+- Abrir outro paciente não expõe mensagens da conversa anterior.
+- Verificação de tipos, lint, build e jornada paciente -> médico -> paciente passam.
 
 ## Itens explicitamente excluídos
 

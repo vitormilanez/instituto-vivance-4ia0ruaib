@@ -85,6 +85,7 @@ const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' 
   'follow-up-configured': { label: 'Cadência configurada', tone: 'blue' },
   'follow-up-contact-recorded': { label: 'Contato humano registrado', tone: 'amber' },
   'diary-entry-submitted': { label: 'Diário compartilhado', tone: 'blue' },
+  'conversation-message-sent': { label: 'Mensagem contextualizada', tone: 'blue' },
   'pre-consultation-submitted': { label: 'Pré-consulta enviada', tone: 'blue' },
   'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
   'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
@@ -185,6 +186,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
     followUpConfigurations,
     followUpContacts,
     diaryEntries,
+    conversationMessages,
     actionConfirmations,
     latestCheckIn,
     auditEvents,
@@ -304,6 +306,37 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       limitation: 'As notas são autorrelatos. A foto demonstrativa e sua análise não confirmam ingredientes, quantidades, valor nutricional, diagnóstico ou resultado clínico.',
     }));
 
+    const conversationRecords = conversationMessages.map<LongitudinalRecord>((message) => {
+      const contextLabel = message.context === 'care-plan'
+        ? 'plano de cuidado'
+        : message.context === 'check-in'
+          ? 'check-in'
+          : message.context === 'diary'
+            ? 'diário'
+            : 'outro assunto';
+      return {
+        id: `timeline-${message.id}`,
+        patientId,
+        encounterId,
+        occurredAt: formatTimelineTimestamp(message.sentAtIso),
+        occurredAtIso: message.sentAtIso,
+        kind: message.sender === 'patient' ? 'patient-report' : 'recorded-data',
+        title: `${message.sender === 'patient' ? 'Mensagem da paciente' : 'Resposta do médico'} · versão ${message.version}`,
+        summary: message.body,
+        source: `Conversa contextualizada · ${contextLabel}`,
+        sourceId: message.id,
+        sourceVersion: message.version,
+        author: message.sender === 'patient'
+          ? `${patientName} · paciente`
+          : 'Dr. Guilherme Martins · médico responsável',
+        reviewState: message.sender === 'patient'
+          ? 'Relato original · aguardando leitura humana'
+          : 'Resposta humana registrada na sessão',
+        visibility: 'medical-team',
+        limitation: 'Mensagem demonstrativa retida apenas nesta sessão; não representa canal monitorado continuamente, triagem, urgência, prescrição ou sincronização com prontuário.',
+      };
+    });
+
     const reviewRecords = reviews.map<LongitudinalRecord>((review) => {
       const eventTimestampIso = review.reviewedAtIso ?? review.updatedAtIso;
       return {
@@ -407,6 +440,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       ...followUpConfigurationRecords,
       ...followUpContactRecords,
       ...diaryRecords,
+      ...conversationRecords,
       ...submissionRecords,
       ...reviewRecords,
       ...carePlanRecords,
@@ -417,6 +451,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
     carePlans,
     checkInReviews,
     checkIns,
+    conversationMessages,
     diaryEntries,
     encounterId,
     followUpConfigurations,
@@ -452,14 +487,14 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
     : dossier.records;
   const records = [...sessionRecords, ...staticRecords]
     .filter((record) => record.patientId === patientId && record.encounterId === encounterId)
-    .sort((left, right) => right.occurredAtIso.localeCompare(left.occurredAtIso));
+    .toSorted((left, right) => right.occurredAtIso.localeCompare(left.occurredAtIso));
   const visibleRecords = filter === 'all'
     ? records
     : records.filter((record) => record.kind === filter);
   const sourceCount = new Set(records.flatMap((record) => [record.sourceId, ...(record.linkedSourceIds ?? [])])).size;
   const reviewedCount = records.filter((record) => Boolean(record.reviewedBy)).length;
   const latestUpdate = records[0]?.occurredAt ?? dossier.updatedAt;
-  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || checkInReviews.length > 0 || followUpConfigurations.length > 0 || followUpContacts.length > 0 || diaryEntries.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
+  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || checkInReviews.length > 0 || followUpConfigurations.length > 0 || followUpContacts.length > 0 || diaryEntries.length > 0 || conversationMessages.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
   const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (

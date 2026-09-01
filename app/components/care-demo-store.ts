@@ -7,6 +7,9 @@ import type {
   CareCheckIn,
   CareCheckInInput,
   CareCheckInReview,
+  CareConversationMessage,
+  CareConversationMessageInput,
+  CareConversationSender,
   CareDiaryEntry,
   CareDiaryEntryInput,
   CareFollowUpCadence,
@@ -30,6 +33,7 @@ export interface CareDemoState {
   followUpConfigurations: CareFollowUpConfiguration[];
   followUpContacts: CareFollowUpContact[];
   diaryEntries: CareDiaryEntry[];
+  conversationMessages: CareConversationMessage[];
   actionConfirmations: CarePlanActionConfirmation[];
   auditEvents: CareAuditEvent[];
 }
@@ -68,6 +72,12 @@ export interface CareDemoStoreValue extends CareDemoState {
     encounterId: string,
     input: CareDiaryEntryInput,
   ) => CareDiaryEntry;
+  sendConversationMessage: (
+    patientId: string,
+    encounterId: string,
+    sender: CareConversationSender,
+    input: CareConversationMessageInput,
+  ) => CareConversationMessage;
   startPreConsultationReview: (patientId: string, encounterId: string) => PreConsultationReview;
   savePreConsultationReview: (
     patientId: string,
@@ -140,6 +150,7 @@ export interface CareDemoContextValue {
   followUpContacts: CareFollowUpContact[];
   latestFollowUpContact: CareFollowUpContact | null;
   diaryEntries: CareDiaryEntry[];
+  conversationMessages: CareConversationMessage[];
   actionConfirmations: CarePlanActionConfirmation[];
   confirmedActionIds: string[];
   auditEvents: CareAuditEvent[];
@@ -156,6 +167,10 @@ export interface CareDemoContextValue {
   ) => CareFollowUpConfiguration;
   recordFollowUpContact: (configurationId: string) => CareFollowUpContact;
   submitDiaryEntry: (input: CareDiaryEntryInput) => CareDiaryEntry;
+  sendConversationMessage: (
+    sender: CareConversationSender,
+    input: CareConversationMessageInput,
+  ) => CareConversationMessage;
   startPreConsultationReview: () => PreConsultationReview;
   savePreConsultationReview: (content: string) => PreConsultationReview;
   approvePreConsultationReview: (content: string) => PreConsultationReview;
@@ -241,6 +256,9 @@ export function useCareDemo(
   const diaryEntries = (context.diaryEntries ?? [])
     .filter((entry) => entry.patientId === patientId && entry.encounterId === encounterId)
     .toSorted((left, right) => left.submittedAtIso.localeCompare(right.submittedAtIso));
+  const conversationMessages = (context.conversationMessages ?? [])
+    .filter((message) => message.patientId === patientId && message.encounterId === encounterId)
+    .toSorted((left, right) => left.sentAtIso.localeCompare(right.sentAtIso));
   const actionConfirmations = (context.actionConfirmations ?? [])
     .filter((confirmation) => confirmation.patientId === patientId && confirmation.encounterId === encounterId)
     .toSorted((left, right) => left.recordedAtIso.localeCompare(right.recordedAtIso));
@@ -278,6 +296,7 @@ export function useCareDemo(
     followUpContacts,
     latestFollowUpContact,
     diaryEntries,
+    conversationMessages,
     actionConfirmations,
     confirmedActionIds,
     auditEvents,
@@ -291,6 +310,8 @@ export function useCareDemo(
     recordFollowUpContact: (configurationId) =>
       context.recordFollowUpContact(patientId, encounterId, configurationId),
     submitDiaryEntry: (input) => context.submitDiaryEntry(patientId, encounterId, input),
+    sendConversationMessage: (sender, input) =>
+      context.sendConversationMessage(patientId, encounterId, sender, input),
     startPreConsultationReview: () =>
       context.startPreConsultationReview(patientId, encounterId),
     savePreConsultationReview: (content) =>

@@ -1,5 +1,6 @@
 export type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
-export type PatientView = 'Hoje' | 'Plano' | 'Diário' | 'Evolução' | 'Mensagens' | 'Consultas';
+export type PatientPrimaryView = 'Hoje' | 'Meu cuidado' | 'Conversas' | 'Evolução';
+export type PatientView = PatientPrimaryView | 'Plano' | 'Diário' | 'Mensagens' | 'Consultas';
 export type ClinicalRouteMode = 'workspace' | 'pre-consultation' | 'consultation';
 
 export const DEFAULT_PATIENT_ID = 'pac-demo-001';
@@ -13,11 +14,17 @@ export const doctorNavigation: Array<{ label: DoctorView; href: string; section?
   { label: 'Relatórios', href: '/medico/relatorios', section: 'relatorios' },
 ];
 
-export const patientNavigation: Array<{ label: PatientView; section: string }> = [
+export const patientNavigation: Array<{ label: PatientPrimaryView; section: string }> = [
   { label: 'Hoje', section: '' },
+  { label: 'Meu cuidado', section: 'cuidado' },
+  { label: 'Conversas', section: 'conversas' },
+  { label: 'Evolução', section: 'evolucao' },
+];
+
+const patientRoutes: Array<{ label: PatientView; section: string }> = [
+  ...patientNavigation,
   { label: 'Plano', section: 'plano' },
   { label: 'Diário', section: 'diario' },
-  { label: 'Evolução', section: 'evolucao' },
   { label: 'Mensagens', section: 'mensagens' },
   { label: 'Consultas', section: 'consultas' },
 ];
@@ -43,12 +50,18 @@ export function getDoctorView(section: string): DoctorView | null {
 }
 
 export function getPatientView(section: string): PatientView | null {
-  return patientNavigation.find((item) => item.section === section)?.label ?? null;
+  return patientRoutes.find((item) => item.section === section)?.label ?? null;
 }
 
 export function getPatientSectionHref(patientId: string, view: PatientView) {
-  const section = patientNavigation.find((item) => item.label === view)?.section ?? '';
+  const section = patientRoutes.find((item) => item.label === view)?.section ?? '';
   return section ? `/paciente/${patientId}/${section}` : `/paciente/${patientId}`;
+}
+
+export function getPatientPrimaryView(view: PatientView): PatientPrimaryView {
+  if (view === 'Plano' || view === 'Diário' || view === 'Consultas') return 'Meu cuidado';
+  if (view === 'Mensagens') return 'Conversas';
+  return view;
 }
 
 export function getPatientDossierHref(patientId: string) {

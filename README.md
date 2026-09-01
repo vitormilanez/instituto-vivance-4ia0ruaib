@@ -9,10 +9,12 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 ### Paciente — mobile-first
 
 - visão diária alimentada pelo plano publicado e check-in guiado;
+- navegação principal reduzida a Hoje, Meu cuidado, Conversas e Evolução;
+- hub Meu cuidado para acessar plano, diário e consultas sem fragmentar a jornada;
 - plano de cuidado em ações simples, com confirmação opcional da paciente;
-- diário alimentar com análise demonstrativa de refeição;
-- evolução de peso, adesão, sono e passos;
-- mensagens e consultas em um só lugar;
+- diário alimentar com análise demonstrativa e contexto guiado compartilhado com a equipe;
+- evolução que separa registros reais da sessão de gráficos históricos fictícios;
+- conversa vinculada a plano, check-in, diário ou outro assunto;
 - pré-consulta guiada por texto, com ciência, assistência de IA opcional e revisão antes do envio;
 
 ### Médico — desktop-first
@@ -27,10 +29,13 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - workspace médico com edição, rejeição justificada, aprovação restrita ao preparo e histórico de versões.
 - navegação por URLs reais para agenda, dossiê, pré-consulta e consulta, com contexto sintético de paciente e atendimento.
 - histórico longitudinal rastreável no protótipo por paciente, com filtros, autoria, origem, identificador, versão, estado de revisão e limites explícitos.
+- resumo orientado à ação que apresenta pendência, evidência e próximo passo humano antes do histórico extenso.
+- configuração demonstrativa de cadência, leitura humana de check-in e contato manual diante de ausência de registro.
+- conversa contextual compartilhada com a paciente e auditada sem copiar o conteúdo da mensagem.
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, confirmações de ações e auditoria de transições permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões, os planos, os autorrelatos e os registros de transição criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, leituras humanas, cadências, contatos manuais, diário, mensagens, confirmações de ações e auditoria de transições permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com as fontes e transições criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, entrega real de mensagens, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -46,6 +51,8 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - Publicação e transferência para prontuário são fluxos diferentes: este protótipo não envia dados ao Feegow nem a qualquer serviço externo.
 - A auditoria exibida no dossiê registra somente transições e ciência na sessão demonstrativa; não substitui trilha de auditoria de prontuário, autenticação ou evidência legal.
 - Check-ins e confirmações de ações são autorrelatos para organizar a próxima conversa; não são triagem, alerta de urgência, diagnóstico ou confirmação de resultado clínico.
+- A cadência e a ausência de registros geram somente estados operacionais demonstrativos; qualquer contato continua humano e nenhuma notificação real é enviada.
+- Mensagens são vinculadas ao contexto e ficam apenas na sessão; o canal não é monitorado continuamente e não substitui urgência.
 - Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.
@@ -70,6 +77,8 @@ Rotas principais do protótipo:
 - `http://localhost:3000/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`
 - `http://localhost:3000/medico/pacientes/pac-demo-001/consultas/enc-demo-002`
 - `http://localhost:3000/paciente/pac-demo-001`
+- `http://localhost:3000/paciente/pac-demo-001/cuidado`
+- `http://localhost:3000/paciente/pac-demo-001/conversas`
 - `http://localhost:3000/paciente/pac-demo-001/plano`
 
 Para validar a versão de produção:

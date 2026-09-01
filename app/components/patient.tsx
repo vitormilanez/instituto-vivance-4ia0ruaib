@@ -9,6 +9,9 @@ import type {
   CareCheckIn,
   CareCheckInInput,
   CareCheckInSleepQuality,
+  CareConversationContext,
+  CareConversationMessage,
+  CareConversationMessageInput,
   CareDiaryEntry,
   CareDiaryEntryInput,
   CareFollowUpConfiguration,
@@ -21,6 +24,7 @@ import { PatientCarePlan } from './patient-care-plan';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import {
   getPatientPreConsultationHref,
+  getPatientPrimaryView,
   getPatientSectionHref,
   patientNavigation,
   type PatientView,
@@ -40,6 +44,24 @@ const initialPatientDemoUiState: PatientDemoUiState = {
   mealAnalyzed: false,
   mealRatings: [0, 0, 0],
   watchConnected: false,
+};
+
+const conversationContextOptions: Array<{
+  value: CareConversationContext;
+  label: string;
+  helper: string;
+}> = [
+  { value: 'care-plan', label: 'Plano', helper: 'Uma dúvida sobre o que foi combinado' },
+  { value: 'check-in', label: 'Check-in', helper: 'Algo sobre seu registro de acompanhamento' },
+  { value: 'diary', label: 'Diário', helper: 'Contexto de uma refeição ou rotina' },
+  { value: 'general', label: 'Outro assunto', helper: 'Uma pergunta geral para a equipe' },
+];
+
+const conversationContextLabel: Record<CareConversationContext, string> = {
+  'care-plan': 'Plano de cuidado',
+  'check-in': 'Check-in',
+  'diary': 'Diário',
+  'general': 'Outro assunto',
 };
 
 function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
@@ -74,11 +96,13 @@ export default function PatientWorkspace({
     latestCheckIn,
     activeFollowUpConfiguration,
     diaryEntries,
+    conversationMessages,
     confirmedActionIds,
     savePreConsultationDraft,
     submitPreConsultation,
     submitCheckIn,
     submitDiaryEntry,
+    sendConversationMessage,
     confirmCarePlanAction,
   } = useCareDemo(patientId, encounterId);
   const [checkinOpen, setCheckinOpen] = useState(false);
@@ -98,6 +122,7 @@ export default function PatientWorkspace({
   const nextPlanAction = visiblePublishedActions.find((action) => !confirmedActionIdSet.has(action.id))
     ?? visiblePublishedActions.at(0)
     ?? null;
+  const primaryView = getPatientPrimaryView(view);
 
   const notify = (text: string) => {
     setToast(text);
@@ -127,10 +152,10 @@ export default function PatientWorkspace({
             <Link
               key={label}
               href={getPatientSectionHref(patientId, label)}
-              aria-current={view === label ? 'page' : undefined}
+              aria-current={primaryView === label ? 'page' : undefined}
               className={cn(
                 'flex min-h-10 flex-1 items-center justify-center rounded-xl px-4 text-sm font-semibold',
-                view === label ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#f4f7f5]'
+                primaryView === label ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#f4f7f5]'
               )}
             >
               {label}
@@ -167,6 +192,17 @@ export default function PatientWorkspace({
             }}
           />
         )}
+        {view === 'Meu cuidado' && (
+          <MyCare
+            plan={latestPublishedCarePlan}
+            completedActionCount={completedActionCount}
+            totalActionCount={visiblePublishedActions.length}
+            diaryEntryCount={diaryEntries.length}
+            followUpConfiguration={activeFollowUpConfiguration}
+            preVisitDone={preVisitDone}
+            onNavigate={navigateToView}
+          />
+        )}
         {view === 'Diário' && (
           <Diary
             analyzed={mealAnalyzed}
@@ -195,23 +231,29 @@ export default function PatientWorkspace({
             followUpConfiguration={activeFollowUpConfiguration}
           />
         )}
-        {view === 'Mensagens' && <Messages onNotify={notify} />}
+        {(view === 'Conversas' || view === 'Mensagens') && (
+          <Messages
+            messages={conversationMessages}
+            onSend={(input) => sendConversationMessage('patient', input)}
+            onNotify={notify}
+          />
+        )}
         {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={openPreVisit} />}
       </main>
 
       <nav aria-label="Navegação do paciente" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#dfe8e3] bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+        <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
           {patientNavigation.map(({ label }) => (
             <Link
               key={label}
               href={getPatientSectionHref(patientId, label)}
-              aria-current={view === label ? 'page' : undefined}
+              aria-current={primaryView === label ? 'page' : undefined}
               className={cn(
-                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold',
-                view === label ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'text-[#789087]'
+                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-bold',
+                primaryView === label ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'text-[#789087]'
               )}
             >
-              <span aria-hidden="true" className={cn('size-2 rounded-full', view === label ? 'bg-[#0b7b68]' : 'bg-[#c3d0cc]')} />
+              <span aria-hidden="true" className={cn('size-2 rounded-full', primaryView === label ? 'bg-[#0b7b68]' : 'bg-[#c3d0cc]')} />
               {label}
             </Link>
           ))}
@@ -379,11 +421,119 @@ function Today({
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 md:col-span-2 xl:col-span-1">
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Mensagem do médico</p>
           <p className="mt-4 text-sm leading-6 text-[#526a62]">“Marina, mantenha o combinado hoje. Vamos conversar sobre o sono na consulta.”</p>
-          <button type="button" onClick={() => onNavigate('Mensagens')} className="mt-4 min-h-11 text-sm font-bold text-[#0b6a5b] underline underline-offset-4">Responder ao Dr. Guilherme</button>
+          <button type="button" onClick={() => onNavigate('Conversas')} className="mt-4 min-h-11 text-sm font-bold text-[#0b6a5b] underline underline-offset-4">Responder ao Dr. Guilherme</button>
         </article>
       </section>
       <p className="mt-6 text-center text-xs leading-5 text-[#8a9c96]">Este protótipo não atende emergências. Em uma situação urgente, procure os serviços de emergência da sua região.</p>
     </>
+  );
+}
+
+function MyCare({
+  plan,
+  completedActionCount,
+  totalActionCount,
+  diaryEntryCount,
+  followUpConfiguration,
+  preVisitDone,
+  onNavigate,
+}: {
+  plan: CarePlanVersion | null;
+  completedActionCount: number;
+  totalActionCount: number;
+  diaryEntryCount: number;
+  followUpConfiguration: CareFollowUpConfiguration | null;
+  preVisitDone: boolean;
+  onNavigate: (view: PatientView) => void;
+}) {
+  const cadenceLabel = followUpConfiguration
+    ? {
+        daily: 'Todos os dias',
+        'three-times-week': '3 vezes por semana',
+        weekly: 'Uma vez por semana',
+      }[followUpConfiguration.cadence]
+    : 'Ainda não combinada';
+  const planProgress = totalActionCount > 0
+    ? Math.round((completedActionCount / totalActionCount) * 100)
+    : 0;
+
+  return (
+    <section className="mt-0 lg:mt-8">
+      <Heading
+        eyebrow="Tudo em um só lugar"
+        title="Meu cuidado"
+        description="Veja o que foi combinado, registre seu contexto e prepare a próxima conversa sem precisar procurar em várias telas."
+      />
+
+      <article className="mt-7 overflow-hidden rounded-3xl bg-[#17372f] text-white shadow-[0_16px_40px_rgba(23,55,47,0.16)]">
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Status tone={plan ? 'green' : 'gray'}>{plan ? `Plano publicado · v${plan.version}` : 'Sem plano publicado'}</Status>
+              <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#d6e8e2]">Acompanhamento: {cadenceLabel}</span>
+            </div>
+            <h1 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.04em]">{plan?.title ?? 'Seu plano aparecerá aqui depois da revisão médica'}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#d6e8e2]">{plan?.objective ?? 'Enquanto isso, você pode preparar sua consulta e conversar com a equipe.'}</p>
+          </div>
+          <button type="button" onClick={() => onNavigate('Plano')} className="min-h-12 cursor-pointer rounded-xl bg-white px-6 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">
+            Abrir plano
+          </button>
+        </div>
+        <div className="grid grid-cols-3 border-t border-white/10">
+          {[
+            [`${planProgress}%`, 'ações confirmadas'],
+            [`${diaryEntryCount}`, diaryEntryCount === 1 ? 'registro no diário' : 'registros no diário'],
+            [preVisitDone ? 'Pronto' : 'Pendente', 'preparo da consulta'],
+          ].map((item, index) => (
+            <div key={item[1]} className={cn('p-4 sm:p-5', index > 0 && 'border-l border-white/10')}>
+              <p className="text-lg font-bold sm:text-xl">{item[0]}</p>
+              <p className="mt-1 text-[11px] leading-4 text-[#b8d3cb]">{item[1]}</p>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-3">
+        {[
+          {
+            view: 'Plano' as const,
+            eyebrow: 'Combinados',
+            title: 'Plano de cuidado',
+            description: `${completedActionCount} de ${totalActionCount} ações confirmadas nesta versão.`,
+            action: 'Ver ações',
+          },
+          {
+            view: 'Diário' as const,
+            eyebrow: 'Seu contexto',
+            title: 'Diário',
+            description: diaryEntryCount > 0
+              ? `${diaryEntryCount} ${diaryEntryCount === 1 ? 'registro compartilhado' : 'registros compartilhados'} nesta sessão.`
+              : 'Registre uma refeição e como você se sentiu, sem julgamento.',
+            action: 'Abrir diário',
+          },
+          {
+            view: 'Consultas' as const,
+            eyebrow: 'Próximo encontro',
+            title: 'Consultas',
+            description: preVisitDone
+              ? 'Seu preparo já foi enviado para a próxima consulta.'
+              : 'Organize em poucos minutos o que deseja conversar.',
+            action: preVisitDone ? 'Ver consulta' : 'Preparar consulta',
+          },
+        ].map((item) => (
+          <article key={item.view} className="flex min-h-56 flex-col rounded-3xl border border-[#dfe8e3] bg-white p-5 shadow-[0_8px_24px_rgba(28,55,47,0.04)] sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">{item.eyebrow}</p>
+            <h2 className="mt-3 text-xl font-semibold text-[#17372f]">{item.title}</h2>
+            <p className="mt-2 flex-1 text-sm leading-6 text-[#60766f]">{item.description}</p>
+            <button type="button" onClick={() => onNavigate(item.view)} className="mt-5 min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+              {item.action}
+            </button>
+          </article>
+        ))}
+      </div>
+
+      <p className="mt-5 rounded-2xl border border-[#ead8ad] bg-[#fffaf0] px-4 py-3 text-xs leading-5 text-[#704f10]">Os registros ajudam a próxima conversa, mas não geram diagnóstico, urgência, ajuste de dose ou orientação automática.</p>
+    </section>
   );
 }
 
@@ -578,7 +728,7 @@ function Evolution({
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.045em] text-[#15342c] sm:text-4xl">Quanto falta para meu objetivo?</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">Um gráfico simples para enxergar o que já mudou e o que ainda falta, sem transformar variações de um dia em cobrança.</p>
         </div>
-        <button type="button" onClick={() => onNavigate('Mensagens')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+          <button type="button" onClick={() => onNavigate('Conversas')} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
           Conversar sobre a meta
         </button>
       </div>
@@ -749,7 +899,7 @@ function Evolution({
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9fd6c8]">Conquista do ciclo</p>
           <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">Consistência maior que pressa</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#d3e4df]">Seu peso se aproximou da meta enquanto movimento e adesão melhoraram. O sono ainda merece atenção — um sinal para conversar, não uma falha.</p>
-          <button type="button" onClick={() => onNavigate('Mensagens')} className="mt-5 min-h-11 cursor-pointer rounded-xl bg-white px-5 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Levar para a conversa</button>
+          <button type="button" onClick={() => onNavigate('Conversas')} className="mt-5 min-h-11 cursor-pointer rounded-xl bg-white px-5 text-sm font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Levar para a conversa</button>
         </article>
 
         <details className="group rounded-[28px] border border-[#dfe8e3] bg-white p-5 sm:p-7">
@@ -768,30 +918,119 @@ function Evolution({
   );
 }
 
-function Messages({ onNotify }: { onNotify: (text: string) => void }) {
+function Messages({
+  messages,
+  onSend,
+  onNotify,
+}: {
+  messages: CareConversationMessage[];
+  onSend: (input: CareConversationMessageInput) => CareConversationMessage;
+  onNotify: (text: string) => void;
+}) {
   const [value, setValue] = useState('');
-  const [sent, setSent] = useState(false);
+  const [context, setContext] = useState<CareConversationContext>('care-plan');
+  const trimmedValue = value.trim();
+  const canSend = trimmedValue.length >= 2;
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!value.trim()) return;
+    if (!canSend) return;
+    onSend({ body: trimmedValue, context });
     setValue('');
-    setSent(true);
-    onNotify('Mensagem demonstrativa enviada.');
+    onNotify(`Mensagem sobre ${conversationContextLabel[context].toLocaleLowerCase('pt-BR')} registrada nesta sessão.`);
   };
 
   return (
     <section className="mt-0 lg:mt-8">
-      <Heading eyebrow="Canal de acompanhamento" title="Conversa com seu médico" description="Orientações e dúvidas ficam junto do seu plano, sem se perder em outros aplicativos." />
-      <article className="mt-7 flex min-h-[580px] flex-col overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white">
-        <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:p-5"><span className="grid size-11 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">GM</span><div><p className="text-sm font-bold">Dr. Guilherme Martins</p><p className="text-xs text-[#698078]">Respostas em horário de atendimento</p></div></div>
-        <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6">
-          <div className="ml-auto max-w-[82%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm leading-6 text-white">Consegui registrar o jantar. Também dormi melhor esta noite.<p className="mt-2 text-[11px] text-[#c9e4dd]">09:18</p></div>
-          <div className="max-w-[82%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.<p className="mt-2 text-[11px] text-[#8a9c96]">09:22 · Dr. Guilherme</p></div>
-          {sent && <div className="ml-auto max-w-[82%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm text-white">Mensagem demonstrativa enviada agora.</div>}
+      <Heading eyebrow="Canal de acompanhamento" title="Conversa com seu médico" description="Escolha o assunto antes de escrever. Assim, sua dúvida chega ligada ao plano, check-in ou diário certo." />
+      <article className="mt-7 flex min-h-[620px] flex-col overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
+        <div className="flex flex-col gap-3 border-b border-[#e7eeea] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">GM</span>
+            <div><p className="text-sm font-bold">Dr. Guilherme Martins</p><p className="text-xs text-[#698078]">Respostas em horário de atendimento</p></div>
+          </div>
+          <Status tone="gray">Conversa demonstrativa · sessão atual</Status>
         </div>
-        <form onSubmit={submit} className="flex gap-2 border-t border-[#e7eeea] p-4"><label htmlFor="patient-message" className="sr-only">Escrever mensagem</label><input id="patient-message" value={value} onChange={(event) => setValue(event.target.value)} placeholder="Escreva sua mensagem..." className="min-h-11 min-w-0 flex-1 rounded-xl border border-[#d7e3df] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" /><button type="submit" className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar</button></form>
+
+        <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6" aria-live="polite">
+          <div className="ml-auto max-w-[88%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm leading-6 text-white sm:max-w-[76%]">
+            <span className="mb-2 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]">Diário</span>
+            <p>Consegui registrar o jantar. Também dormi melhor esta noite.</p>
+            <p className="mt-2 text-[11px] text-[#c9e4dd]">09:18 · exemplo fictício</p>
+          </div>
+          <div className="max-w-[88%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm sm:max-w-[76%]">
+            <span className="mb-2 inline-flex rounded-full bg-[#edf7f4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0b6a5b]">Diário</span>
+            <p>Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.</p>
+            <p className="mt-2 text-[11px] text-[#8a9c96]">09:22 · Dr. Guilherme · exemplo fictício</p>
+          </div>
+
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                'max-w-[88%] rounded-2xl p-4 text-sm leading-6 sm:max-w-[76%]',
+                message.sender === 'patient'
+                  ? 'ml-auto rounded-tr-md bg-[#0b7b68] text-white'
+                  : 'rounded-tl-md bg-white text-[#17372f] shadow-sm',
+              )}
+            >
+              <span className={cn(
+                'mb-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]',
+                message.sender === 'patient' ? 'bg-white/15 text-white' : 'bg-[#edf7f4] text-[#0b6a5b]',
+              )}>
+                {conversationContextLabel[message.context]}
+              </span>
+              <p className="whitespace-pre-wrap break-words">{message.body}</p>
+              <p className={cn('mt-2 text-[11px]', message.sender === 'patient' ? 'text-[#c9e4dd]' : 'text-[#8a9c96]')}>
+                {message.sentAt} · {message.sender === 'patient' ? 'Você' : 'Dr. Guilherme'}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={submit} className="border-t border-[#e7eeea] bg-white p-4 sm:p-5">
+          <fieldset>
+            <legend className="text-xs font-bold uppercase tracking-[0.1em] text-[#405d54]">Sobre o que você quer conversar?</legend>
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {conversationContextOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={context === option.value}
+                  title={option.helper}
+                  onClick={() => setContext(option.value)}
+                  className={cn(
+                    'min-h-11 shrink-0 cursor-pointer rounded-xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
+                    context === option.value
+                      ? 'border-[#17372f] bg-[#17372f] text-white'
+                      : 'border-[#d7e3df] bg-white text-[#60766f] hover:bg-[#edf7f4] hover:text-[#0b6a5b]',
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <label htmlFor="patient-message" className="mt-4 block text-sm font-bold text-[#17372f]">Sua mensagem</label>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+            <textarea
+              id="patient-message"
+              value={value}
+              maxLength={600}
+              rows={2}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder={`Escreva sua dúvida sobre ${conversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`}
+              className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]"
+            />
+            <button type="submit" disabled={!canSend} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">Enviar</button>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#789087]">
+            <p>O conteúdo fica apenas nesta sessão demonstrativa.</p>
+            <p>{value.length}/600</p>
+          </div>
+        </form>
       </article>
-      <p className="mt-4 text-center text-xs text-[#8a9c96]">Este canal não substitui atendimento de urgência.</p>
+      <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">Este canal não é monitorado continuamente e não substitui atendimento de urgência.</p>
     </section>
   );
 }

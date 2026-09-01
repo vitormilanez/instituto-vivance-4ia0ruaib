@@ -16,6 +16,9 @@ import type {
   CareCheckIn,
   CareCheckInReview,
   CareCheckInSleepQuality,
+  CareConversationContext,
+  CareConversationMessage,
+  CareConversationSender,
   CareDiaryEntry,
   CareFollowUpCadence,
   CareFollowUpConfiguration,
@@ -510,6 +513,53 @@ function normalizeDiaryEntry(value: unknown): CareDiaryEntry | null {
   };
 }
 
+function isConversationContext(value: unknown): value is CareConversationContext {
+  return value === 'care-plan' || value === 'check-in' || value === 'diary' || value === 'general';
+}
+
+function isConversationSender(value: unknown): value is CareConversationSender {
+  return value === 'patient' || value === 'doctor';
+}
+
+function getConversationContextLabel(context: CareConversationContext) {
+  if (context === 'care-plan') return 'plano de cuidado';
+  if (context === 'check-in') return 'check-in';
+  if (context === 'diary') return 'diário';
+  return 'outro assunto';
+}
+
+function normalizeConversationMessage(value: unknown): CareConversationMessage | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !isConversationSender(value.sender) ||
+    !isConversationContext(value.context) ||
+    typeof value.body !== 'string' ||
+    !value.body.trim() ||
+    typeof value.sentAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    sender: value.sender,
+    context: value.context,
+    body: value.body.trim(),
+    sentAt: value.sentAt,
+    sentAtIso: typeof value.sentAtIso === 'string'
+      ? value.sentAtIso
+      : isoTimestampFromOpaqueId(value.id),
+    retentionMode: 'session-only',
+  };
+}
+
 function isCareAuditAction(value: unknown): value is CareAuditAction {
   return [
     'check-in-submitted',
@@ -517,6 +567,7 @@ function isCareAuditAction(value: unknown): value is CareAuditAction {
     'follow-up-configured',
     'follow-up-contact-recorded',
     'diary-entry-submitted',
+    'conversation-message-sent',
     'pre-consultation-submitted',
     'pre-consultation-review-started',
     'pre-consultation-review-approved',
@@ -583,6 +634,7 @@ function getAuditEventsFromHistory(
   followUpConfigurations: CareFollowUpConfiguration[] = [],
   followUpContacts: CareFollowUpContact[] = [],
   diaryEntries: CareDiaryEntry[] = [],
+  conversationMessages: CareConversationMessage[] = [],
 ): CareAuditEvent[] {
   const checkInEvents = checkIns.map<CareAuditEvent>((checkIn) => ({
     id: `audit-derived-${checkIn.id}-submitted`,
@@ -660,6 +712,24 @@ function getAuditEventsFromHistory(
     relatedId: entry.id,
     relatedVersion: entry.version,
     summary: 'Contexto guiado do diário compartilhado com a equipe.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
+  const conversationEvents = conversationMessages.map<CareAuditEvent>((message) => ({
+    id: `audit-derived-${message.id}-sent`,
+    patientId: message.patientId,
+    encounterId: message.encounterId,
+    action: 'conversation-message-sent',
+    actor: message.sender,
+    actorLabel: message.sender === 'patient'
+      ? getPatientAuditLabel(message.patientId)
+      : 'Dr. Guilherme Martins · médico responsável',
+    occurredAt: message.sentAt,
+    occurredAtIso: message.sentAtIso,
+    relatedId: message.id,
+    relatedVersion: message.version,
+    summary: `Mensagem contextualizada em “${getConversationContextLabel(message.context)}” registrada sem copiar seu conteúdo para a auditoria.`,
     consentVersion: null,
     aiAssistanceAllowed: null,
   }));
@@ -785,6 +855,7 @@ function getAuditEventsFromHistory(
     ...followUpConfigurationEvents,
     ...followUpContactEvents,
     ...diaryEvents,
+    ...conversationEvents,
     ...submissionEvents,
     ...reviewEvents,
     ...planEvents,
@@ -803,6 +874,7 @@ const emptyState: CareDemoState = {
   followUpConfigurations: [],
   followUpContacts: [],
   diaryEntries: [],
+  conversationMessages: [],
   actionConfirmations: [],
   auditEvents: getAuditEventsFromHistory([], [], initialCarePlans, []),
 };
@@ -865,6 +937,12 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
         return normalized ? [normalized] : [];
       })
     : [];
+  const conversationMessages = Array.isArray(value.conversationMessages)
+    ? value.conversationMessages.flatMap((message) => {
+        const normalized = normalizeConversationMessage(message);
+        return normalized ? [normalized] : [];
+      })
+    : [];
   const actionConfirmations = Array.isArray(value.actionConfirmations)
     ? value.actionConfirmations.flatMap((confirmation) => {
         const normalized = normalizeActionConfirmation(confirmation);
@@ -888,6 +966,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     followUpConfigurations,
     followUpContacts,
     diaryEntries,
+    conversationMessages,
     actionConfirmations,
     auditEvents: parsedAuditEvents.length > 0
       ? parsedAuditEvents
@@ -900,6 +979,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
           followUpConfigurations,
           followUpContacts,
           diaryEntries,
+          conversationMessages,
         ),
   };
 }
@@ -934,6 +1014,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     followUpConfigurations: [],
     followUpContacts: [],
     diaryEntries: [],
+    conversationMessages: [],
     actionConfirmations: [],
     auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, []),
   };
@@ -1118,6 +1199,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         (entry) => entry.patientId === patientId && entry.encounterId === encounterId,
       );
 
+    const conversationMessagesFor = (patientId: string, encounterId: string) =>
+      (state.conversationMessages ?? []).filter(
+        (message) => message.patientId === patientId && message.encounterId === encounterId,
+      );
+
     const reviewHistoryFor = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       return latestSubmission
@@ -1235,6 +1321,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       followUpConfigurations: state.followUpConfigurations ?? [],
       followUpContacts: state.followUpContacts ?? [],
       diaryEntries: state.diaryEntries ?? [],
+      conversationMessages: state.conversationMessages ?? [],
       actionConfirmations: state.actionConfirmations ?? [],
       auditEvents: state.auditEvents,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
@@ -1513,6 +1600,48 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         setState((current) => ({
           ...current,
           diaryEntries: [...(current.diaryEntries ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return created;
+      },
+      sendConversationMessage: (patientId, encounterId, sender, input) => {
+        const body = input.body.trim();
+        if (!isConversationSender(sender) || !isConversationContext(input.context)) {
+          throw new Error('Escolha um contexto válido para esta conversa.');
+        }
+        if (body.length < 2 || body.length > 600) {
+          throw new Error('Escreva uma mensagem entre 2 e 600 caracteres.');
+        }
+
+        const messages = conversationMessagesFor(patientId, encounterId);
+        const now = new Date();
+        const created: CareConversationMessage = {
+          id: `mensagem-cuidado-${Date.now()}`,
+          patientId,
+          encounterId,
+          version: messages.length + 1,
+          sender,
+          context: input.context,
+          body,
+          sentAt: formatSubmissionTime(now),
+          sentAtIso: now.toISOString(),
+          retentionMode: 'session-only',
+        };
+        const auditEvent = createAuditEvent({
+          action: 'conversation-message-sent',
+          actor: sender,
+          patientId,
+          encounterId,
+          occurredAt: created.sentAt,
+          occurredAtIso: created.sentAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: `Mensagem contextualizada em “${getConversationContextLabel(created.context)}” registrada sem copiar seu conteúdo para a auditoria.`,
+        });
+
+        setState((current) => ({
+          ...current,
+          conversationMessages: [...(current.conversationMessages ?? []), created],
           auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;

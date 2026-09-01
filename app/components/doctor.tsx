@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
+import type { CareConversationContext } from './care-demo-types';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import {
   DEFAULT_ENCOUNTER_ID,
@@ -20,6 +21,7 @@ import {
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
+import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
@@ -53,6 +55,20 @@ interface DoctorDemoUiState {
 const initialDoctorDemoUiState: DoctorDemoUiState = {
   reportApproved: false,
   overdueReminderSent: false,
+};
+
+const doctorConversationContexts: Array<{ value: CareConversationContext; label: string }> = [
+  { value: 'care-plan', label: 'Plano' },
+  { value: 'check-in', label: 'Check-in' },
+  { value: 'diary', label: 'Diário' },
+  { value: 'general', label: 'Outro assunto' },
+];
+
+const doctorConversationContextLabel: Record<CareConversationContext, string> = {
+  'care-plan': 'Plano de cuidado',
+  'check-in': 'Check-in',
+  'diary': 'Diário',
+  'general': 'Outro assunto',
 };
 
 function normalizeDoctorDemoUiState(value: unknown): DoctorDemoUiState {
@@ -993,6 +1009,12 @@ function Patients({
           ))}
         </div>
 
+        <DoctorCareCycleSummary
+          key={`summary-${selected.id}`}
+          patientId={selected.id}
+          encounterId={getDefaultEncounterId(selected.id)}
+        />
+
         <LongitudinalDossier key={selected.id} patientId={selected.id} patientName={selected.name} />
 
         <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)_minmax(280px,0.9fr)]">
@@ -1386,20 +1408,24 @@ const messageThreads = [
 
 function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text: string) => void }) {
   const [value, setValue] = useState('');
-  const [sent, setSent] = useState(false);
+  const [context, setContext] = useState<CareConversationContext>('care-plan');
+  const encounterId = getDefaultEncounterId(patientId);
+  const { conversationMessages, sendConversationMessage } = useCareDemo(patientId, encounterId);
   const selected = messageThreads.find((thread) => thread.patientId === patientId) ?? null;
+  const trimmedValue = value.trim();
+  const canSend = trimmedValue.length >= 2;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selected || !value.trim()) return;
+    if (!selected || !canSend) return;
+    sendConversationMessage('doctor', { body: trimmedValue, context });
     setValue('');
-    setSent(true);
-    onNotify(`Mensagem demonstrativa adicionada à conversa de ${selected.name}.`);
+    onNotify(`Mensagem sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')} adicionada à conversa de ${selected.name}.`);
   };
 
   return (
     <>
-      <Heading eyebrow="Comunicação segura" title="Mensagens" description="Conversas contextualizadas, sem perder orientações entre canais." />
+      <Heading eyebrow="Comunicação segura" title="Mensagens" description="Cada conversa fica vinculada ao contexto do cuidado, sem transformar uma mensagem em decisão clínica." />
       <section className="mt-7 grid min-h-[590px] overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white lg:grid-cols-[290px_1fr]">
         <div className="border-b border-[#e7eeea] lg:border-b-0 lg:border-r">
           <div className="p-4"><input aria-label="Buscar conversa" placeholder="Buscar conversa" className="min-h-11 w-full rounded-xl bg-[#f4f7f5] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></div>
@@ -1419,15 +1445,68 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
               <span className="grid size-10 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{selected.initials}</span>
               <div><p className="text-sm font-bold">{selected.name}</p><p className="text-xs text-[#698078]">{selected.context}</p></div>
             </div>
-            <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6">
-              <div className="max-w-[78%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">{selected.incoming}<p className="mt-2 text-[11px] text-[#8a9c96]">{selected.time}</p></div>
-              <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white">{selected.outgoing}<p className="mt-2 text-[11px] text-[#b8d3cb]">Dr. Guilherme</p></div>
-              {sent && <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm text-white">Mensagem demonstrativa enviada agora.</div>}
+            <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6" aria-live="polite">
+              <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm sm:max-w-[78%]">
+                <span className="mb-2 inline-flex rounded-full bg-[#edf7f4] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0b6a5b]">Plano de cuidado</span>
+                <p>{selected.incoming}</p>
+                <p className="mt-2 text-[11px] text-[#8a9c96]">{selected.time} · exemplo fictício</p>
+              </div>
+              <div className="ml-auto max-w-[86%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white sm:max-w-[78%]">
+                <span className="mb-2 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]">Plano de cuidado</span>
+                <p>{selected.outgoing}</p>
+                <p className="mt-2 text-[11px] text-[#b8d3cb]">Dr. Guilherme · exemplo fictício</p>
+              </div>
+              {conversationMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'max-w-[86%] rounded-2xl p-4 text-sm leading-6 sm:max-w-[78%]',
+                    message.sender === 'doctor'
+                      ? 'ml-auto rounded-tr-md bg-[#17372f] text-white'
+                      : 'rounded-tl-md bg-white text-[#17372f] shadow-sm',
+                  )}
+                >
+                  <span className={cn(
+                    'mb-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]',
+                    message.sender === 'doctor' ? 'bg-white/15 text-white' : 'bg-[#edf7f4] text-[#0b6a5b]',
+                  )}>
+                    {doctorConversationContextLabel[message.context]}
+                  </span>
+                  <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                  <p className={cn('mt-2 text-[11px]', message.sender === 'doctor' ? 'text-[#b8d3cb]' : 'text-[#8a9c96]')}>
+                    {message.sentAt} · {message.sender === 'doctor' ? 'Dr. Guilherme' : selected.name}
+                  </p>
+                </div>
+              ))}
             </div>
-            <form onSubmit={submit} className="flex gap-2 border-t border-[#e7eeea] p-4">
-              <label className="sr-only" htmlFor="doctor-message">Escrever mensagem para {selected.name}</label>
-              <input id="doctor-message" value={value} onChange={(event) => setValue(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-[#d7e3df] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder="Escreva uma mensagem..." />
-              <button type="submit" className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar</button>
+            <form onSubmit={submit} className="border-t border-[#e7eeea] bg-white p-4">
+              <fieldset>
+                <legend className="text-xs font-bold uppercase tracking-[0.09em] text-[#405d54]">Vincular ao contexto</legend>
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                  {doctorConversationContexts.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={context === option.value}
+                      onClick={() => setContext(option.value)}
+                      className={cn(
+                        'min-h-11 shrink-0 cursor-pointer rounded-xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
+                        context === option.value
+                          ? 'border-[#17372f] bg-[#17372f] text-white'
+                          : 'border-[#d7e3df] bg-white text-[#60766f] hover:bg-[#edf7f4] hover:text-[#0b6a5b]',
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <label className="mt-3 block text-sm font-bold text-[#17372f]" htmlFor="doctor-message">Mensagem para {selected.name}</label>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
+                <textarea id="doctor-message" value={value} maxLength={600} rows={2} onChange={(event) => setValue(event.target.value)} className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder={`Escreva sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`} />
+                <button type="submit" disabled={!canSend} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">Enviar</button>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#789087]"><p>Sessão demonstrativa; sem envio externo.</p><p>{value.length}/600</p></div>
             </form>
           </div>
         ) : (

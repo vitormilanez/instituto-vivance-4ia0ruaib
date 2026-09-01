@@ -165,6 +165,25 @@ export interface CareDiaryEntry extends CareDiaryEntryInput {
   submittedAtIso: string;
 }
 
+export type CareConversationContext = 'care-plan' | 'check-in' | 'diary' | 'general';
+export type CareConversationSender = 'patient' | 'doctor';
+
+export interface CareConversationMessageInput {
+  context: CareConversationContext;
+  body: string;
+}
+
+export interface CareConversationMessage extends CareConversationMessageInput {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  sender: CareConversationSender;
+  sentAt: string;
+  sentAtIso: string;
+  retentionMode: 'session-only';
+}
+
 export interface CarePlanActionConfirmation {
   id: string;
   patientId: string;
@@ -183,6 +202,7 @@ export type CareAuditAction =
   | 'follow-up-configured'
   | 'follow-up-contact-recorded'
   | 'diary-entry-submitted'
+  | 'conversation-message-sent'
   | 'pre-consultation-submitted'
   | 'pre-consultation-review-started'
   | 'pre-consultation-review-approved'
