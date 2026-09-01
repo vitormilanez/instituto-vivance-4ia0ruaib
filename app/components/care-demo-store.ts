@@ -6,6 +6,12 @@ import type {
   CareAuditEvent,
   CareCheckIn,
   CareCheckInInput,
+  CareCheckInReview,
+  CareDiaryEntry,
+  CareDiaryEntryInput,
+  CareFollowUpCadence,
+  CareFollowUpConfiguration,
+  CareFollowUpContact,
   CarePlanDraftContent,
   CarePlanActionConfirmation,
   CarePlanVersion,
@@ -20,6 +26,10 @@ export interface CareDemoState {
   reviews: PreConsultationReview[];
   carePlans: CarePlanVersion[];
   checkIns: CareCheckIn[];
+  checkInReviews: CareCheckInReview[];
+  followUpConfigurations: CareFollowUpConfiguration[];
+  followUpContacts: CareFollowUpContact[];
+  diaryEntries: CareDiaryEntry[];
   actionConfirmations: CarePlanActionConfirmation[];
   auditEvents: CareAuditEvent[];
 }
@@ -37,6 +47,27 @@ export interface CareDemoStoreValue extends CareDemoState {
     encounterId: string,
     input: CareCheckInInput,
   ) => CareCheckIn;
+  reviewCheckIn: (
+    patientId: string,
+    encounterId: string,
+    checkInId: string,
+  ) => CareCheckInReview;
+  configureFollowUp: (
+    patientId: string,
+    encounterId: string,
+    planId: string,
+    cadence: CareFollowUpCadence,
+  ) => CareFollowUpConfiguration;
+  recordFollowUpContact: (
+    patientId: string,
+    encounterId: string,
+    configurationId: string,
+  ) => CareFollowUpContact;
+  submitDiaryEntry: (
+    patientId: string,
+    encounterId: string,
+    input: CareDiaryEntryInput,
+  ) => CareDiaryEntry;
   startPreConsultationReview: (patientId: string, encounterId: string) => PreConsultationReview;
   savePreConsultationReview: (
     patientId: string,
@@ -102,6 +133,13 @@ export interface CareDemoContextValue {
   carePlans: CarePlanVersion[];
   checkIns: CareCheckIn[];
   latestCheckIn: CareCheckIn | null;
+  checkInReviews: CareCheckInReview[];
+  latestCheckInReview: CareCheckInReview | null;
+  followUpConfigurations: CareFollowUpConfiguration[];
+  activeFollowUpConfiguration: CareFollowUpConfiguration | null;
+  followUpContacts: CareFollowUpContact[];
+  latestFollowUpContact: CareFollowUpContact | null;
+  diaryEntries: CareDiaryEntry[];
   actionConfirmations: CarePlanActionConfirmation[];
   confirmedActionIds: string[];
   auditEvents: CareAuditEvent[];
@@ -111,6 +149,13 @@ export interface CareDemoContextValue {
   savePreConsultationDraft: (patch: Partial<PreConsultationAnswers>) => void;
   submitPreConsultation: () => PreConsultationSubmission;
   submitCheckIn: (input: CareCheckInInput) => CareCheckIn;
+  reviewCheckIn: (checkInId: string) => CareCheckInReview;
+  configureFollowUp: (
+    planId: string,
+    cadence: CareFollowUpCadence,
+  ) => CareFollowUpConfiguration;
+  recordFollowUpContact: (configurationId: string) => CareFollowUpContact;
+  submitDiaryEntry: (input: CareDiaryEntryInput) => CareDiaryEntry;
   startPreConsultationReview: () => PreConsultationReview;
   savePreConsultationReview: (content: string) => PreConsultationReview;
   approvePreConsultationReview: (content: string) => PreConsultationReview;
@@ -179,6 +224,23 @@ export function useCareDemo(
     .filter((checkIn) => checkIn.patientId === patientId && checkIn.encounterId === encounterId)
     .toSorted((left, right) => left.submittedAtIso.localeCompare(right.submittedAtIso));
   const latestCheckIn = checkIns.at(-1) ?? null;
+  const checkInReviews = (context.checkInReviews ?? [])
+    .filter((review) => review.patientId === patientId && review.encounterId === encounterId)
+    .toSorted((left, right) => left.reviewedAtIso.localeCompare(right.reviewedAtIso));
+  const latestCheckInReview = latestCheckIn
+    ? [...checkInReviews].reverse().find((review) => review.checkInId === latestCheckIn.id) ?? null
+    : null;
+  const followUpConfigurations = (context.followUpConfigurations ?? [])
+    .filter((configuration) => configuration.patientId === patientId && configuration.encounterId === encounterId)
+    .toSorted((left, right) => left.configuredAtIso.localeCompare(right.configuredAtIso));
+  const activeFollowUpConfiguration = followUpConfigurations.at(-1) ?? null;
+  const followUpContacts = (context.followUpContacts ?? [])
+    .filter((contact) => contact.patientId === patientId && contact.encounterId === encounterId)
+    .toSorted((left, right) => left.recordedAtIso.localeCompare(right.recordedAtIso));
+  const latestFollowUpContact = followUpContacts.at(-1) ?? null;
+  const diaryEntries = (context.diaryEntries ?? [])
+    .filter((entry) => entry.patientId === patientId && entry.encounterId === encounterId)
+    .toSorted((left, right) => left.submittedAtIso.localeCompare(right.submittedAtIso));
   const actionConfirmations = (context.actionConfirmations ?? [])
     .filter((confirmation) => confirmation.patientId === patientId && confirmation.encounterId === encounterId)
     .toSorted((left, right) => left.recordedAtIso.localeCompare(right.recordedAtIso));
@@ -209,6 +271,13 @@ export function useCareDemo(
     latestPublishedCarePlan,
     checkIns,
     latestCheckIn,
+    checkInReviews,
+    latestCheckInReview,
+    followUpConfigurations,
+    activeFollowUpConfiguration,
+    followUpContacts,
+    latestFollowUpContact,
+    diaryEntries,
     actionConfirmations,
     confirmedActionIds,
     auditEvents,
@@ -216,6 +285,12 @@ export function useCareDemo(
       context.savePreConsultationDraft(patientId, encounterId, patch),
     submitPreConsultation: () => context.submitPreConsultation(patientId, encounterId),
     submitCheckIn: (input) => context.submitCheckIn(patientId, encounterId, input),
+    reviewCheckIn: (checkInId) => context.reviewCheckIn(patientId, encounterId, checkInId),
+    configureFollowUp: (planId, cadence) =>
+      context.configureFollowUp(patientId, encounterId, planId, cadence),
+    recordFollowUpContact: (configurationId) =>
+      context.recordFollowUpContact(patientId, encounterId, configurationId),
+    submitDiaryEntry: (input) => context.submitDiaryEntry(patientId, encounterId, input),
     startPreConsultationReview: () =>
       context.startPreConsultationReview(patientId, encounterId),
     savePreConsultationReview: (content) =>

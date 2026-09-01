@@ -14,7 +14,13 @@ import type {
   CareAuditActor,
   CareAuditEvent,
   CareCheckIn,
+  CareCheckInReview,
   CareCheckInSleepQuality,
+  CareDiaryEntry,
+  CareFollowUpCadence,
+  CareFollowUpConfiguration,
+  CareFollowUpContact,
+  CareGuidedScore,
   CarePlanAction,
   CarePlanActionConfirmation,
   CarePlanDraftContent,
@@ -367,9 +373,150 @@ function normalizeActionConfirmation(value: unknown): CarePlanActionConfirmation
   };
 }
 
+function normalizeCheckInReview(value: unknown): CareCheckInReview | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.checkInId !== 'string' ||
+    typeof value.checkInVersion !== 'number' ||
+    typeof value.reviewedBy !== 'string' ||
+    typeof value.reviewedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    checkInId: value.checkInId,
+    checkInVersion: value.checkInVersion,
+    reviewedBy: value.reviewedBy,
+    reviewedAt: value.reviewedAt,
+    reviewedAtIso: typeof value.reviewedAtIso === 'string'
+      ? value.reviewedAtIso
+      : isoTimestampFromOpaqueId(value.id),
+  };
+}
+
+function isFollowUpCadence(value: unknown): value is CareFollowUpCadence {
+  return value === 'daily' || value === 'three-times-week' || value === 'weekly';
+}
+
+function normalizeFollowUpConfiguration(value: unknown): CareFollowUpConfiguration | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.planId !== 'string' ||
+    typeof value.planVersion !== 'number' ||
+    typeof value.version !== 'number' ||
+    !isFollowUpCadence(value.cadence) ||
+    typeof value.configuredBy !== 'string' ||
+    typeof value.configuredAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    planId: value.planId,
+    planVersion: value.planVersion,
+    version: value.version,
+    cadence: value.cadence,
+    configuredBy: value.configuredBy,
+    configuredAt: value.configuredAt,
+    configuredAtIso: typeof value.configuredAtIso === 'string'
+      ? value.configuredAtIso
+      : isoTimestampFromOpaqueId(value.id),
+    retentionMode: 'session-only',
+    contactMode: 'manual-only',
+  };
+}
+
+function normalizeFollowUpContact(value: unknown): CareFollowUpContact | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.configurationId !== 'string' ||
+    typeof value.configurationVersion !== 'number' ||
+    value.reason !== 'check-in-not-recorded' ||
+    typeof value.recordedBy !== 'string' ||
+    typeof value.recordedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    configurationId: value.configurationId,
+    configurationVersion: value.configurationVersion,
+    reason: value.reason,
+    recordedBy: value.recordedBy,
+    recordedAt: value.recordedAt,
+    recordedAtIso: typeof value.recordedAtIso === 'string'
+      ? value.recordedAtIso
+      : isoTimestampFromOpaqueId(value.id),
+  };
+}
+
+function isGuidedScore(value: unknown): value is CareGuidedScore {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 5;
+}
+
+function normalizeDiaryEntry(value: unknown): CareDiaryEntry | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    value.mealType !== 'dinner' ||
+    !isGuidedScore(value.satiety) ||
+    !isGuidedScore(value.digestiveComfort) ||
+    !isGuidedScore(value.planEase) ||
+    typeof value.analysisViewed !== 'boolean' ||
+    typeof value.submittedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    mealType: value.mealType,
+    satiety: value.satiety,
+    digestiveComfort: value.digestiveComfort,
+    planEase: value.planEase,
+    analysisViewed: value.analysisViewed,
+    attachmentRef: '/meals/jantar-omelete.jpg',
+    sharedWithCareTeam: true,
+    sharingConsentVersion: 'diario-contexto-v1',
+    submittedAt: value.submittedAt,
+    submittedAtIso: typeof value.submittedAtIso === 'string'
+      ? value.submittedAtIso
+      : isoTimestampFromOpaqueId(value.id),
+  };
+}
+
 function isCareAuditAction(value: unknown): value is CareAuditAction {
   return [
     'check-in-submitted',
+    'check-in-reviewed',
+    'follow-up-configured',
+    'follow-up-contact-recorded',
+    'diary-entry-submitted',
     'pre-consultation-submitted',
     'pre-consultation-review-started',
     'pre-consultation-review-approved',
@@ -432,6 +579,10 @@ function getAuditEventsFromHistory(
   reviews: PreConsultationReview[],
   carePlans: CarePlanVersion[],
   checkIns: CareCheckIn[],
+  checkInReviews: CareCheckInReview[] = [],
+  followUpConfigurations: CareFollowUpConfiguration[] = [],
+  followUpContacts: CareFollowUpContact[] = [],
+  diaryEntries: CareDiaryEntry[] = [],
 ): CareAuditEvent[] {
   const checkInEvents = checkIns.map<CareAuditEvent>((checkIn) => ({
     id: `audit-derived-${checkIn.id}-submitted`,
@@ -445,6 +596,70 @@ function getAuditEventsFromHistory(
     relatedId: checkIn.id,
     relatedVersion: checkIn.version,
     summary: 'Check-in de acompanhamento registrado.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
+  const checkInReviewEvents = checkInReviews.map<CareAuditEvent>((review) => ({
+    id: `audit-derived-${review.id}-reviewed`,
+    patientId: review.patientId,
+    encounterId: review.encounterId,
+    action: 'check-in-reviewed',
+    actor: 'doctor',
+    actorLabel: review.reviewedBy,
+    occurredAt: review.reviewedAt,
+    occurredAtIso: review.reviewedAtIso,
+    relatedId: review.checkInId,
+    relatedVersion: review.checkInVersion,
+    summary: 'Leitura humana da fonte do check-in registrada.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
+  const followUpConfigurationEvents = followUpConfigurations.map<CareAuditEvent>((configuration) => ({
+    id: `audit-derived-${configuration.id}-configured`,
+    patientId: configuration.patientId,
+    encounterId: configuration.encounterId,
+    action: 'follow-up-configured',
+    actor: 'doctor',
+    actorLabel: configuration.configuredBy,
+    occurredAt: configuration.configuredAt,
+    occurredAtIso: configuration.configuredAtIso,
+    relatedId: configuration.id,
+    relatedVersion: configuration.version,
+    summary: 'Cadência demonstrativa de acompanhamento configurada.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
+  const followUpContactEvents = followUpContacts.map<CareAuditEvent>((contact) => ({
+    id: `audit-derived-${contact.id}-contact`,
+    patientId: contact.patientId,
+    encounterId: contact.encounterId,
+    action: 'follow-up-contact-recorded',
+    actor: 'doctor',
+    actorLabel: contact.recordedBy,
+    occurredAt: contact.recordedAt,
+    occurredAtIso: contact.recordedAtIso,
+    relatedId: contact.configurationId,
+    relatedVersion: contact.configurationVersion,
+    summary: 'Contato humano demonstrativo registrado; nenhuma notificação real foi enviada.',
+    consentVersion: null,
+    aiAssistanceAllowed: null,
+  }));
+
+  const diaryEvents = diaryEntries.map<CareAuditEvent>((entry) => ({
+    id: `audit-derived-${entry.id}-submitted`,
+    patientId: entry.patientId,
+    encounterId: entry.encounterId,
+    action: 'diary-entry-submitted',
+    actor: 'patient',
+    actorLabel: getPatientAuditLabel(entry.patientId),
+    occurredAt: entry.submittedAt,
+    occurredAtIso: entry.submittedAtIso,
+    relatedId: entry.id,
+    relatedVersion: entry.version,
+    summary: 'Contexto guiado do diário compartilhado com a equipe.',
     consentVersion: null,
     aiAssistanceAllowed: null,
   }));
@@ -564,7 +779,16 @@ function getAuditEventsFromHistory(
     return events;
   });
 
-  return [...checkInEvents, ...submissionEvents, ...reviewEvents, ...planEvents]
+  return [
+    ...checkInEvents,
+    ...checkInReviewEvents,
+    ...followUpConfigurationEvents,
+    ...followUpContactEvents,
+    ...diaryEvents,
+    ...submissionEvents,
+    ...reviewEvents,
+    ...planEvents,
+  ]
     .toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso));
 }
 
@@ -575,6 +799,10 @@ const emptyState: CareDemoState = {
   reviews: [],
   carePlans: initialCarePlans,
   checkIns: [],
+  checkInReviews: [],
+  followUpConfigurations: [],
+  followUpContacts: [],
+  diaryEntries: [],
   actionConfirmations: [],
   auditEvents: getAuditEventsFromHistory([], [], initialCarePlans, []),
 };
@@ -613,6 +841,30 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
         return normalized ? [normalized] : [];
       })
     : [];
+  const checkInReviews = Array.isArray(value.checkInReviews)
+    ? value.checkInReviews.flatMap((review) => {
+        const normalized = normalizeCheckInReview(review);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const followUpConfigurations = Array.isArray(value.followUpConfigurations)
+    ? value.followUpConfigurations.flatMap((configuration) => {
+        const normalized = normalizeFollowUpConfiguration(configuration);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const followUpContacts = Array.isArray(value.followUpContacts)
+    ? value.followUpContacts.flatMap((contact) => {
+        const normalized = normalizeFollowUpContact(contact);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const diaryEntries = Array.isArray(value.diaryEntries)
+    ? value.diaryEntries.flatMap((entry) => {
+        const normalized = normalizeDiaryEntry(entry);
+        return normalized ? [normalized] : [];
+      })
+    : [];
   const actionConfirmations = Array.isArray(value.actionConfirmations)
     ? value.actionConfirmations.flatMap((confirmation) => {
         const normalized = normalizeActionConfirmation(confirmation);
@@ -632,10 +884,23 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     reviews,
     carePlans,
     checkIns,
+    checkInReviews,
+    followUpConfigurations,
+    followUpContacts,
+    diaryEntries,
     actionConfirmations,
     auditEvents: parsedAuditEvents.length > 0
       ? parsedAuditEvents
-      : getAuditEventsFromHistory(submissions, reviews, carePlans, checkIns),
+      : getAuditEventsFromHistory(
+          submissions,
+          reviews,
+          carePlans,
+          checkIns,
+          checkInReviews,
+          followUpConfigurations,
+          followUpContacts,
+          diaryEntries,
+        ),
   };
 }
 
@@ -665,6 +930,10 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     reviews,
     carePlans,
     checkIns: [],
+    checkInReviews: [],
+    followUpConfigurations: [],
+    followUpContacts: [],
+    diaryEntries: [],
     actionConfirmations: [],
     auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, []),
   };
@@ -828,6 +1097,27 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         (checkIn) => checkIn.patientId === patientId && checkIn.encounterId === encounterId,
       );
 
+    const checkInReviewsFor = (patientId: string, encounterId: string) =>
+      (state.checkInReviews ?? []).filter(
+        (review) => review.patientId === patientId && review.encounterId === encounterId,
+      );
+
+    const followUpConfigurationsFor = (patientId: string, encounterId: string) =>
+      (state.followUpConfigurations ?? []).filter(
+        (configuration) =>
+          configuration.patientId === patientId && configuration.encounterId === encounterId,
+      );
+
+    const followUpContactsFor = (patientId: string, encounterId: string) =>
+      (state.followUpContacts ?? []).filter(
+        (contact) => contact.patientId === patientId && contact.encounterId === encounterId,
+      );
+
+    const diaryEntriesFor = (patientId: string, encounterId: string) =>
+      (state.diaryEntries ?? []).filter(
+        (entry) => entry.patientId === patientId && entry.encounterId === encounterId,
+      );
+
     const reviewHistoryFor = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       return latestSubmission
@@ -941,6 +1231,10 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       reviews: state.reviews,
       carePlans: state.carePlans,
       checkIns: state.checkIns ?? [],
+      checkInReviews: state.checkInReviews ?? [],
+      followUpConfigurations: state.followUpConfigurations ?? [],
+      followUpContacts: state.followUpContacts ?? [],
+      diaryEntries: state.diaryEntries ?? [],
       actionConfirmations: state.actionConfirmations ?? [],
       auditEvents: state.auditEvents,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
@@ -1031,6 +1325,194 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         setState((current) => ({
           ...current,
           checkIns: [...(current.checkIns ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return created;
+      },
+      reviewCheckIn: (patientId, encounterId, checkInId) => {
+        const checkIn = checkInsFor(patientId, encounterId).find(
+          (candidate) => candidate.id === checkInId,
+        );
+        if (!checkIn) {
+          throw new Error('Este check-in não pertence ao contexto atual.');
+        }
+        const existing = checkInReviewsFor(patientId, encounterId).find(
+          (review) => review.checkInId === checkIn.id,
+        );
+        if (existing) return existing;
+
+        const now = new Date();
+        const created: CareCheckInReview = {
+          id: `leitura-check-in-${Date.now()}`,
+          patientId,
+          encounterId,
+          checkInId: checkIn.id,
+          checkInVersion: checkIn.version,
+          reviewedBy: 'Dr. Guilherme Martins · médico responsável',
+          reviewedAt: formatSubmissionTime(now),
+          reviewedAtIso: now.toISOString(),
+        };
+        const auditEvent = createAuditEvent({
+          action: 'check-in-reviewed',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.reviewedAt,
+          occurredAtIso: created.reviewedAtIso,
+          relatedId: checkIn.id,
+          relatedVersion: checkIn.version,
+          summary: 'Leitura humana da fonte do check-in registrada.',
+        });
+
+        setState((current) => ({
+          ...current,
+          checkInReviews: [...(current.checkInReviews ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return created;
+      },
+      configureFollowUp: (patientId, encounterId, planId, cadence) => {
+        if (!isFollowUpCadence(cadence)) {
+          throw new Error('Escolha uma cadência válida para o acompanhamento.');
+        }
+        const plan = requireCarePlan(patientId, encounterId, planId);
+        const latestPublishedPlan = [...carePlansFor(patientId, encounterId)].reverse().find(
+          (candidate) => candidate.status === 'published',
+        ) ?? null;
+        if (plan.status !== 'published' || latestPublishedPlan?.id !== plan.id) {
+          throw new Error('A cadência só pode ser vinculada à versão publicada mais recente do plano.');
+        }
+        const configurations = followUpConfigurationsFor(patientId, encounterId);
+        const latest = configurations.at(-1) ?? null;
+        if (latest?.planId === plan.id && latest.planVersion === plan.version && latest.cadence === cadence) {
+          return latest;
+        }
+
+        const now = new Date();
+        const created: CareFollowUpConfiguration = {
+          id: `cadencia-acompanhamento-${Date.now()}`,
+          patientId,
+          encounterId,
+          planId: plan.id,
+          planVersion: plan.version,
+          version: configurations.length + 1,
+          cadence,
+          configuredBy: 'Dr. Guilherme Martins · médico responsável',
+          configuredAt: formatSubmissionTime(now),
+          configuredAtIso: now.toISOString(),
+          retentionMode: 'session-only',
+          contactMode: 'manual-only',
+        };
+        const auditEvent = createAuditEvent({
+          action: 'follow-up-configured',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.configuredAt,
+          occurredAtIso: created.configuredAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: 'Cadência demonstrativa de acompanhamento configurada.',
+        });
+
+        setState((current) => ({
+          ...current,
+          followUpConfigurations: [...(current.followUpConfigurations ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return created;
+      },
+      recordFollowUpContact: (patientId, encounterId, configurationId) => {
+        const configuration = followUpConfigurationsFor(patientId, encounterId).find(
+          (candidate) => candidate.id === configurationId,
+        );
+        if (!configuration) {
+          throw new Error('Esta configuração de acompanhamento não pertence ao contexto atual.');
+        }
+        const checkInAfterConfiguration = checkInsFor(patientId, encounterId).some(
+          (checkIn) => checkIn.submittedAtIso >= configuration.configuredAtIso,
+        );
+        if (checkInAfterConfiguration) {
+          throw new Error('Já existe um check-in depois desta configuração; o contato não é necessário.');
+        }
+        const existing = followUpContactsFor(patientId, encounterId).find(
+          (contact) => contact.configurationId === configuration.id,
+        );
+        if (existing) return existing;
+
+        const now = new Date();
+        const created: CareFollowUpContact = {
+          id: `contato-acompanhamento-${Date.now()}`,
+          patientId,
+          encounterId,
+          configurationId: configuration.id,
+          configurationVersion: configuration.version,
+          reason: 'check-in-not-recorded',
+          recordedBy: 'Dr. Guilherme Martins · médico responsável',
+          recordedAt: formatSubmissionTime(now),
+          recordedAtIso: now.toISOString(),
+        };
+        const auditEvent = createAuditEvent({
+          action: 'follow-up-contact-recorded',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: created.recordedAt,
+          occurredAtIso: created.recordedAtIso,
+          relatedId: configuration.id,
+          relatedVersion: configuration.version,
+          summary: 'Contato humano demonstrativo registrado; nenhuma notificação real foi enviada.',
+        });
+
+        setState((current) => ({
+          ...current,
+          followUpContacts: [...(current.followUpContacts ?? []), created],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return created;
+      },
+      submitDiaryEntry: (patientId, encounterId, input) => {
+        if (
+          !isGuidedScore(input.satiety) ||
+          !isGuidedScore(input.digestiveComfort) ||
+          !isGuidedScore(input.planEase) ||
+          input.mealType !== 'dinner'
+        ) {
+          throw new Error('Responda as três perguntas guiadas antes de compartilhar o diário.');
+        }
+        const entries = diaryEntriesFor(patientId, encounterId);
+        const now = new Date();
+        const created: CareDiaryEntry = {
+          id: `diario-refeicao-${Date.now()}`,
+          patientId,
+          encounterId,
+          version: entries.length + 1,
+          mealType: input.mealType,
+          satiety: input.satiety,
+          digestiveComfort: input.digestiveComfort,
+          planEase: input.planEase,
+          analysisViewed: input.analysisViewed,
+          attachmentRef: '/meals/jantar-omelete.jpg',
+          sharedWithCareTeam: true,
+          sharingConsentVersion: 'diario-contexto-v1',
+          submittedAt: formatSubmissionTime(now),
+          submittedAtIso: now.toISOString(),
+        };
+        const auditEvent = createAuditEvent({
+          action: 'diary-entry-submitted',
+          actor: 'patient',
+          patientId,
+          encounterId,
+          occurredAt: created.submittedAt,
+          occurredAtIso: created.submittedAtIso,
+          relatedId: created.id,
+          relatedVersion: created.version,
+          summary: 'Contexto guiado do diário compartilhado com a equipe.',
+        });
+
+        setState((current) => ({
+          ...current,
+          diaryEntries: [...(current.diaryEntries ?? []), created],
           auditEvents: [...current.auditEvents, auditEvent],
         }));
         return created;

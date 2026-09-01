@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
+import { DoctorFollowUpWorkspace } from './doctor-follow-up-workspace';
 import type {
   CareAuditAction,
   CareAuditEvent,
@@ -80,6 +81,10 @@ function reviewStateLabel(status: 'draft' | 'approved' | 'rejected') {
 
 const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' | 'amber' | 'blue' | 'gray' }> = {
   'check-in-submitted': { label: 'Check-in enviado', tone: 'blue' },
+  'check-in-reviewed': { label: 'Fonte lida', tone: 'green' },
+  'follow-up-configured': { label: 'Cadência configurada', tone: 'blue' },
+  'follow-up-contact-recorded': { label: 'Contato humano registrado', tone: 'amber' },
+  'diary-entry-submitted': { label: 'Diário compartilhado', tone: 'blue' },
   'pre-consultation-submitted': { label: 'Pré-consulta enviada', tone: 'blue' },
   'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
   'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
@@ -176,6 +181,10 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
     reviews,
     carePlans,
     checkIns,
+    checkInReviews,
+    followUpConfigurations,
+    followUpContacts,
+    diaryEntries,
     actionConfirmations,
     latestCheckIn,
     auditEvents,
@@ -218,6 +227,81 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       reviewState: checkIn.newSymptom ? 'Aguardando leitura médica da fonte' : 'Registro confirmado pela paciente',
       visibility: 'medical-team',
       limitation: 'É um autorrelato da paciente; não equivale a triagem, diagnóstico, classificação de urgência ou decisão clínica.',
+    }));
+
+    const checkInReviewRecords = checkInReviews.map<LongitudinalRecord>((review) => ({
+      id: `timeline-${review.id}`,
+      patientId,
+      encounterId,
+      occurredAt: formatTimelineTimestamp(review.reviewedAtIso),
+      occurredAtIso: review.reviewedAtIso,
+      kind: 'medical-review',
+      title: `Leitura humana do check-in · versão ${review.checkInVersion}`,
+      summary: 'O médico registrou que abriu e leu a fonte do check-in para organizar o acompanhamento.',
+      source: 'Check-in guiado da paciente',
+      sourceId: review.checkInId,
+      sourceVersion: review.checkInVersion,
+      author: review.reviewedBy,
+      reviewedBy: review.reviewedBy,
+      reviewedAt: formatTimelineTimestamp(review.reviewedAtIso),
+      reviewState: 'Leitura da fonte registrada',
+      visibility: 'medical-team',
+      limitation: 'Registrar leitura não equivale a validar hipótese, definir diagnóstico, decidir conduta ou transferir informação ao prontuário.',
+    }));
+
+    const followUpConfigurationRecords = followUpConfigurations.map<LongitudinalRecord>((configuration) => ({
+      id: `timeline-${configuration.id}`,
+      patientId,
+      encounterId,
+      occurredAt: formatTimelineTimestamp(configuration.configuredAtIso),
+      occurredAtIso: configuration.configuredAtIso,
+      kind: 'recorded-data',
+      title: `Cadência de acompanhamento · versão ${configuration.version}`,
+      summary: `Frequência operacional definida como ${configuration.cadence === 'daily' ? 'diária' : configuration.cadence === 'three-times-week' ? 'três vezes por semana' : 'semanal'}.`,
+      source: `Plano publicado · versão ${configuration.planVersion}`,
+      sourceId: configuration.id,
+      sourceVersion: configuration.version,
+      linkedSourceIds: [configuration.planId],
+      author: configuration.configuredBy,
+      reviewState: 'Configuração demonstrativa ativa',
+      visibility: 'medical-team',
+      limitation: 'A configuração vale apenas na sessão do protótipo; não cria retenção durável, lembrete automático ou monitoramento de urgência.',
+    }));
+
+    const followUpContactRecords = followUpContacts.map<LongitudinalRecord>((contact) => ({
+      id: `timeline-${contact.id}`,
+      patientId,
+      encounterId,
+      occurredAt: formatTimelineTimestamp(contact.recordedAtIso),
+      occurredAtIso: contact.recordedAtIso,
+      kind: 'recorded-data',
+      title: 'Contato humano de acompanhamento registrado',
+      summary: 'A equipe registrou uma ação manual diante da ausência de novo check-in após a configuração.',
+      source: `Cadência de acompanhamento · versão ${contact.configurationVersion}`,
+      sourceId: contact.configurationId,
+      sourceVersion: contact.configurationVersion,
+      author: contact.recordedBy,
+      reviewState: 'Registro operacional demonstrativo',
+      visibility: 'medical-team',
+      limitation: 'Nenhuma mensagem ou notificação real foi enviada; o registro não representa triagem, urgência ou tentativa de contato comprovada.',
+    }));
+
+    const diaryRecords = diaryEntries.map<LongitudinalRecord>((entry) => ({
+      id: `timeline-${entry.id}`,
+      patientId,
+      encounterId,
+      occurredAt: formatTimelineTimestamp(entry.submittedAtIso),
+      occurredAtIso: entry.submittedAtIso,
+      kind: 'patient-report',
+      title: `Contexto do jantar compartilhado · versão ${entry.version}`,
+      summary: `Autorrelato guiado: saciedade ${entry.satiety}/5, conforto digestivo ${entry.digestiveComfort}/5 e facilidade para seguir o combinado ${entry.planEase}/5.`,
+      source: 'Diário guiado da paciente · foto demonstrativa',
+      sourceId: entry.id,
+      sourceVersion: entry.version,
+      author: `${patientName} · paciente`,
+      reviewState: 'Original preservado · ainda não revisado',
+      visibility: 'medical-team',
+      limitation: 'As notas são autorrelatos. A foto demonstrativa e sua análise não confirmam ingredientes, quantidades, valor nutricional, diagnóstico ou resultado clínico.',
     }));
 
     const reviewRecords = reviews.map<LongitudinalRecord>((review) => {
@@ -319,12 +403,29 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
 
     return [
       ...checkInRecords,
+      ...checkInReviewRecords,
+      ...followUpConfigurationRecords,
+      ...followUpContactRecords,
+      ...diaryRecords,
       ...submissionRecords,
       ...reviewRecords,
       ...carePlanRecords,
       ...actionConfirmationRecords,
     ];
-  }, [actionConfirmations, carePlans, checkIns, encounterId, patientId, patientName, reviews, submissions]);
+  }, [
+    actionConfirmations,
+    carePlans,
+    checkInReviews,
+    checkIns,
+    diaryEntries,
+    encounterId,
+    followUpConfigurations,
+    followUpContacts,
+    patientId,
+    patientName,
+    reviews,
+    submissions,
+  ]);
 
   if (!hydrated) {
     return (
@@ -358,7 +459,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const sourceCount = new Set(records.flatMap((record) => [record.sourceId, ...(record.linkedSourceIds ?? [])])).size;
   const reviewedCount = records.filter((record) => Boolean(record.reviewedBy)).length;
   const latestUpdate = records[0]?.occurredAt ?? dossier.updatedAt;
-  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
+  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || checkIns.length > 0 || checkInReviews.length > 0 || followUpConfigurations.length > 0 || followUpContacts.length > 0 || diaryEntries.length > 0 || actionConfirmations.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
   const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (
@@ -507,6 +608,8 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
           </section>
 
           <OperationalCheckIn checkIn={latestCheckIn} />
+
+          <DoctorFollowUpWorkspace patientId={patientId} encounterId={encounterId} />
 
           <AuditTrail events={auditEvents} />
 

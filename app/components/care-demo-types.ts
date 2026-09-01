@@ -103,6 +103,68 @@ export interface CareCheckIn extends CareCheckInInput {
   submittedAtIso: string;
 }
 
+export interface CareCheckInReview {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  checkInId: string;
+  checkInVersion: number;
+  reviewedBy: string;
+  reviewedAt: string;
+  reviewedAtIso: string;
+}
+
+export type CareFollowUpCadence = 'daily' | 'three-times-week' | 'weekly';
+
+export interface CareFollowUpConfiguration {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  planId: string;
+  planVersion: number;
+  version: number;
+  cadence: CareFollowUpCadence;
+  configuredBy: string;
+  configuredAt: string;
+  configuredAtIso: string;
+  retentionMode: 'session-only';
+  contactMode: 'manual-only';
+}
+
+export interface CareFollowUpContact {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  configurationId: string;
+  configurationVersion: number;
+  reason: 'check-in-not-recorded';
+  recordedBy: string;
+  recordedAt: string;
+  recordedAtIso: string;
+}
+
+export type CareGuidedScore = 1 | 2 | 3 | 4 | 5;
+
+export interface CareDiaryEntryInput {
+  mealType: 'dinner';
+  satiety: CareGuidedScore;
+  digestiveComfort: CareGuidedScore;
+  planEase: CareGuidedScore;
+  analysisViewed: boolean;
+}
+
+export interface CareDiaryEntry extends CareDiaryEntryInput {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  attachmentRef: '/meals/jantar-omelete.jpg';
+  sharedWithCareTeam: true;
+  sharingConsentVersion: 'diario-contexto-v1';
+  submittedAt: string;
+  submittedAtIso: string;
+}
+
 export interface CarePlanActionConfirmation {
   id: string;
   patientId: string;
@@ -117,6 +179,10 @@ export interface CarePlanActionConfirmation {
 
 export type CareAuditAction =
   | 'check-in-submitted'
+  | 'check-in-reviewed'
+  | 'follow-up-configured'
+  | 'follow-up-contact-recorded'
+  | 'diary-entry-submitted'
   | 'pre-consultation-submitted'
   | 'pre-consultation-review-started'
   | 'pre-consultation-review-approved'

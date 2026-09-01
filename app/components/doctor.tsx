@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
@@ -1278,7 +1279,7 @@ function Patients({
                       {marinaMeals.map((meal, index) => (
                         <article key={meal.image} className="overflow-hidden rounded-2xl border border-[#dfe8e3] bg-white">
                           <div className="relative aspect-[4/3] overflow-hidden bg-[#e8eeeb]">
-                            <img src={meal.image} alt={meal.alt} loading="lazy" className="h-full w-full object-cover" />
+                            <Image src={meal.image} alt={meal.alt} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                             <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-[#17372f] shadow-sm">{meal.meal}</span>
                           </div>
                           <div className="p-4">
@@ -1315,7 +1316,7 @@ function Patients({
               <button type="button" onClick={() => setSelectedMealIndex(null)} aria-label="Fechar análise da refeição" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
             </div>
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-              <div className="bg-[#edf2ef] p-4 sm:p-6"><img src={selectedMeal.image} alt={selectedMeal.alt} className="h-full max-h-[620px] w-full rounded-2xl object-cover" /></div>
+              <div className="relative min-h-[320px] bg-[#edf2ef] m-4 overflow-hidden rounded-2xl sm:m-6 lg:min-h-[620px]"><Image src={selectedMeal.image} alt={selectedMeal.alt} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /></div>
               <div className="p-5 sm:p-6">
                 <Status tone={selectedMeal.tone}>{selectedMeal.status}</Status>
                 <h4 className="mt-5 text-sm font-bold text-[#17372f]">Itens reconhecidos</h4>

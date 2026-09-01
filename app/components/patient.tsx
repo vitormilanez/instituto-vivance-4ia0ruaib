@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
@@ -8,6 +9,10 @@ import type {
   CareCheckIn,
   CareCheckInInput,
   CareCheckInSleepQuality,
+  CareDiaryEntry,
+  CareDiaryEntryInput,
+  CareFollowUpConfiguration,
+  CareGuidedScore,
   CarePlanVersion,
   PreConsultationAnswers,
   PreConsultationSubmission,
@@ -28,14 +33,12 @@ type MealRatings = [number, number, number];
 interface PatientDemoUiState {
   mealAnalyzed: boolean;
   mealRatings: MealRatings;
-  mealFeedbackSent: boolean;
   watchConnected: boolean;
 }
 
 const initialPatientDemoUiState: PatientDemoUiState = {
   mealAnalyzed: false,
   mealRatings: [0, 0, 0],
-  mealFeedbackSent: false,
   watchConnected: false,
 };
 
@@ -47,7 +50,6 @@ function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
   return {
     mealAnalyzed: typeof stored.mealAnalyzed === 'boolean' ? stored.mealAnalyzed : false,
     mealRatings: ratings,
-    mealFeedbackSent: typeof stored.mealFeedbackSent === 'boolean' ? stored.mealFeedbackSent : false,
     watchConnected: typeof stored.watchConnected === 'boolean' ? stored.watchConnected : false,
   };
 }
@@ -70,10 +72,13 @@ export default function PatientWorkspace({
     latestSubmission,
     latestPublishedCarePlan,
     latestCheckIn,
+    activeFollowUpConfiguration,
+    diaryEntries,
     confirmedActionIds,
     savePreConsultationDraft,
     submitPreConsultation,
     submitCheckIn,
+    submitDiaryEntry,
     confirmCarePlanAction,
   } = useCareDemo(patientId, encounterId);
   const [checkinOpen, setCheckinOpen] = useState(false);
@@ -83,7 +88,8 @@ export default function PatientWorkspace({
     normalizePatientDemoUiState,
   );
   const [toast, setToast] = useState('');
-  const { mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected } = demoUi;
+  const { mealAnalyzed, mealRatings, watchConnected } = demoUi;
+  const latestDiaryEntry = diaryEntries.at(-1) ?? null;
   const preVisitDone = Boolean(latestSubmission);
   const checkinDone = Boolean(latestCheckIn);
   const visiblePublishedActions = latestPublishedCarePlan?.actions.filter((action) => action.active) ?? [];
@@ -136,6 +142,7 @@ export default function PatientWorkspace({
           <Today
             checkinDone={checkinDone}
             latestCheckIn={latestCheckIn}
+            followUpConfiguration={activeFollowUpConfiguration}
             preVisitDone={preVisitDone}
             watchConnected={watchConnected}
             completedActionCount={completedActionCount}
@@ -164,7 +171,7 @@ export default function PatientWorkspace({
           <Diary
             analyzed={mealAnalyzed}
             ratings={mealRatings}
-            feedbackSent={mealFeedbackSent}
+            latestEntry={latestDiaryEntry}
             onAnalyze={() => setDemoUi((current) => ({ ...current, mealAnalyzed: true }))}
             onRate={(questionIndex, value) => {
               setDemoUi((current) => ({
@@ -172,13 +179,22 @@ export default function PatientWorkspace({
                 mealRatings: current.mealRatings.map((rating, index) => index === questionIndex ? value : rating) as MealRatings,
               }));
             }}
-            onSubmitFeedback={() => {
-              setDemoUi((current) => ({ ...current, mealFeedbackSent: true }));
+            onSubmitFeedback={(input) => {
+              submitDiaryEntry(input);
               notify('Avaliação enviada ao Dr. Guilherme.');
             }}
           />
         )}
-        {view === 'Evolução' && <Evolution onNavigate={navigateToView} />}
+        {view === 'Evolução' && (
+          <Evolution
+            onNavigate={navigateToView}
+            latestCheckIn={latestCheckIn}
+            diaryEntryCount={diaryEntries.length}
+            completedActionCount={completedActionCount}
+            totalActionCount={visiblePublishedActions.length}
+            followUpConfiguration={activeFollowUpConfiguration}
+          />
+        )}
         {view === 'Mensagens' && <Messages onNotify={notify} />}
         {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={openPreVisit} />}
       </main>
@@ -233,6 +249,7 @@ export default function PatientWorkspace({
 function Today({
   checkinDone,
   latestCheckIn,
+  followUpConfiguration,
   preVisitDone,
   watchConnected,
   completedActionCount,
@@ -245,6 +262,7 @@ function Today({
 }: {
   checkinDone: boolean;
   latestCheckIn: CareCheckIn | null;
+  followUpConfiguration: CareFollowUpConfiguration | null;
   preVisitDone: boolean;
   watchConnected: boolean;
   completedActionCount: number;
@@ -261,12 +279,23 @@ function Today({
   const sleepLabel = latestCheckIn
     ? { poor: 'ruim', regular: 'regular', good: 'bom' }[latestCheckIn.sleepQuality]
     : null;
+  const cadenceLabel = followUpConfiguration
+    ? {
+        daily: 'diário',
+        'three-times-week': '3 vezes por semana',
+        weekly: 'semanal',
+      }[followUpConfiguration.cadence]
+    : null;
 
   return (
     <>
       <section className="mt-0 flex flex-col gap-4 lg:mt-8 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="flex flex-wrap gap-2"><Status tone="amber">Dados demonstrativos</Status><Status>Plano em andamento · dia 29</Status></div>
+          <div className="flex flex-wrap gap-2">
+            <Status tone="amber">Dados demonstrativos</Status>
+            <Status>Plano em andamento · dia 29</Status>
+            {cadenceLabel ? <Status tone="green">Acompanhamento {cadenceLabel}</Status> : null}
+          </div>
           <h1 className="mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Bom dia, Marina</h1>
           <p className="mt-2 text-sm leading-6 text-[#60766f]">
             {latestCheckIn
@@ -274,9 +303,12 @@ function Today({
               : 'Hoje tem só o essencial. Um pequeno passo de cada vez.'}
           </p>
         </div>
-        <button type="button" onClick={onCheckin} disabled={checkinDone} className="min-h-12 rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] disabled:bg-[#779a91]">
-          {checkinDone ? 'Check-in concluído' : 'Fazer check-in de hoje'}
-        </button>
+        <div className="lg:text-right">
+          <button type="button" onClick={onCheckin} disabled={checkinDone} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#779a91]">
+            {checkinDone ? 'Check-in concluído' : 'Fazer check-in de hoje'}
+          </button>
+          {cadenceLabel ? <p className="mt-2 text-xs text-[#698078]">Combinado atual: {cadenceLabel} · sem alerta automático</p> : null}
+        </div>
       </section>
 
       <article className="mt-7 overflow-hidden rounded-3xl border border-[#9fc9bd] bg-white shadow-[0_12px_34px_rgba(28,55,47,0.07)]">
@@ -370,29 +402,36 @@ function Plan({
 function Diary({
   analyzed,
   ratings,
-  feedbackSent,
+  latestEntry,
   onAnalyze,
   onRate,
   onSubmitFeedback,
 }: {
   analyzed: boolean;
   ratings: MealRatings;
-  feedbackSent: boolean;
+  latestEntry: CareDiaryEntry | null;
   onAnalyze: () => void;
   onRate: (questionIndex: number, value: number) => void;
-  onSubmitFeedback: () => void;
+  onSubmitFeedback: (input: CareDiaryEntryInput) => void;
 }) {
   const questions = [
     { question: 'Quanto essa refeição deixou você saciada?', low: 'Nada saciada', high: 'Muito saciada' },
     { question: 'Como ficou seu conforto digestivo depois?', low: 'Muito desconfortável', high: 'Muito confortável' },
     { question: 'Quão fácil foi seguir o combinado nesta refeição?', low: 'Muito difícil', high: 'Muito fácil' },
   ];
+  const feedbackSent = Boolean(latestEntry);
   const allAnswered = ratings.every((rating) => rating > 0);
 
   const submitFeedback = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!allAnswered || feedbackSent) return;
-    onSubmitFeedback();
+    onSubmitFeedback({
+      mealType: 'dinner',
+      satiety: ratings[0] as CareGuidedScore,
+      digestiveComfort: ratings[1] as CareGuidedScore,
+      planEase: ratings[2] as CareGuidedScore,
+      analysisViewed: analyzed,
+    });
   };
 
   return (
@@ -402,8 +441,8 @@ function Diary({
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-7">
           <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Jantar · hoje, 19:42</p><h2 className="mt-2 text-xl font-semibold">Refeição registrada</h2></div><Status tone="gray">Foto demonstrativa</Status></div>
           <div className="mt-6 grid gap-5 sm:grid-cols-[220px_1fr] sm:items-center">
-            <div className="mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl bg-[#e8dfce] shadow-[0_12px_34px_rgba(73,61,42,0.16)]">
-              <img src="/meals/jantar-omelete.jpg" alt="Prato demonstrativo com omelete, batata-doce, brócolis e salada." className="size-full object-cover" />
+            <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-3xl bg-[#e8dfce] shadow-[0_12px_34px_rgba(73,61,42,0.16)]">
+              <Image src="/meals/jantar-omelete.jpg" alt="Prato demonstrativo com omelete, batata-doce, brócolis e salada." fill sizes="220px" className="object-cover" />
             </div>
             <div>
               <p className="text-sm leading-6 text-[#60766f]">Você marcou esta refeição como <strong className="text-[#17372f]">satisfatória</strong> e informou fome moderada antes de comer.</p>
@@ -448,7 +487,7 @@ function Diary({
                 {feedbackSent ? (
                   <div role="status" className="mt-5 rounded-2xl border border-[#b9d8cf] bg-[#e8f4f0] p-4">
                     <p className="text-sm font-bold text-[#0b6a5b]">Avaliação enviada ao Dr. Guilherme</p>
-                    <p className="mt-1 text-xs leading-5 text-[#526a62]">Suas três respostas foram adicionadas ao acompanhamento desta refeição.</p>
+                    <p className="mt-1 text-xs leading-5 text-[#526a62]">Suas três respostas foram adicionadas ao acompanhamento desta refeição{latestEntry ? ` em ${latestEntry.submittedAt}` : ''}.</p>
                   </div>
                 ) : (
                   <button type="submit" disabled={!allAnswered} className="mt-5 min-h-12 w-full cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#a9b8b3]">Enviar avaliação ao Dr. Guilherme</button>
@@ -473,7 +512,21 @@ function Diary({
   );
 }
 
-function Evolution({ onNavigate }: { onNavigate: (view: PatientView) => void }) {
+function Evolution({
+  onNavigate,
+  latestCheckIn,
+  diaryEntryCount,
+  completedActionCount,
+  totalActionCount,
+  followUpConfiguration,
+}: {
+  onNavigate: (view: PatientView) => void;
+  latestCheckIn: CareCheckIn | null;
+  diaryEntryCount: number;
+  completedActionCount: number;
+  totalActionCount: number;
+  followUpConfiguration: CareFollowUpConfiguration | null;
+}) {
   type EvolutionRange = '6 semanas' | '3 meses' | '6 meses';
   const [range, setRange] = useState<EvolutionRange>('6 semanas');
   const rangeData: Record<EvolutionRange, Array<{ label: string; remaining: number }>> = {
@@ -509,6 +562,12 @@ function Evolution({ onNavigate }: { onNavigate: (view: PatientView) => void }) 
   const journeyProgress = 23;
   const movementWeek = [54, 63, 47, 72, 67, 83, 76];
   const sleepWeek = [78, 51, 63, 56, 74, 68, 61];
+  const currentSleepLabel = latestCheckIn
+    ? { poor: 'ruim', regular: 'regular', good: 'bom' }[latestCheckIn.sleepQuality]
+    : null;
+  const currentCadenceLabel = followUpConfiguration
+    ? { daily: 'Diária', 'three-times-week': '3x por semana', weekly: 'Semanal' }[followUpConfiguration.cadence]
+    : 'Ainda não configurada';
 
   return (
     <section className="mt-0 lg:mt-8">
@@ -523,6 +582,39 @@ function Evolution({ onNavigate }: { onNavigate: (view: PatientView) => void }) 
           Conversar sobre a meta
         </button>
       </div>
+
+      <section aria-labelledby="session-progress-title" className="mt-7 rounded-[28px] border border-[#bfd4cd] bg-[#f7fbf9] p-5 sm:p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Registros desta sessão</p>
+            <h2 id="session-progress-title" className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#17372f]">O que entrou de verdade no acompanhamento</h2>
+          </div>
+          <Status tone="green">Fonte identificada</Status>
+        </div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">Este bloco usa somente ações feitas nesta sessão. Os gráficos históricos abaixo continuam claramente demonstrativos.</p>
+        <dl className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-[#789087]">Check-in</dt>
+            <dd className="mt-2 text-sm font-bold text-[#294940]">{latestCheckIn ? `Energia ${latestCheckIn.energy}/5 · sono ${currentSleepLabel}` : 'Ainda não registrado'}</dd>
+            <p className="mt-1 text-[11px] leading-5 text-[#698078]">Autorrelato guiado</p>
+          </div>
+          <div className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-[#789087]">Diário</dt>
+            <dd className="mt-2 text-sm font-bold text-[#294940]">{diaryEntryCount} {diaryEntryCount === 1 ? 'contexto compartilhado' : 'contextos compartilhados'}</dd>
+            <p className="mt-1 text-[11px] leading-5 text-[#698078]">Escolhas da paciente</p>
+          </div>
+          <div className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-[#789087]">Plano</dt>
+            <dd className="mt-2 text-sm font-bold text-[#294940]">{completedActionCount} de {totalActionCount} ações registradas</dd>
+            <p className="mt-1 text-[11px] leading-5 text-[#698078]">Confirmação autorrelatada</p>
+          </div>
+          <div className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
+            <dt className="text-xs font-bold uppercase tracking-[0.08em] text-[#789087]">Cadência</dt>
+            <dd className="mt-2 text-sm font-bold text-[#294940]">{currentCadenceLabel}</dd>
+            <p className="mt-1 text-[11px] leading-5 text-[#698078]">Sem alerta ou urgência automática</p>
+          </div>
+        </dl>
+      </section>
 
       <article className="mt-7 overflow-hidden rounded-[32px] bg-[#17372f] text-white shadow-[0_18px_45px_rgba(23,55,47,0.18)]">
         <div className="grid gap-7 p-5 sm:p-7 lg:grid-cols-[minmax(0,1.05fr)_190px_minmax(240px,0.85fr)] lg:items-center">
