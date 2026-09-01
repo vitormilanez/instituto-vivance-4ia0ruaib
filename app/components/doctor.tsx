@@ -1,8 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { cn, Heading, Status, Toast } from './shared';
 
 type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
@@ -413,7 +414,7 @@ export default function DoctorWorkspace() {
 
   return (
     <>
-      <div className="mx-auto grid max-w-[1540px] lg:grid-cols-[232px_minmax(0,1fr)]">
+      <div id="doctor-workspace-content" className="mx-auto grid max-w-[1540px] lg:grid-cols-[232px_minmax(0,1fr)]">
         <aside className="hidden min-h-[calc(100vh-72px)] border-r border-[#dfe8e3] bg-white px-4 py-6 lg:block">
           <nav aria-label="Navegação do médico" className="space-y-1">
             {nav.map((item) => (
@@ -499,6 +500,7 @@ export default function DoctorWorkspace() {
       {selectedAppointment && (
         <Consultation
           appointment={selectedAppointment}
+          onNotify={notify}
           onClose={() => setSelectedAppointment(null)}
           onComplete={() => {
             const patientName = selectedAppointment.patient;
@@ -533,14 +535,39 @@ function Overview({
   onAlert: (item: (typeof alerts)[number]) => void;
   onReports: () => void;
 }) {
-  const { latestSubmission } = useCareDemo();
-  const preparationChecklist = latestSubmission
-    ? [
-        'Ler o relato original da paciente',
-        latestSubmission.aiAssistanceAllowed ? 'Comparar o rascunho com as fontes' : 'Organizar o contexto manualmente',
-        'Registrar dúvidas e decisões na consulta',
-      ]
-    : ['Aguardar a pré-consulta', 'Confirmar o objetivo durante a consulta', 'Registrar o contexto manualmente'];
+  const { latestSubmission, activeReview } = useCareDemo();
+  const reviewLabel = !latestSubmission
+    ? 'Pré-consulta pendente'
+    : activeReview?.status === 'approved'
+      ? `Preparo aprovado · v${activeReview.version}`
+      : activeReview?.status === 'rejected'
+        ? `Rascunho rejeitado · v${activeReview.version}`
+        : activeReview?.status === 'draft'
+          ? `Revisão em andamento · v${activeReview.version}`
+          : 'Aguardando revisão médica';
+  const reviewTone = !latestSubmission || activeReview?.status === 'draft'
+    ? 'amber'
+    : activeReview?.status === 'approved'
+      ? 'green'
+      : activeReview?.status === 'rejected'
+        ? 'rose'
+        : 'blue';
+  const reviewAction = !latestSubmission
+    ? 'Pré-consulta ainda pendente'
+    : activeReview?.status === 'approved'
+      ? 'Ver preparo aprovado'
+      : activeReview?.status === 'draft'
+        ? 'Continuar revisão médica'
+        : activeReview?.status === 'rejected'
+          ? 'Criar nova versão'
+          : 'Iniciar revisão médica';
+  const preparationChecklist = !latestSubmission
+    ? ['Aguardar a pré-consulta', 'Confirmar o objetivo durante a consulta', 'Registrar o contexto manualmente']
+    : activeReview?.status === 'approved'
+      ? ['Ler o preparo aprovado', 'Confirmar o contexto com a paciente', 'Registrar decisões da consulta']
+      : activeReview?.status === 'rejected'
+        ? ['Preservar o relato original', 'Criar uma preparação manual', 'Registrar decisões da consulta']
+        : ['Ler o relato original da paciente', 'Revisar ou rejeitar o rascunho', 'Registrar dúvidas para a consulta'];
   const summaryCards = [
     { label: 'Consultas hoje', value: '5', detail: 'Próxima às 10:30', action: 'Ver agenda do dia', target: 'agenda-do-dia', dot: 'bg-[#3da58f]' },
     { label: 'Precisam de atenção', value: '3', detail: '1 novo sintoma relatado', action: 'Ver prioridades', target: 'atencao-do-dia', dot: 'bg-[#e49d45]' },
@@ -603,7 +630,7 @@ function Overview({
             <div>
               <div className="flex flex-wrap gap-2">
                 {['Emagrecimento', 'Saúde do sono', 'Retorno 30 dias'].map((tag) => <Status key={tag} tone="gray">{tag}</Status>)}
-                <Status tone={latestSubmission ? 'green' : 'amber'}>{latestSubmission ? 'Pré-consulta por texto pronta' : 'Pré-consulta pendente'}</Status>
+                <Status tone={reviewTone}>{reviewLabel}</Status>
               </div>
               <div className="mt-6 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4">
                 <ClinicalLayerBadge layer="relato" />
@@ -612,7 +639,15 @@ function Overview({
                 <p className="mt-2 text-xs text-[#698078]">{latestSubmission ? `Versão ${latestSubmission.version} · enviada em ${latestSubmission.submittedAt} · ciência registrada` : 'O atendimento pode continuar manualmente, sem bloquear a consulta.'}</p>
               </div>
               <h3 className="mt-5 text-sm font-bold">Organização para revisão médica</h3>
-              {latestSubmission?.structuredDraft ? (
+              {activeReview ? (
+                <div className={cn('mt-3 rounded-2xl border p-4', activeReview.status === 'approved' ? 'border-[#b9d8cf] bg-[#edf7f4]' : activeReview.status === 'rejected' ? 'border-[#e4beb9] bg-[#fdf0ef]' : 'border-[#c9d8ec] bg-[#f7f9fc]')}>
+                  <Status tone={activeReview.status === 'approved' ? 'green' : activeReview.status === 'rejected' ? 'rose' : 'amber'}>
+                    {activeReview.status === 'approved' ? 'Aprovado para a consulta' : activeReview.status === 'rejected' ? 'Rascunho rejeitado' : 'Rascunho em revisão'}
+                  </Status>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#526a62]">{activeReview.content}</p>
+                  <p className="mt-3 text-xs text-[#698078]">Versão de revisão {activeReview.version} · atualizada em {activeReview.updatedAt}</p>
+                </div>
+              ) : latestSubmission?.structuredDraft ? (
                 <div className="mt-3 rounded-2xl border border-[#c9d8ec] bg-[#f7f9fc] p-4">
                   <AiDraftBadge />
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#526a62]">{latestSubmission.structuredDraft}</p>
@@ -631,7 +666,7 @@ function Overview({
                 </details>
               )}
               <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" disabled={!latestSubmission} onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a59f]">{latestSubmission ? 'Abrir preparo da consulta' : 'Pré-consulta ainda pendente'}</button>
+                <button type="button" disabled={!latestSubmission} onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a59f]">{reviewAction}</button>
                 <button type="button" onClick={onPatient} className="min-h-11 cursor-pointer px-2 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prontuário completo</button>
               </div>
             </div>
@@ -1327,13 +1362,28 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
   );
 }
 
-function Consultation({ appointment, onClose, onComplete }: { appointment: Appointment; onClose: () => void; onComplete: () => void }) {
+function Consultation({
+  appointment,
+  onClose,
+  onComplete,
+  onNotify,
+}: {
+  appointment: Appointment;
+  onClose: () => void;
+  onComplete: () => void;
+  onNotify: (message: string) => void;
+}) {
   type Step = 'preparo' | 'consulta' | 'plano' | 'fechamento';
+  const { latestSubmission } = useCareDemo();
   const [step, setStep] = useState<Step>('preparo');
   const [meetOpen, setMeetOpen] = useState(false);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
   const [summary, setSummary] = useState(false);
   const [compiled, setCompiled] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const usesSharedPreConsultation = appointment.patient === 'Marina Costa' && Boolean(latestSubmission);
   const steps: Array<[Step, string]> = [
     ['preparo', '1. Preparo'],
     ['consulta', '2. Consulta'],
@@ -1341,12 +1391,74 @@ function Consultation({ appointment, onClose, onComplete }: { appointment: Appoi
     ['fechamento', '4. Fechamento'],
   ];
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    const backgroundRegions = [
+      document.querySelector<HTMLElement>('header'),
+      document.getElementById('doctor-workspace-content'),
+    ].filter((region): region is HTMLElement => Boolean(region));
+    const backgroundState = backgroundRegions.map((region) => ({
+      region,
+      hadInert: region.hasAttribute('inert'),
+      ariaHidden: region.getAttribute('aria-hidden'),
+    }));
+
+    backgroundRegions.forEach((region) => {
+      region.setAttribute('inert', '');
+      region.setAttribute('aria-hidden', 'true');
+    });
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      backgroundState.forEach(({ region, hadInert, ariaHidden }) => {
+        if (!hadInert) region.removeAttribute('inert');
+        if (ariaHidden === null) region.removeAttribute('aria-hidden');
+        else region.setAttribute('aria-hidden', ariaHidden);
+      });
+      previousFocus?.focus();
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#102a24]/55 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="consultation-title">
-      <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-t-3xl bg-[#f4f7f5] shadow-2xl sm:rounded-3xl">
+      <div ref={dialogRef} className="max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-t-3xl bg-[#f4f7f5] shadow-2xl sm:rounded-3xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dfe8e3] bg-white px-5 py-4 sm:px-6">
           <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta · {appointment.time}</p><h2 id="consultation-title" className="mt-1 text-xl font-semibold">{appointment.patient}</h2></div>
-          <button type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
         </div>
         <div className="border-b border-[#dfe8e3] bg-white px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
@@ -1359,9 +1471,14 @@ function Consultation({ appointment, onClose, onComplete }: { appointment: Appoi
               <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Briefing longitudinal</p><h3 className="mt-2 text-2xl font-semibold">O que mudou desde a última consulta</h3></div>
-                  <Status tone={appointment.preVisitTone}>{appointment.preVisit}</Status>
+                  <Status tone={usesSharedPreConsultation ? 'blue' : appointment.preVisitTone}>{usesSharedPreConsultation ? 'Fonte compartilhada nesta sessão' : appointment.preVisit}</Status>
                 </div>
-                <div className="mt-6 rounded-3xl bg-[#17372f] p-5 text-white">
+                {usesSharedPreConsultation ? (
+                  <div className="mt-6">
+                    <PreConsultationReviewWorkspace onNotify={onNotify} />
+                  </div>
+                ) : (
+                  <div className="mt-6 rounded-3xl bg-[#17372f] p-5 text-white">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Síntese da pré-consulta</p>
                     <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-[#d6e8e2]">Dados demonstrativos</span>
@@ -1372,7 +1489,8 @@ function Consultation({ appointment, onClose, onComplete }: { appointment: Appoi
                     <div className="rounded-2xl bg-white/10 p-4"><p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Organizado pela IA</p><p className="mt-2 text-sm leading-6 text-[#e0eee9]">{appointment.aiFocus}</p></div>
                   </div>
                   <details className="mt-4 rounded-2xl border border-white/15 p-3"><summary className="cursor-pointer text-xs font-bold text-[#c9e4dd]">Abrir respostas de origem</summary><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">As respostas demonstrativas foram organizadas em um resumo revisável. Nenhum conteúdo é tratado como diagnóstico ou decisão clínica automática.</p></details>
-                </div>
+                  </div>
+                )}
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   {appointment.metrics.map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs text-[#698078]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p><p className={cn('mt-1 text-xs font-semibold', item[0] === 'Sintoma' ? 'text-[#9c453f]' : item[0] === 'Anamnese' || (item[0] === 'Sono' && item[2].includes('abaixo')) ? 'text-[#a06117]' : 'text-[#0b7b68]')}>{item[2]}</p></div>)}
                 </div>

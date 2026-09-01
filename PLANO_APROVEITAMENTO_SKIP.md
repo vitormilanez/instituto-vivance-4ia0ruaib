@@ -24,7 +24,19 @@ pré-consulta por texto
 -> recebimento no preparo médico
 ```
 
-Aprovação do plano e publicação para a paciente permanecem planejadas para os lotes 2 e 3; ainda não devem ser consideradas entregues.
+Aprovação do plano e publicação para a paciente permanecem planejadas para o Lote 3; ainda não devem ser consideradas entregues.
+
+Na branch `codex/skip-lote2-workspace-medico`, o segundo incremento acrescenta:
+
+```text
+fonte original preservada
+-> rascunho médico editável
+-> rejeição com motivo
+-> nova versão de revisão
+-> aprovação apenas para uso na consulta
+```
+
+Essa aprovação não publica conteúdo para a paciente e não representa sincronização com prontuário.
 
 ## Princípios
 
@@ -67,13 +79,26 @@ Aprovação do plano e publicação para a paciente permanecem planejadas para o
 - Compartilhar a submissão entre as visões paciente e médico.
 - Persistir somente na sessão do navegador, com dados fictícios.
 
-### Lote 2 — Dossiê e workspace médico
+### Lote 2 — Dossiê e workspace médico — em andamento nesta branch
 
-- Dividir `doctor.tsx` e `patient.tsx` em componentes menores.
-- Criar rotas reais para paciente, dossiê, pré-consulta e consulta.
-- Exibir fontes, notas, rascunhos e versões separadamente.
-- Permitir edição, rejeição e aprovação do rascunho.
-- Manter todo o fluxo disponível manualmente.
+Implementado neste incremento:
+
+- extrair o workspace de revisão da pré-consulta para um componente próprio;
+- exibir fonte original e rascunho em superfícies separadas;
+- permitir edição e salvamento do rascunho durante a sessão;
+- exigir motivo para rejeição sem alterar o relato original;
+- criar uma nova versão depois de aprovação ou rejeição;
+- registrar versão, estado, horário e responsável pela revisão;
+- permitir aprovação somente para uso no preparo da consulta;
+- manter uma preparação manual quando a assistência de IA não for autorizada;
+- refletir o estado da revisão no painel médico.
+
+Ainda pendente no Lote 2:
+
+- dividir outras áreas extensas de `doctor.tsx` e `patient.tsx`;
+- criar rotas reais para paciente, dossiê, pré-consulta e consulta;
+- estruturar notas e fontes longitudinais além da pré-consulta;
+- definir persistência durável e identidade autenticada, fora do estado demonstrativo.
 
 ### Lote 3 — Plano aprovado
 
@@ -112,6 +137,19 @@ Aprovação do plano e publicação para a paciente permanecem planejadas para o
 - Recarregar a página mantém a submissão durante a sessão de demonstração.
 - Nenhum conteúdo interno ou rascunho é apresentado como decisão aprovada.
 - Build, lint e validação visual passam.
+
+## Critérios de aceite do incremento do Lote 2
+
+- A revisão só pode começar quando existe uma pré-consulta enviada.
+- A fonte original permanece visível e não pode ser sobrescrita pela revisão.
+- O médico pode editar o preparo sem transformar o texto em decisão clínica automática.
+- Rejeitar o rascunho exige um motivo e preserva a versão rejeitada no histórico.
+- Uma nova revisão cria outra versão em vez de sobrescrever a versão encerrada.
+- A aprovação identifica responsável e horário.
+- A interface afirma claramente que aprovar o preparo não publica um plano.
+- O fluxo manual funciona quando a IA não foi autorizada.
+- O estado aprovado e o histórico permanecem após recarregar durante a sessão.
+- O modal funciona por teclado, isola o conteúdo de fundo e não cria rolagem horizontal em 375 px.
 
 ## Itens explicitamente excluídos
 

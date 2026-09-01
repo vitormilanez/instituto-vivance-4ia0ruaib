@@ -24,10 +24,11 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - compilação do plano de cuidado;
 - mensagens e relatórios revisáveis;
 - recebimento do objetivo e dos relatos originais da pré-consulta, separados do rascunho assistido.
+- workspace médico com edição, rejeição justificada, aprovação restrita ao preparo e histórico de versões.
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. As experiências usam estado local demonstrativo; a pré-consulta permanece na `sessionStorage` somente durante a sessão do navegador. Ainda não existem autenticação, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. As experiências usam estado local demonstrativo; a pré-consulta e suas versões de revisão permanecem na `sessionStorage` somente durante a sessão do navegador. Ainda não existem autenticação, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -38,6 +39,7 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - Conteúdo gerado não deve ser enviado automaticamente ao paciente.
 - A pré-consulta registra ciência, começa com campos vazios e permite revisar o relato antes do envio.
 - A assistência de IA é opcional e sua recusa não impede o fluxo manual.
+- Aprovar a revisão da pré-consulta valida somente o preparo médico; não publica plano nem sincroniza prontuário.
 - Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.
