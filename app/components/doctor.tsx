@@ -49,6 +49,53 @@ type Appointment = {
   checklist: string[];
 };
 
+type DashboardIconProps = { className?: string };
+
+function SparklesIcon({ className = 'size-4' }: DashboardIconProps) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3.5c.5 3.5 2.5 5.5 6 6-3.5.5-5.5 2.5-6 6-.5-3.5-2.5-5.5-6-6 3.5-.5 5.5-2.5 6-6Z" />
+      <path d="M19 15.5c.25 1.75 1.25 2.75 3 3-1.75.25-2.75 1.25-3 3-.25-1.75-1.25-2.75-3-3 1.75-.25 2.75-1.25 3-3Z" />
+      <path d="M5 3v3M3.5 4.5h3" />
+    </svg>
+  );
+}
+
+function VideoIcon({ className = 'size-5' }: DashboardIconProps) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="13" height="12" rx="2.5" />
+      <path d="m16 10 5-3v10l-5-3" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className = 'size-5' }: DashboardIconProps) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2.5" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </svg>
+  );
+}
+
+function BroadcastIcon({ className = 'size-4' }: DashboardIconProps) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="1.75" fill="currentColor" stroke="none" />
+      <path d="M8.8 8.8a4.5 4.5 0 0 0 0 6.4M15.2 8.8a4.5 4.5 0 0 1 0 6.4M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon({ className = 'size-4' }: DashboardIconProps) {
+  return (
+    <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M14 7l5 5-5 5" />
+    </svg>
+  );
+}
+
 interface DoctorDemoUiState {
   reportApproved: boolean;
   overdueReminderSent: boolean;
@@ -690,37 +737,96 @@ function Overview({
     ['Lúcia Barbosa', 'Resumo pós-consulta', 'Rascunho criado hoje', 'gray'] as const,
   ];
   const scrollTo = (target: string) => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const nextAppointment = appointments[1];
+  const waitingRoomContext = latestSubmission
+    ? 'Pré-consulta concluída · contexto pronto para revisão médica'
+    : 'Pré-consulta pendente · o atendimento manual continua disponível';
 
   return (
     <>
-      <section className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-1 text-xs font-semibold text-[#45655c]">
-              Terça-feira, 25 de agosto
+      <section aria-labelledby="doctor-welcome-title" className="relative overflow-hidden rounded-[34px] border border-[#e5ded2] bg-[#fffefa] px-5 py-6 shadow-[0_20px_60px_rgba(42,62,54,0.07)] sm:px-7 sm:py-8 xl:px-9 xl:py-10">
+        <div aria-hidden="true" className="absolute -right-24 -top-28 size-72 rounded-full border-[40px] border-[#edf4f0] opacity-70" />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="inline-flex min-h-9 items-center gap-2 rounded-full bg-[#e7efea] px-4 text-xs font-bold text-[#2e6253] sm:text-sm">
+              <SparklesIcon />
+              Painel de longevidade
+            </span>
+            <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-[#bdd2c8] bg-[#f2f8f5] px-4 text-xs font-semibold text-[#2e6253] shadow-[0_2px_5px_rgba(46,98,83,0.08)] sm:text-sm">
+              <span aria-hidden="true" className="size-2 rounded-full bg-[#328568]" />
+              Carteira ativa · 22 pacientes
             </span>
             <Status tone="amber">Dados demonstrativos</Status>
           </div>
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#15342c] sm:text-4xl">Bom dia, Dr. Guilherme</h1>
-          <p className="mt-2 max-w-2xl text-[15px] leading-6 text-[#60766f]">
-            Sua agenda está organizada. Três pacientes merecem uma revisão antes do próximo contato.
+
+          <h1 id="doctor-welcome-title" className="font-editorial mt-6 max-w-5xl text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.045em] text-[#1f2824] sm:text-5xl xl:text-[3.65rem]">
+            Bem-vindo, Dr. Guilherme Martins
+          </h1>
+          <p className="mt-5 max-w-4xl text-base leading-7 text-[#606b66] sm:text-lg sm:leading-8">
+            Hoje você tem <strong className="font-bold text-[#2e6253]">5 consultas agendadas</strong>.{' '}
+            {latestSubmission ? (
+              <>A paciente <strong className="text-[#232a27]">Marina Costa</strong> enviou a pré-consulta e aguarda na sala virtual.</>
+            ) : (
+              <>A paciente <strong className="text-[#232a27]">Marina Costa</strong> já aguarda na sala virtual; a pré-consulta ainda está pendente.</>
+            )}
           </p>
+
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <button type="button" onClick={() => onOpenAppointment(nextAppointment)} className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-[#2e6253] px-5 text-sm font-bold text-white shadow-[0_12px_30px_rgba(46,98,83,0.2)] transition-colors duration-200 hover:bg-[#244d42] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#70aa97] focus-visible:ring-offset-2 sm:min-h-14 sm:px-6 sm:text-base">
+              <VideoIcon />
+              Iniciar consulta online
+            </button>
+            <Link href="/medico/agenda" className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2.5 rounded-2xl border border-[#ded7cb] bg-[#faf8f4] px-5 text-sm font-bold text-[#29332f] transition-colors duration-200 hover:border-[#b8ccc3] hover:bg-[#f2f5f2] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#70aa97] focus-visible:ring-offset-2 sm:min-h-14 sm:px-6 sm:text-base">
+              <CalendarIcon className="size-5 text-[#2e6253]" />
+              Ver agenda do dia
+            </Link>
+          </div>
+
+          <section aria-labelledby="virtual-waiting-room-title" className="mt-8 rounded-[26px] border border-[#bfd4ca] bg-[#e9f1ed] p-4 shadow-[0_6px_18px_rgba(46,98,83,0.07)] sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-[#2e6253]">
+                <span className="grid size-9 place-items-center rounded-full bg-white/75">
+                  <BroadcastIcon className="size-4" />
+                </span>
+                <h2 id="virtual-waiting-room-title" className="text-xs font-extrabold uppercase tracking-[0.12em] sm:text-sm">Sala de espera virtual</h2>
+              </div>
+              <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-[#bdd2c8] bg-white px-3 text-xs font-bold text-[#2e6253]">
+                <span aria-hidden="true" className="size-2 rounded-full bg-[#328568]" />
+                1 paciente online
+              </span>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-4 rounded-[20px] border border-[#bfd4ca] bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#dbeae4] text-sm font-extrabold text-[#2e6253]">MC</span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-bold text-[#202824]">Marina Costa</h3>
+                    <Status tone={latestSubmission ? 'green' : 'amber'}>{latestSubmission ? 'Pré-consulta recebida' : 'Pré-consulta pendente'}</Status>
+                  </div>
+                  <p className="mt-1 text-sm text-[#65706b]">Aguardando há 4 min · consulta das 10:30</p>
+                  <p className="mt-1 text-xs font-medium text-[#557067]">{waitingRoomContext}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => onOpenAppointment(nextAppointment)} aria-label="Atender Marina Costa agora" className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-[#2e6253] px-5 text-sm font-bold text-white transition-colors duration-200 hover:bg-[#244d42] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#70aa97] focus-visible:ring-offset-2">
+                Atender agora
+                <ArrowRightIcon />
+              </button>
+            </div>
+          </section>
         </div>
-        <button type="button" onClick={() => onOpenAppointment(appointments[1])} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white shadow-[0_10px_25px_rgba(11,123,104,0.22)] transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-          Iniciar próxima consulta
-        </button>
       </section>
 
       <section aria-label="Resumo do dia" className="mt-8 grid gap-4 sm:grid-cols-3">
         {summaryCards.map((item) => (
-          <button type="button" key={item.label} aria-controls={item.target} onClick={() => scrollTo(item.target)} className="group cursor-pointer rounded-2xl border border-[#dfe8e3] bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc9be] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+          <button type="button" key={item.label} aria-controls={item.target} onClick={() => scrollTo(item.target)} className="group cursor-pointer rounded-[24px] border border-[#e4dfd6] bg-[#fffefa] p-5 text-left shadow-[0_8px_28px_rgba(42,62,54,0.045)] transition-colors duration-200 hover:border-[#aac9bc] hover:bg-white focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#70aa97] focus-visible:ring-offset-2">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[#60766f]">{item.label}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#66726d]">{item.label}</p>
               <span aria-hidden="true" className={cn('size-2.5 rounded-full', item.dot)} />
             </div>
-            <p className="mt-3 text-3xl font-semibold tracking-[-0.04em]">{item.value}</p>
-            <p className="mt-1 text-xs font-medium text-[#789087]">{item.detail}</p>
-            <p className="mt-4 text-xs font-bold text-[#0b6a5b] group-hover:underline group-hover:underline-offset-4">{item.action} →</p>
+            <p className="font-editorial mt-3 text-4xl font-semibold leading-none tracking-[-0.04em] text-[#26312d]">{item.value}</p>
+            <p className="mt-2 text-xs font-medium text-[#78847f]">{item.detail}</p>
+            <p className="mt-5 flex items-center gap-1.5 text-xs font-bold text-[#2e6253] group-hover:underline group-hover:underline-offset-4">{item.action}<ArrowRightIcon className="size-3.5" /></p>
           </button>
         ))}
       </section>
