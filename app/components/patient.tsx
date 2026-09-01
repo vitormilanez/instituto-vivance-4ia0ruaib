@@ -1,6 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useCareDemo } from './care-demo-store';
+import type { PreConsultationAnswers, PreConsultationSubmission } from './care-demo-types';
+import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import { cn, Heading, Status, Toast } from './shared';
 
 type PatientView = 'Hoje' | 'Plano' | 'Diário' | 'Evolução' | 'Mensagens' | 'Consultas';
@@ -9,17 +12,23 @@ type MealRatings = [number, number, number];
 const nav: PatientView[] = ['Hoje', 'Plano', 'Diário', 'Evolução', 'Mensagens', 'Consultas'];
 
 export default function PatientWorkspace() {
+  const {
+    draft: preConsultationDraft,
+    latestSubmission,
+    savePreConsultationDraft,
+    submitPreConsultation,
+  } = useCareDemo();
   const [view, setView] = useState<PatientView>('Hoje');
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [checkinDone, setCheckinDone] = useState(false);
   const [preVisitOpen, setPreVisitOpen] = useState(false);
-  const [preVisitDone, setPreVisitDone] = useState(false);
   const [mealAnalyzed, setMealAnalyzed] = useState(false);
   const [mealRatings, setMealRatings] = useState<MealRatings>([0, 0, 0]);
   const [mealFeedbackSent, setMealFeedbackSent] = useState(false);
   const [watchConnected, setWatchConnected] = useState(false);
   const [tasks, setTasks] = useState([true, false, false]);
   const [toast, setToast] = useState('');
+  const preVisitDone = Boolean(latestSubmission);
 
   const notify = (text: string) => {
     setToast(text);
@@ -116,11 +125,13 @@ export default function PatientWorkspace() {
       )}
       {preVisitOpen && (
         <PreVisitInterview
-          initiallyComplete={preVisitDone}
+          initialDraft={preConsultationDraft}
+          latestSubmission={latestSubmission}
+          onSaveDraft={savePreConsultationDraft}
           onClose={() => setPreVisitOpen(false)}
-          onComplete={() => {
+          onSubmit={() => {
+            submitPreConsultation();
             setPreVisitOpen(false);
-            setPreVisitDone(true);
             notify('Pré-consulta enviada ao Dr. Guilherme.');
           }}
         />
@@ -163,18 +174,18 @@ function Today({
       <article className="mt-7 overflow-hidden rounded-3xl border border-[#9fc9bd] bg-white shadow-[0_12px_34px_rgba(28,55,47,0.07)]">
         <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[auto_1fr_auto] lg:items-center">
           <div className="grid size-14 place-items-center rounded-full bg-[#17372f] text-xs font-bold uppercase tracking-[0.08em] text-white">
-            Voz
+            Texto
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Conversa de pré-consulta</p>
-              <Status tone={preVisitDone ? 'green' : 'amber'}>{preVisitDone ? 'Enviada ao médico' : '5–7 minutos'}</Status>
+              <Status tone={preVisitDone ? 'green' : 'amber'}>{preVisitDone ? 'Enviada ao médico' : 'cerca de 4 minutos'}</Status>
             </div>
             <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em]">
-              {preVisitDone ? 'Seu objetivo já está no preparo da consulta' : 'Conte com sua voz o que você quer melhorar'}
+              {preVisitDone ? 'Seu objetivo já está no preparo da consulta' : 'Organize o que deseja conversar na consulta'}
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[#60766f]">
-              A assistente do Instituto Vivance conversa com você, faz perguntas básicas e monta um resumo que você revisa antes de enviar.
+              Responda quatro etapas em texto, revise suas palavras e escolha se deseja permitir uma organização assistida do relato.
             </p>
           </div>
           <button type="button" onClick={onPreVisit} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">
@@ -182,7 +193,7 @@ function Today({
           </button>
         </div>
         <div className="border-t border-[#e2ece8] bg-[#f7faf8] px-5 py-3 text-xs leading-5 text-[#698078] sm:px-6">
-          Link seguro · consentimento antes do microfone · transcrição e resumo revisáveis
+          Texto guiado · salvamento durante a sessão · revisão obrigatória antes do envio
         </div>
       </article>
 
@@ -209,7 +220,7 @@ function Today({
 
         <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Próxima consulta</p><h2 className="mt-2 text-xl font-semibold">Hoje, 10:30</h2></div><Status>Confirmada</Status></div>
-          <p className="mt-3 text-sm text-[#60766f]">Dr. Guilherme Mendes · retorno de 30 min</p>
+          <p className="mt-3 text-sm text-[#60766f]">Dr. Guilherme Martins · retorno de 30 min</p>
           <div className="mt-5 flex gap-2"><button type="button" className="min-h-11 flex-1 rounded-xl bg-[#0b7b68] px-3 text-sm font-bold text-white">Entrar na sala</button><button type="button" onClick={() => onNavigate('Consultas')} className="min-h-11 rounded-xl border border-[#d7e3df] px-4 text-sm font-bold">Detalhes</button></div>
         </article>
       </section>
@@ -589,7 +600,7 @@ function Messages({ onNotify }: { onNotify: (text: string) => void }) {
     <section className="mt-0 lg:mt-8">
       <Heading eyebrow="Canal de acompanhamento" title="Conversa com seu médico" description="Orientações e dúvidas ficam junto do seu plano, sem se perder em outros aplicativos." />
       <article className="mt-7 flex min-h-[580px] flex-col overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white">
-        <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:p-5"><span className="grid size-11 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">GM</span><div><p className="text-sm font-bold">Dr. Guilherme Mendes</p><p className="text-xs text-[#698078]">Respostas em horário de atendimento</p></div></div>
+        <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:p-5"><span className="grid size-11 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">GM</span><div><p className="text-sm font-bold">Dr. Guilherme Martins</p><p className="text-xs text-[#698078]">Respostas em horário de atendimento</p></div></div>
         <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6">
           <div className="ml-auto max-w-[82%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm leading-6 text-white">Consegui registrar o jantar. Também dormi melhor esta noite.<p className="mt-2 text-[11px] text-[#c9e4dd]">09:18</p></div>
           <div className="max-w-[82%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.<p className="mt-2 text-[11px] text-[#8a9c96]">09:22 · Dr. Guilherme</p></div>
@@ -609,14 +620,14 @@ function Appointments({ preVisitDone, onPreVisit }: { preVisitDone: boolean; onP
       <article className="mt-7 rounded-3xl border border-[#9fc9bd] bg-[#edf7f4] p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#17372f] text-xs font-bold uppercase text-white">Voz</span>
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#17372f] text-xs font-bold uppercase text-white">Texto</span>
             <div>
-              <div className="flex flex-wrap items-center gap-2"><p className="font-bold">Pré-consulta conversacional</p><Status>{preVisitDone ? 'Concluída' : 'Pendente'}</Status></div>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[#60766f]">Responda falando, confira a transcrição e envie seu principal objetivo ao Dr. Guilherme.</p>
+              <div className="flex flex-wrap items-center gap-2"><p className="font-bold">Pré-consulta guiada</p><Status>{preVisitDone ? 'Concluída' : 'Pendente'}</Status></div>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[#60766f]">Responda em texto, confira o relato completo e envie seu principal objetivo ao Dr. Guilherme.</p>
             </div>
           </div>
           <button type="button" onClick={onPreVisit} className="min-h-11 shrink-0 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">
-            {preVisitDone ? 'Revisar resumo' : 'Responder por voz'}
+            {preVisitDone ? 'Revisar envio' : 'Responder em texto'}
           </button>
         </div>
       </article>
@@ -636,122 +647,303 @@ function Appointments({ preVisitDone, onPreVisit }: { preVisitDone: boolean; onP
 }
 
 function PreVisitInterview({
-  initiallyComplete,
+  initialDraft,
+  latestSubmission,
+  onSaveDraft,
   onClose,
-  onComplete,
+  onSubmit,
 }: {
-  initiallyComplete: boolean;
+  initialDraft: PreConsultationAnswers;
+  latestSubmission: PreConsultationSubmission | null;
+  onSaveDraft: (patch: Partial<PreConsultationAnswers>) => void;
   onClose: () => void;
-  onComplete: () => void;
+  onSubmit: () => void;
 }) {
-  const questions = [
-    'O que você mais gostaria de melhorar com esta consulta?',
-    'O que mudou desde a sua última conversa com o Dr. Guilherme?',
-    'Você teve algum sintoma novo ou algo que te preocupou?',
-    'Como ficaram sua alimentação, seu sono e sua atividade física?',
-  ];
-  const answers = [
-    'Quero continuar perdendo peso, mas sem ficar cansada, e gostaria de voltar a dormir melhor.',
-    'Senti mais saciedade e consegui seguir o plano na maior parte dos dias. O sono piorou nesta semana.',
-    'Não tive sintoma novo. Minha preocupação é acordar várias vezes durante a noite.',
-    'A alimentação ficou organizada, caminhei quase todos os dias e dormi menos de seis horas em quatro noites.',
-  ];
-  const [stage, setStage] = useState<'intro' | 'chat' | 'review'>(initiallyComplete ? 'review' : 'intro');
-  const [consent, setConsent] = useState(false);
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [listening, setListening] = useState(false);
-  const [captured, setCaptured] = useState<string[]>(initiallyComplete ? answers : []);
+  type AnswerField = 'objective' | 'changes' | 'questions' | 'additionalContext';
+  type Stage = 'intro' | AnswerField | 'review';
 
-  const captureAnswer = () => {
-    const current = questionIndex;
-    setListening(true);
-    window.setTimeout(() => {
-      setCaptured((items) => items.concat(answers[current]));
-      setListening(false);
-      if (current === questions.length - 1) {
-        setStage('review');
-      } else {
-        setQuestionIndex(current + 1);
+  const stages: Array<{ key: AnswerField; label: string; title: string; helper: string; required: boolean }> = [
+    {
+      key: 'objective',
+      label: 'Objetivo principal',
+      title: 'O que você mais gostaria de conversar nesta consulta?',
+      helper: 'Escreva com suas palavras. Não precisa usar termos médicos.',
+      required: true,
+    },
+    {
+      key: 'changes',
+      label: 'Mudanças recentes',
+      title: 'O que mudou desde a última consulta?',
+      helper: 'Conte o que percebeu na sua rotina, disposição ou bem-estar.',
+      required: true,
+    },
+    {
+      key: 'questions',
+      label: 'Dúvidas',
+      title: 'Quais perguntas você não quer esquecer?',
+      helper: 'Este campo é opcional. Você poderá conversar sobre outros assuntos durante a consulta.',
+      required: false,
+    },
+    {
+      key: 'additionalContext',
+      label: 'Contexto adicional',
+      title: 'Existe mais alguma informação que gostaria de registrar?',
+      helper: 'Este campo é opcional e será exibido como relato original.',
+      required: false,
+    },
+  ];
+
+  const [stage, setStage] = useState<Stage>(latestSubmission ? 'review' : 'intro');
+  const [errors, setErrors] = useState<Partial<Record<AnswerField | 'consent', string>>>({});
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
       }
-    }, 900);
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, []);
+
+  const activeIndex = stages.findIndex((item) => item.key === stage);
+  const activeStage = activeIndex >= 0 ? stages[activeIndex] : null;
+
+  const updateAnswer = (field: AnswerField, value: string) => {
+    onSaveDraft({ [field]: value });
+    if (errors[field]) {
+      setErrors((current) => ({ ...current, [field]: undefined }));
+    }
   };
 
+  const validateStage = (field: AnswerField) => {
+    const config = stages.find((item) => item.key === field);
+    const value = initialDraft[field].trim();
+    if (config?.required && value.length < 10) {
+      setErrors((current) => ({
+        ...current,
+        [field]: 'Escreva pelo menos 10 caracteres para que o médico tenha contexto suficiente.',
+      }));
+      return false;
+    }
+    return true;
+  };
+
+  const goNext = () => {
+    if (!activeStage || !validateStage(activeStage.key)) return;
+    const next = stages[activeIndex + 1];
+    setStage(next ? next.key : 'review');
+  };
+
+  const goBack = () => {
+    if (!activeStage) return;
+    const previous = stages[activeIndex - 1];
+    setStage(previous ? previous.key : 'intro');
+  };
+
+  const startForm = () => {
+    if (!initialDraft.consentGiven) {
+      setErrors((current) => ({
+        ...current,
+        consent: 'Confirme que entendeu como as respostas serão usadas para continuar.',
+      }));
+      return;
+    }
+    setErrors((current) => ({ ...current, consent: undefined }));
+    setStage('objective');
+  };
+
+  const submit = () => {
+    if (!initialDraft.consentGiven) {
+      setStage('intro');
+      setErrors((current) => ({
+        ...current,
+        consent: 'Confirme que entendeu como as respostas serão usadas para continuar.',
+      }));
+      return;
+    }
+    if (!validateStage('objective')) {
+      setStage('objective');
+      return;
+    }
+    if (!validateStage('changes')) {
+      setStage('changes');
+      return;
+    }
+    onSubmit();
+  };
+
+  const structuredPreview = [
+    `Objetivo declarado: ${initialDraft.objective.trim()}`,
+    `Mudanças relatadas: ${initialDraft.changes.trim()}`,
+    initialDraft.questions.trim() ? `Dúvidas para a consulta: ${initialDraft.questions.trim()}` : '',
+    initialDraft.additionalContext.trim()
+      ? `Contexto adicional: ${initialDraft.additionalContext.trim()}`
+      : '',
+  ].filter(Boolean);
+
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102a24]/60 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="previsit-title">
-      <div className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#102a24]/60 sm:items-center sm:p-5">
+      <div
+        ref={dialogRef}
+        className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="previsit-title"
+        aria-describedby="previsit-description"
+      >
+        <p id="previsit-description" className="sr-only">Pré-consulta textual em quatro etapas, com revisão das respostas antes do envio.</p>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e2ebe7] bg-white px-5 py-4 sm:px-7">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta por voz</p>
-            <h2 id="previsit-title" className="mt-1 text-xl font-semibold">Conversa com a assistente Vivance</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Pré-consulta por texto</p>
+            <h2 id="previsit-title" className="mt-1 text-xl font-semibold">Prepare sua consulta</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 place-items-center rounded-full border border-[#d7e3df] text-xl">×</button>
+          <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Fechar pré-consulta" className="grid size-11 cursor-pointer place-items-center rounded-full border border-[#d7e3df] text-xl transition-colors hover:bg-[#f4f7f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">×</button>
         </div>
 
         {stage === 'intro' && (
           <div className="p-5 sm:p-7">
-            <div className="grid size-20 place-items-center rounded-full bg-[#17372f] text-sm font-bold uppercase tracking-[0.08em] text-white">Voz</div>
-            <Status tone="green">Cerca de 5 minutos</Status>
-            <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Fale naturalmente. Não precisa preencher formulário.</h3>
-            <p className="mt-3 text-sm leading-6 text-[#60766f]">Vou fazer quatro perguntas para entender seu objetivo, mudanças recentes e possíveis preocupações. Você poderá revisar tudo antes de enviar.</p>
+            <Status tone="green">Cerca de 4 minutos</Status>
+            <h3 className="mt-5 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Escreva do seu jeito. Você poderá revisar tudo.</h3>
+            <p className="mt-3 text-base leading-7 text-[#526a62]">Quatro etapas ajudam a organizar seu objetivo, mudanças recentes e dúvidas antes da consulta.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[
-                ['1', 'Você fala'],
-                ['2', 'A IA organiza'],
+                ['1', 'Você escreve'],
+                ['2', 'O sistema organiza'],
                 ['3', 'Você revisa'],
               ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><span className="grid size-7 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item[0]}</span><p className="mt-3 text-sm font-bold">{item[1]}</p></div>)}
             </div>
-            <label className="mt-6 flex items-start gap-3 rounded-2xl border border-[#d7e3df] p-4 text-sm leading-6 text-[#526a62]">
-              <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[#0b7b68]" />
-              Autorizo o uso do áudio para criar a transcrição e o resumo desta pré-consulta. Sei que poderei revisar antes do envio.
+            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-[#d7e3df] p-4 text-sm leading-6 text-[#405d54]">
+              <input
+                type="checkbox"
+                checked={initialDraft.consentGiven}
+                onChange={(event) => {
+                  onSaveDraft({ consentGiven: event.target.checked });
+                  setErrors((current) => ({ ...current, consent: undefined }));
+                }}
+                aria-describedby={errors.consent ? 'previsit-consent-error' : undefined}
+                className="mt-0.5 size-5 shrink-0 accent-[#0b7b68]"
+              />
+              Li e entendi que estas respostas serão disponibilizadas ao médico e à equipe clínica para preparar a consulta demonstrativa.
             </label>
-            <button type="button" disabled={!consent} onClick={() => setStage('chat')} className="mt-5 min-h-12 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white disabled:bg-[#9aaca7]">Permitir microfone e começar</button>
-            <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">Simulação: nenhum áudio é gravado neste protótipo. No produto real, o áudio seria descartado após a transcrição por padrão.</p>
+            {errors.consent && <p id="previsit-consent-error" role="alert" className="mt-2 text-sm font-semibold text-[#9c453f]">{errors.consent}</p>}
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-[#c9d8ec] bg-[#f7f9fc] p-4 text-sm leading-6 text-[#405d54]">
+              <input
+                type="checkbox"
+                checked={initialDraft.aiAssistanceAllowed}
+                onChange={(event) => onSaveDraft({ aiAssistanceAllowed: event.target.checked })}
+                className="mt-0.5 size-5 shrink-0 accent-[#5578a9]"
+              />
+              Permito que uma IA organize uma cópia do meu relato como rascunho para revisão médica. Posso continuar sem marcar esta opção.
+            </label>
+            <button type="button" onClick={startForm} className="mt-5 min-h-12 w-full cursor-pointer rounded-xl bg-[#0b7b68] text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Começar pré-consulta</button>
+            <div className="mt-4"><SimulationDisclaimer>Nenhuma informação é enviada a serviços externos nesta primeira implementação.</SimulationDisclaimer></div>
           </div>
         )}
 
-        {stage === 'chat' && (
+        {activeStage && (
           <div className="bg-[#f4f7f5] p-5 sm:p-7">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-[#60766f]">Pergunta {questionIndex + 1} de {questions.length}</p>
-              <button type="button" onClick={() => setStage('review')} className="text-xs font-bold text-[#0b6a5b]">Encerrar e revisar</button>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#dfe8e3]"><div className="h-full rounded-full bg-[#0b7b68] transition-[width]" style={{ width: String(((questionIndex + 1) / questions.length) * 100) + '%' }} /></div>
-            <div className="mt-6 space-y-4">
-              {captured.map((answer, index) => (
-                <div key={String(index)}>
-                  <div className="max-w-[84%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">{questions[index]}</div>
-                  <div className="ml-auto mt-2 max-w-[84%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white">{answer}</div>
-                </div>
-              ))}
-              <div className="max-w-[88%] rounded-2xl rounded-tl-md bg-white p-4 shadow-sm">
-                <p className="text-sm font-bold text-[#17372f]">{questions[questionIndex]}</p>
-                <p className="mt-2 text-xs leading-5 text-[#698078]">Pode responder do seu jeito. Eu perguntarei se algo não ficar claro.</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-[#60766f]">Etapa {activeIndex + 1} de {stages.length}</p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">{activeStage.label}</p>
               </div>
+              <Status tone={activeStage.required ? 'green' : 'gray'}>{activeStage.required ? 'Obrigatória' : 'Opcional'}</Status>
             </div>
-            <div className="mt-8 text-center">
-              <button type="button" disabled={listening} onClick={captureAnswer} className={cn('mx-auto grid size-24 place-items-center rounded-full border-8 text-sm font-bold text-white shadow-[0_12px_32px_rgba(11,123,104,0.25)]', listening ? 'animate-pulse border-[#b9d8cf] bg-[#b04f49]' : 'border-[#d9eee8] bg-[#0b7b68]')}>
-                {listening ? 'Ouvindo' : 'Falar'}
-              </button>
-              <p className="mt-3 text-xs text-[#698078]">{listening ? 'Pode falar. Toque novamente para parar.' : 'Toque para simular uma resposta por voz'}</p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#dfe8e3]" aria-hidden="true"><div className="h-full rounded-full bg-[#0b7b68] transition-[width]" style={{ width: `${((activeIndex + 1) / stages.length) * 100}%` }} /></div>
+            <label htmlFor={`previsit-${activeStage.key}`} className="mt-7 block text-xl font-semibold leading-8 text-[#17372f]">{activeStage.title}</label>
+            <p id={`previsit-${activeStage.key}-helper`} className="mt-2 text-sm leading-6 text-[#60766f]">{activeStage.helper}</p>
+            <textarea
+              id={`previsit-${activeStage.key}`}
+              value={initialDraft[activeStage.key]}
+              onChange={(event) => updateAnswer(activeStage.key, event.target.value)}
+              onBlur={() => validateStage(activeStage.key)}
+              maxLength={800}
+              aria-describedby={`${`previsit-${activeStage.key}-helper`}${errors[activeStage.key] ? ` previsit-${activeStage.key}-error` : ''}`}
+              aria-invalid={Boolean(errors[activeStage.key])}
+              className={cn(
+                'mt-4 min-h-44 w-full rounded-2xl border bg-white p-4 text-base leading-7 outline-none transition-colors focus:ring-3',
+                errors[activeStage.key] ? 'border-[#d38780] focus:ring-[#efb9b4]' : 'border-[#b9d8cf] focus:ring-[#8bc6b9]',
+              )}
+              placeholder="Escreva aqui..."
+            />
+            <div className="mt-2 flex min-h-6 items-start justify-between gap-3">
+              <span>{errors[activeStage.key] && <span id={`previsit-${activeStage.key}-error`} role="alert" className="text-sm font-semibold text-[#9c453f]">{errors[activeStage.key]}</span>}</span>
+              <span className="shrink-0 text-xs text-[#698078]">{initialDraft[activeStage.key].length}/800</span>
             </div>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+              <button type="button" onClick={goBack} className="min-h-12 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Voltar</button>
+              <button type="button" onClick={goNext} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-6 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">{activeIndex === stages.length - 1 ? 'Revisar respostas' : 'Continuar'}</button>
+            </div>
+            <p className="mt-5 text-center text-xs leading-5 text-[#789087]">Rascunho salvo somente nesta sessão demonstrativa.</p>
           </div>
         )}
 
         {stage === 'review' && (
           <div className="p-5 sm:p-7">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Revisão antes do envio</p><h3 className="mt-2 text-2xl font-semibold">Este é o seu objetivo para a consulta</h3></div><Status>Você está no controle</Status></div>
-            <label className="mt-6 block text-sm font-bold">Em suas palavras<textarea defaultValue="Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor." className="mt-2 min-h-24 w-full rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4 font-normal leading-6 outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></label>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#698078]">Relatado por você</p><p className="mt-2 text-sm leading-6">Mais saciedade, boa adesão, sono pior nesta semana e nenhum sintoma novo.</p></div>
-              <div className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#698078]">Organizado pela IA</p><p className="mt-2 text-sm leading-6">Priorizar sono e energia antes de aumentar metas do plano.</p></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Revisão antes do envio</p><h3 className="mt-2 text-2xl font-semibold">Confira o que será compartilhado</h3></div><Status>Você está no controle</Status></div>
+            {latestSubmission && <p className="mt-3 text-sm text-[#60766f]">A última submissão foi enviada em {latestSubmission.submittedAt}. Um novo envio criará a versão {latestSubmission.version + 1}.</p>}
+            <div className="mt-6 space-y-3">
+              {stages.map((item) => (
+                <article key={item.key} className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <ClinicalLayerBadge layer="relato" />
+                    <button type="button" onClick={() => setStage(item.key)} className="min-h-9 cursor-pointer rounded-lg px-3 text-xs font-bold text-[#0b6a5b] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Editar</button>
+                  </div>
+                  <h4 className="mt-3 text-sm font-bold text-[#17372f]">{item.label}</h4>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#526a62]">{initialDraft[item.key].trim() || 'Não informado.'}</p>
+                </article>
+              ))}
             </div>
-            <div className="mt-4 rounded-2xl border-l-4 border-[#e49d45] bg-[#fff8e9] p-4"><p className="text-sm font-bold text-[#6f4b0d]">Ponto para conversar</p><p className="mt-1 text-sm leading-6 text-[#805f24]">Despertares noturnos em quatro dias. Isto é um relato, não um diagnóstico.</p></div>
-            <details className="mt-5 rounded-2xl border border-[#dfe8e3] p-4"><summary className="cursor-pointer text-sm font-bold">Ver transcrição completa</summary><div className="mt-4 space-y-3 text-sm leading-6 text-[#60766f]">{questions.map((question, index) => <div key={question}><p className="font-bold text-[#17372f]">Assistente Vivance: {question}</p><p>Marina: {answers[index]}</p></div>)}</div></details>
+            {initialDraft.aiAssistanceAllowed ? (
+              <article className="mt-5 rounded-2xl border border-[#c9d8ec] bg-[#f7f9fc] p-4">
+                <AiDraftBadge />
+                <div className="mt-4 space-y-3 text-sm leading-6 text-[#405d54]">{structuredPreview.map((item) => <p key={item}>{item}</p>)}</div>
+              </article>
+            ) : (
+              <div className="mt-5"><SimulationDisclaimer>A assistência de IA não foi autorizada. O médico receberá apenas o relato original e poderá realizar todo o processo manualmente.</SimulationDisclaimer></div>
+            )}
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setStage('intro')} className="min-h-12 rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b]">Refazer conversa</button>
-              <button type="button" onClick={onComplete} className="min-h-12 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar para o Dr. Guilherme</button>
+              <button type="button" onClick={() => setStage('objective')} className="min-h-12 cursor-pointer rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Revisar respostas</button>
+              <button type="button" onClick={submit} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Enviar para o Dr. Guilherme</button>
             </div>
-            <p className="mt-4 text-center text-xs leading-5 text-[#8a9c96]">A IA resume; o médico lê o contexto completo e continua responsável pela avaliação.</p>
+            <p className="mt-4 text-center text-xs leading-5 text-[#789087]">O médico continua responsável pela interpretação, registro e decisão clínica.</p>
           </div>
         )}
       </div>

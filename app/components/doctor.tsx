@@ -1,6 +1,8 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { useCareDemo } from './care-demo-store';
+import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import { cn, Heading, Status, Toast } from './shared';
 
 type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
@@ -74,7 +76,7 @@ const appointments: Appointment[] = [
     type: 'Retorno · 30 min',
     status: 'Próxima',
     statusTone: 'green',
-    preVisit: 'Voz concluída · resumo pronto',
+    preVisit: 'Texto concluído · resumo pronto',
     preVisitTone: 'green',
     objective: '“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”',
     reported: 'Mais saciedade, sono pior nesta semana e nenhum sintoma novo.',
@@ -108,7 +110,7 @@ const appointments: Appointment[] = [
     type: 'Retorno força · 30 min',
     status: 'Confirmada',
     statusTone: 'green',
-    preVisit: 'Voz concluída · relatório pronto',
+    preVisit: 'Texto concluído · relatório pronto',
     preVisitTone: 'blue',
     objective: '“Quero continuar ganhando força sem perder energia para o restante da semana.”',
     reported: 'Treinos pela manhã facilitaram a rotina e a energia permaneceu estável.',
@@ -170,7 +172,7 @@ const patients = [
       basis: 'Baseado em 14 dias de dados demonstrativos.',
     },
     activity: [
-      ['Hoje · 09:18', 'Pré-consulta por voz concluída'],
+      ['Hoje · 09:18', 'Pré-consulta por texto concluída'],
       ['Ontem · 20:08', 'Jantar e saciedade registrados'],
       ['24 ago · 16:42', 'Relatório quinzenal revisado'],
     ],
@@ -325,7 +327,7 @@ type IntelligenceTab = (typeof intelligenceTabs)[number];
 const marinaConversations = [
   {
     when: 'Hoje · 09:18',
-    channel: 'Pré-consulta por voz · 6 min',
+    channel: 'Pré-consulta por texto · 4 min',
     title: 'Sono melhorou, mas ainda há despertares',
     summary: 'Marina relata duas noites melhores, mantém cansaço ao acordar e quer entender se o horário do jantar interfere no sono.',
     topics: ['Sono', 'Energia', 'Jantar'],
@@ -531,6 +533,14 @@ function Overview({
   onAlert: (item: (typeof alerts)[number]) => void;
   onReports: () => void;
 }) {
+  const { latestSubmission } = useCareDemo();
+  const preparationChecklist = latestSubmission
+    ? [
+        'Ler o relato original da paciente',
+        latestSubmission.aiAssistanceAllowed ? 'Comparar o rascunho com as fontes' : 'Organizar o contexto manualmente',
+        'Registrar dúvidas e decisões na consulta',
+      ]
+    : ['Aguardar a pré-consulta', 'Confirmar o objetivo durante a consulta', 'Registrar o contexto manualmente'];
   const summaryCards = [
     { label: 'Consultas hoje', value: '5', detail: 'Próxima às 10:30', action: 'Ver agenda do dia', target: 'agenda-do-dia', dot: 'bg-[#3da58f]' },
     { label: 'Precisam de atenção', value: '3', detail: '1 novo sintoma relatado', action: 'Ver prioridades', target: 'atencao-do-dia', dot: 'bg-[#e49d45]' },
@@ -593,28 +603,42 @@ function Overview({
             <div>
               <div className="flex flex-wrap gap-2">
                 {['Emagrecimento', 'Saúde do sono', 'Retorno 30 dias'].map((tag) => <Status key={tag} tone="gray">{tag}</Status>)}
-                <Status>Pré-consulta por voz concluída</Status>
+                <Status tone={latestSubmission ? 'green' : 'amber'}>{latestSubmission ? 'Pré-consulta por texto pronta' : 'Pré-consulta pendente'}</Status>
               </div>
               <div className="mt-6 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b6a5b]">Objetivo nas palavras da paciente</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-[#17372f]">“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”</p>
-                <p className="mt-2 text-xs text-[#698078]">Conversa concluída às 09:02 · consentimento registrado · transcrição disponível</p>
+                <ClinicalLayerBadge layer="relato" />
+                <p className="mt-3 text-xs font-bold uppercase tracking-[0.1em] text-[#0b6a5b]">Objetivo nas palavras da paciente</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#17372f]">{latestSubmission ? `“${latestSubmission.objective}”` : 'Nenhuma pré-consulta foi enviada nesta sessão demonstrativa.'}</p>
+                <p className="mt-2 text-xs text-[#698078]">{latestSubmission ? `Versão ${latestSubmission.version} · enviada em ${latestSubmission.submittedAt} · ciência registrada` : 'O atendimento pode continuar manualmente, sem bloquear a consulta.'}</p>
               </div>
-              <h3 className="mt-5 text-sm font-bold">Síntese com dados do acompanhamento</h3>
-              <p className="mt-2 text-sm leading-6 text-[#60766f]">
-                Peso reduziu 1,8 kg desde a última consulta. Adesão consistente, mas o sono ficou abaixo do padrão pessoal em quatro dos últimos sete dias.
-              </p>
+              <h3 className="mt-5 text-sm font-bold">Organização para revisão médica</h3>
+              {latestSubmission?.structuredDraft ? (
+                <div className="mt-3 rounded-2xl border border-[#c9d8ec] bg-[#f7f9fc] p-4">
+                  <AiDraftBadge />
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#526a62]">{latestSubmission.structuredDraft}</p>
+                </div>
+              ) : (
+                <div className="mt-3"><SimulationDisclaimer>{latestSubmission ? 'A paciente não autorizou a organização assistida. Revise o relato original e prepare a consulta manualmente.' : 'Envie ou aguarde a pré-consulta. Nenhum rascunho será criado sem fonte original.'}</SimulationDisclaimer></div>
+              )}
+              {latestSubmission && (
+                <details className="mt-4 rounded-2xl border border-[#dfe8e3] bg-white p-4">
+                  <summary className="cursor-pointer text-sm font-bold text-[#0b6a5b]">Ver todas as respostas originais</summary>
+                  <dl className="mt-4 space-y-4 text-sm leading-6 text-[#526a62]">
+                    <div><dt className="font-bold text-[#17372f]">Mudanças recentes</dt><dd className="mt-1 whitespace-pre-wrap">{latestSubmission.changes}</dd></div>
+                    <div><dt className="font-bold text-[#17372f]">Dúvidas</dt><dd className="mt-1 whitespace-pre-wrap">{latestSubmission.questions || 'Não informado.'}</dd></div>
+                    <div><dt className="font-bold text-[#17372f]">Contexto adicional</dt><dd className="mt-1 whitespace-pre-wrap">{latestSubmission.additionalContext || 'Não informado.'}</dd></div>
+                  </dl>
+                </details>
+              )}
               <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Abrir pré-consulta</button>
+                <button type="button" disabled={!latestSubmission} onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a59f]">{latestSubmission ? 'Abrir preparo da consulta' : 'Pré-consulta ainda pendente'}</button>
                 <button type="button" onClick={onPatient} className="min-h-11 cursor-pointer px-2 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prontuário completo</button>
               </div>
             </div>
             <div className="rounded-2xl bg-[#f4f7f5] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#698078]">Antes da consulta</p>
               <ol className="mt-4 space-y-3 text-sm text-[#405d54]">
-                <li><strong className="mr-2 text-[#0b7b68]">01</strong>Ouvir objetivo relatado</li>
-                <li><strong className="mr-2 text-[#0b7b68]">02</strong>Revisar diário de sono</li>
-                <li><strong className="mr-2 text-[#0b7b68]">03</strong>Confirmar tolerância</li>
+                {preparationChecklist.map((item, index) => <li key={item}><strong className="mr-2 text-[#0b7b68]">{String(index + 1).padStart(2, '0')}</strong>{item}</li>)}
               </ol>
             </div>
           </div>

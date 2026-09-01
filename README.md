@@ -1,4 +1,4 @@
-# Instituto Vivance
+# Instituto Vivans
 
 Protótipo de uma plataforma de cuidado contínuo para emagrecimento e envelhecimento saudável. O produto organiza a jornada antes, durante e depois da consulta, reduz a fragmentação das informações e usa IA para preparar contexto, estruturar acompanhamentos e destacar situações que merecem revisão do médico.
 
@@ -13,7 +13,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - diário alimentar com análise demonstrativa de refeição;
 - evolução de peso, adesão, sono e passos;
 - mensagens e consultas em um só lugar;
-- pré-consulta conversacional por voz, com consentimento, transcrição e revisão antes do envio.
+- pré-consulta guiada por texto, com ciência, assistência de IA opcional e revisão antes do envio;
 
 ### Médico — desktop-first
 
@@ -23,21 +23,22 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - consulta com notas estruturadas e sala de vídeo simulada;
 - compilação do plano de cuidado;
 - mensagens e relatórios revisáveis;
-- recebimento do objetivo, relato e transcrição da pré-consulta.
+- recebimento do objetivo e dos relatos originais da pré-consulta, separados do rascunho assistido.
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. As experiências funcionam localmente com estado em memória, mas ainda não existem autenticação, persistência, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. As experiências usam estado local demonstrativo; a pré-consulta permanece na `sessionStorage` somente durante a sessão do navegador. Ainda não existem autenticação, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
-As integrações de Google Meet, relógios, microfone, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos.
+As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
 ## IA e segurança clínica
 
 - A IA organiza informações e sugere estruturas; não diagnostica nem decide conduta.
 - O médico continua responsável por revisar e aprovar qualquer conteúdo clínico.
 - Conteúdo gerado não deve ser enviado automaticamente ao paciente.
-- A pré-consulta exige consentimento e permite revisão da transcrição e do resumo.
-- O desenho proposto descarta o áudio após a transcrição por padrão.
+- A pré-consulta registra ciência, começa com campos vazios e permite revisar o relato antes do envio.
+- A assistência de IA é opcional e sua recusa não impede o fluxo manual.
+- Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.
 - Antes de usar dados reais, serão necessários controles de acesso, auditoria, consentimento, retenção de dados e adequação à LGPD.
@@ -69,3 +70,5 @@ npm run build
 6. Criar uma camada de conhecimento médico com fontes rastreáveis e avaliações de qualidade.
 7. Projetar métricas de adesão, alertas e relatórios configuráveis por clínica.
 8. Conduzir um piloto pequeno com dados controlados antes de qualquer escala.
+
+O plano de extração seletiva do protótipo Skip está documentado em [`PLANO_APROVEITAMENTO_SKIP.md`](./PLANO_APROVEITAMENTO_SKIP.md).

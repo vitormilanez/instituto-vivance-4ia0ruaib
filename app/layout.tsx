@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://lume-saude-prototipo.vitormilanez.chatgpt.site'),
-  title: 'Instituto Vivance — Cuidado contínuo',
+  title: 'Instituto Vivans — Cuidado contínuo',
   description: 'Protótipo de acompanhamento longitudinal assistido por IA para emagrecimento e envelhecimento saudável.',
   openGraph: {
-    title: 'Instituto Vivance',
+    title: 'Instituto Vivans',
     description: 'Cuidado contínuo, decisões mais claras.',
     type: 'website',
     locale: 'pt_BR',
@@ -26,13 +26,13 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'Instituto Vivance — Cuidado contínuo, decisões mais claras.',
+        alt: 'Instituto Vivans — Cuidado contínuo, decisões mais claras.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Instituto Vivance',
+    title: 'Instituto Vivans',
     description: 'Cuidado contínuo, decisões mais claras.',
     images: ['/og.png'],
   },

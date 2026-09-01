@@ -17,7 +17,7 @@ export function RoleHeader({ role, onRoleChange }: { role: Role; onRoleChange: (
             IV
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[17px] font-bold tracking-[-0.02em]">Instituto Vivance</p>
+            <p className="truncate text-[17px] font-bold tracking-[-0.02em]">Instituto Vivans</p>
             <p className="hidden text-xs font-medium text-[#698078] sm:block">Cuidado contínuo</p>
           </div>
         </div>
