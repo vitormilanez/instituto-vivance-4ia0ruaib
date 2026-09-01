@@ -1,35 +1,182 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CareDemoContext, type CareDemoContextValue } from './care-demo-store';
+import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
+import {
+  CareDemoContext,
+  EMPTY_PRECONSULTATION_DRAFT,
+  getCareDemoScopeKey,
+  type CareDemoState,
+  type CareDemoStoreValue,
+} from './care-demo-store';
 import type {
+  CareDemoScope,
   PreConsultationAnswers,
   PreConsultationReview,
   PreConsultationSubmission,
 } from './care-demo-types';
 
-interface CareDemoState {
-  draft: PreConsultationAnswers;
-  submissions: PreConsultationSubmission[];
-  reviews: PreConsultationReview[];
-}
-
-const STORAGE_KEY = 'instituto-vivans-demo-care-v1';
-
-const emptyDraft: PreConsultationAnswers = {
-  consentGiven: false,
-  aiAssistanceAllowed: false,
-  objective: '',
-  changes: '',
-  questions: '',
-  additionalContext: '',
+const STORAGE_KEY = 'instituto-vivans-demo-care-v2';
+const LEGACY_STORAGE_KEY = 'instituto-vivans-demo-care-v1';
+const DEFAULT_SCOPE: CareDemoScope = {
+  patientId: DEFAULT_PATIENT_ID,
+  encounterId: DEFAULT_ENCOUNTER_ID,
 };
 
 const emptyState: CareDemoState = {
-  draft: emptyDraft,
+  draftsByEncounter: {},
   submissions: [],
   reviews: [],
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeAnswers(value: unknown): PreConsultationAnswers | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    consentGiven: typeof value.consentGiven === 'boolean' ? value.consentGiven : false,
+    aiAssistanceAllowed:
+      typeof value.aiAssistanceAllowed === 'boolean' ? value.aiAssistanceAllowed : false,
+    objective: typeof value.objective === 'string' ? value.objective : '',
+    changes: typeof value.changes === 'string' ? value.changes : '',
+    questions: typeof value.questions === 'string' ? value.questions : '',
+    additionalContext:
+      typeof value.additionalContext === 'string' ? value.additionalContext : '',
+  };
+}
+
+function normalizeSubmission(
+  value: unknown,
+  fallbackScope?: CareDemoScope,
+): PreConsultationSubmission | null {
+  if (!isRecord(value)) return null;
+  const answers = normalizeAnswers(value);
+  const patientId = typeof value.patientId === 'string' ? value.patientId : fallbackScope?.patientId;
+  const encounterId =
+    typeof value.encounterId === 'string' ? value.encounterId : fallbackScope?.encounterId;
+
+  if (
+    !answers ||
+    typeof value.id !== 'string' ||
+    !patientId ||
+    !encounterId ||
+    typeof value.version !== 'number' ||
+    typeof value.submittedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    ...answers,
+    id: value.id,
+    patientId,
+    encounterId,
+    version: value.version,
+    submittedAt: value.submittedAt,
+    consentVersion: 'pre-consulta-texto-v1',
+    structuredDraft: typeof value.structuredDraft === 'string' ? value.structuredDraft : null,
+  };
+}
+
+function normalizeReview(
+  value: unknown,
+  fallbackScope?: CareDemoScope,
+): PreConsultationReview | null {
+  if (!isRecord(value)) return null;
+  const patientId = typeof value.patientId === 'string' ? value.patientId : fallbackScope?.patientId;
+  const encounterId =
+    typeof value.encounterId === 'string' ? value.encounterId : fallbackScope?.encounterId;
+  const status =
+    value.status === 'draft' || value.status === 'approved' || value.status === 'rejected'
+      ? value.status
+      : null;
+  const sourceMode =
+    value.sourceMode === 'assisted' || value.sourceMode === 'manual' ? value.sourceMode : null;
+
+  if (
+    typeof value.id !== 'string' ||
+    !patientId ||
+    !encounterId ||
+    typeof value.submissionId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !status ||
+    typeof value.content !== 'string' ||
+    !sourceMode ||
+    typeof value.createdAt !== 'string' ||
+    typeof value.updatedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId,
+    encounterId,
+    submissionId: value.submissionId,
+    version: value.version,
+    status,
+    content: value.content,
+    sourceMode,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+    reviewedAt: typeof value.reviewedAt === 'string' ? value.reviewedAt : null,
+    reviewedBy: typeof value.reviewedBy === 'string' ? value.reviewedBy : null,
+    rejectionReason: typeof value.rejectionReason === 'string' ? value.rejectionReason : null,
+  };
+}
+
+function normalizeCurrentState(value: unknown): CareDemoState | null {
+  if (!isRecord(value) || !isRecord(value.draftsByEncounter)) return null;
+
+  const draftsByEncounter = Object.fromEntries(
+    Object.entries(value.draftsByEncounter).flatMap(([key, draft]) => {
+      const normalized = normalizeAnswers(draft);
+      return normalized ? [[key, normalized]] : [];
+    }),
+  );
+  const submissions = Array.isArray(value.submissions)
+    ? value.submissions.flatMap((submission) => {
+        const normalized = normalizeSubmission(submission);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const reviews = Array.isArray(value.reviews)
+    ? value.reviews.flatMap((review) => {
+        const normalized = normalizeReview(review);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+
+  return { draftsByEncounter, submissions, reviews };
+}
+
+function migrateLegacyState(value: unknown): CareDemoState | null {
+  if (!isRecord(value)) return null;
+  const draft = normalizeAnswers(value.draft) ?? { ...EMPTY_PRECONSULTATION_DRAFT };
+  const submissions = Array.isArray(value.submissions)
+    ? value.submissions.flatMap((submission) => {
+        const normalized = normalizeSubmission(submission, DEFAULT_SCOPE);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const reviews = Array.isArray(value.reviews)
+    ? value.reviews.flatMap((review) => {
+        const normalized = normalizeReview(review, DEFAULT_SCOPE);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+
+  return {
+    draftsByEncounter: {
+      [getCareDemoScopeKey(DEFAULT_PATIENT_ID, DEFAULT_ENCOUNTER_ID)]: draft,
+    },
+    submissions,
+    reviews,
+  };
+}
 
 function buildStructuredDraft(answers: PreConsultationAnswers) {
   const sections = [
@@ -57,20 +204,38 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
+      let restored: CareDemoState | null = null;
       const stored = window.sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as Partial<CareDemoState>;
-        if (parsed.draft && Array.isArray(parsed.submissions)) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect -- hidrata o protótipo a partir da sessionStorage após o mount
-          setState({
-            draft: { ...emptyDraft, ...parsed.draft },
-            submissions: parsed.submissions,
-            reviews: Array.isArray(parsed.reviews) ? parsed.reviews : [],
-          });
+        try {
+          restored = normalizeCurrentState(JSON.parse(stored));
+        } catch {
+          restored = null;
+        }
+        if (!restored) window.sessionStorage.removeItem(STORAGE_KEY);
+      }
+
+      if (!restored) {
+        const legacy = window.sessionStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacy) {
+          try {
+            restored = migrateLegacyState(JSON.parse(legacy));
+          } catch {
+            restored = null;
+          }
         }
       }
+
+      if (restored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hidrata ou migra a sessão sem apagar a origem v1 antes da gravação v2
+        setState(restored);
+      }
     } catch {
-      window.sessionStorage.removeItem(STORAGE_KEY);
+      try {
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // sessionStorage pode estar indisponível; o protótipo continua em memória.
+      }
     } finally {
       setHydrated(true);
     }
@@ -78,25 +243,46 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (hydrated) {
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Falhas de quota ou privacidade não devem interromper o fluxo demonstrativo.
+      }
     }
   }, [hydrated, state]);
 
-  const value = useMemo<CareDemoContextValue>(() => {
-    const latestSubmission = state.submissions.at(-1) ?? null;
-    const reviewHistory = latestSubmission
-      ? state.reviews.filter((review) => review.submissionId === latestSubmission.id)
-      : [];
-    const activeReview = reviewHistory.at(-1) ?? null;
+  const value = useMemo<CareDemoStoreValue>(() => {
+    const submissionsFor = (patientId: string, encounterId: string) =>
+      state.submissions.filter(
+        (submission) =>
+          submission.patientId === patientId && submission.encounterId === encounterId,
+      );
 
-    const requireSubmission = () => {
+    const latestSubmissionFor = (patientId: string, encounterId: string) =>
+      submissionsFor(patientId, encounterId).at(-1) ?? null;
+
+    const reviewHistoryFor = (patientId: string, encounterId: string) => {
+      const latestSubmission = latestSubmissionFor(patientId, encounterId);
+      return latestSubmission
+        ? state.reviews.filter(
+            (review) =>
+              review.patientId === patientId &&
+              review.encounterId === encounterId &&
+              review.submissionId === latestSubmission.id,
+          )
+        : [];
+    };
+
+    const requireSubmission = (patientId: string, encounterId: string) => {
+      const latestSubmission = latestSubmissionFor(patientId, encounterId);
       if (!latestSubmission) {
         throw new Error('Envie uma pré-consulta antes de iniciar a revisão médica.');
       }
       return latestSubmission;
     };
 
-    const requireDraftReview = () => {
+    const requireDraftReview = (patientId: string, encounterId: string) => {
+      const activeReview = reviewHistoryFor(patientId, encounterId).at(-1) ?? null;
       if (!activeReview || activeReview.status !== 'draft') {
         throw new Error('Inicie uma nova versão de revisão antes de editar este preparo.');
       }
@@ -112,27 +298,36 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
     };
 
     return {
-      draft: state.draft,
-      latestSubmission,
+      hydrated,
+      draftsByEncounter: state.draftsByEncounter,
       submissions: state.submissions,
-      activeReview,
-      reviewHistory,
-      savePreConsultationDraft: (patch) => {
+      reviews: state.reviews,
+      savePreConsultationDraft: (patientId, encounterId, patch) => {
+        const scopeKey = getCareDemoScopeKey(patientId, encounterId);
         setState((current) => ({
           ...current,
-          draft: { ...current.draft, ...patch },
+          draftsByEncounter: {
+            ...current.draftsByEncounter,
+            [scopeKey]: {
+              ...(current.draftsByEncounter[scopeKey] ?? EMPTY_PRECONSULTATION_DRAFT),
+              ...patch,
+            },
+          },
         }));
       },
-      submitPreConsultation: () => {
+      submitPreConsultation: (patientId, encounterId) => {
+        const scopeKey = getCareDemoScopeKey(patientId, encounterId);
+        const draft = state.draftsByEncounter[scopeKey] ?? EMPTY_PRECONSULTATION_DRAFT;
+        const scopedSubmissions = submissionsFor(patientId, encounterId);
         const created: PreConsultationSubmission = {
-          ...state.draft,
+          ...draft,
           id: `pre-consulta-${Date.now()}`,
-          version: state.submissions.length + 1,
+          patientId,
+          encounterId,
+          version: scopedSubmissions.length + 1,
           submittedAt: formatSubmissionTime(),
           consentVersion: 'pre-consulta-texto-v1',
-          structuredDraft: state.draft.aiAssistanceAllowed
-            ? buildStructuredDraft(state.draft)
-            : null,
+          structuredDraft: draft.aiAssistanceAllowed ? buildStructuredDraft(draft) : null,
         };
 
         setState((current) => ({
@@ -142,13 +337,17 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
 
         return created;
       },
-      startPreConsultationReview: () => {
-        const submission = requireSubmission();
+      startPreConsultationReview: (patientId, encounterId) => {
+        const submission = requireSubmission(patientId, encounterId);
+        const reviewHistory = reviewHistoryFor(patientId, encounterId);
+        const activeReview = reviewHistory.at(-1) ?? null;
         if (activeReview?.status === 'draft') return activeReview;
 
         const timestamp = formatSubmissionTime();
         const created: PreConsultationReview = {
           id: `revisao-pre-consulta-${Date.now()}`,
+          patientId,
+          encounterId,
           submissionId: submission.id,
           version: reviewHistory.length + 1,
           status: 'draft',
@@ -167,12 +366,12 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         }));
         return created;
       },
-      savePreConsultationReview: (content) => {
-        const review = requireDraftReview();
+      savePreConsultationReview: (patientId, encounterId, content) => {
+        const review = requireDraftReview(patientId, encounterId);
         return replaceReview({ ...review, content, updatedAt: formatSubmissionTime() });
       },
-      approvePreConsultationReview: (content) => {
-        const review = requireDraftReview();
+      approvePreConsultationReview: (patientId, encounterId, content) => {
+        const review = requireDraftReview(patientId, encounterId);
         if (content.trim().length < 20) {
           throw new Error('O preparo precisa ter ao menos 20 caracteres antes da aprovação.');
         }
@@ -187,8 +386,8 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           rejectionReason: null,
         });
       },
-      rejectPreConsultationReview: (content, reason) => {
-        const review = requireDraftReview();
+      rejectPreConsultationReview: (patientId, encounterId, content, reason) => {
+        const review = requireDraftReview(patientId, encounterId);
         if (reason.trim().length < 10) {
           throw new Error('Explique em ao menos 10 caracteres por que o rascunho foi rejeitado.');
         }
@@ -204,7 +403,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         });
       },
     };
-  }, [state]);
+  }, [hydrated, state]);
 
   return <CareDemoContext.Provider value={value}>{children}</CareDemoContext.Provider>;
 }

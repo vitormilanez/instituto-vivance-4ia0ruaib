@@ -5,8 +5,17 @@ import { useCareDemo } from './care-demo-store';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import { Status } from './shared';
 
-export function PreConsultationReviewWorkspace({ onNotify }: { onNotify: (message: string) => void }) {
+export function PreConsultationReviewWorkspace({
+  patientId,
+  encounterId,
+  onNotify,
+}: {
+  patientId: string;
+  encounterId: string;
+  onNotify: (message: string) => void;
+}) {
   const {
+    hydrated,
     latestSubmission,
     activeReview,
     reviewHistory,
@@ -14,10 +23,14 @@ export function PreConsultationReviewWorkspace({ onNotify }: { onNotify: (messag
     savePreConsultationReview,
     approvePreConsultationReview,
     rejectPreConsultationReview,
-  } = useCareDemo();
+  } = useCareDemo(patientId, encounterId);
   const [showRejection, setShowRejection] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState('');
+
+  if (!hydrated) {
+    return <SimulationDisclaimer>Carregando o contexto desta consulta...</SimulationDisclaimer>;
+  }
 
   if (!latestSubmission) {
     return (

@@ -92,11 +92,19 @@ Implementado neste incremento:
 - permitir aprovação somente para uso no preparo da consulta;
 - manter uma preparação manual quando a assistência de IA não for autorizada;
 - refletir o estado da revisão no painel médico.
+- substituir o seletor interno por navegação real de médico e paciente;
+- criar URLs endereçáveis para agenda, dossiê, pré-consulta e consulta;
+- usar identificadores sintéticos opacos de paciente e atendimento nas URLs;
+- isolar rascunhos, submissões, versões e revisões por paciente e consulta;
+- manter o provider no layout raiz e migrar com segurança a sessão demonstrativa `v1` para `v2`;
+- rejeitar IDs inexistentes ou combinações incompatíveis com uma página segura, sem reaproveitar dados de outra pessoa.
+- manter a conversa demonstrativa vinculada ao paciente selecionado;
+- preservar ações demonstrativas do médico e da paciente ao navegar entre páginas durante a mesma sessão;
+- encerrar pré-consulta e consulta sem criar uma entrada de histórico que reabra o fluxo já fechado.
 
 Ainda pendente no Lote 2:
 
 - dividir outras áreas extensas de `doctor.tsx` e `patient.tsx`;
-- criar rotas reais para paciente, dossiê, pré-consulta e consulta;
 - estruturar notas e fontes longitudinais além da pré-consulta;
 - definir persistência durável e identidade autenticada, fora do estado demonstrativo.
 
@@ -150,6 +158,14 @@ Ainda pendente no Lote 2:
 - O fluxo manual funciona quando a IA não foi autorizada.
 - O estado aprovado e o histórico permanecem após recarregar durante a sessão.
 - O modal funciona por teclado, isola o conteúdo de fundo e não cria rolagem horizontal em 375 px.
+- A navegação principal altera a URL e funciona com recarga, voltar e avançar.
+- A pré-consulta da Marina não aparece no preparo de outro paciente.
+- Uma consulta incompatível com o paciente da URL retorna uma página segura, sem fallback silencioso.
+- As URLs usam somente IDs sintéticos opacos e não incluem nomes ou respostas clínicas.
+- O dossiê sem conteúdo demonstrativo mostra um estado vazio seguro em vez de dados de outro paciente.
+- Mensagens abertas pelo dossiê mantêm o paciente selecionado.
+- Ações demonstrativas concluídas permanecem ao navegar entre páginas na mesma sessão.
+- Fechar ou enviar uma pré-consulta não faz o botão Voltar reabrir o fluxo encerrado.
 
 ## Itens explicitamente excluídos
 

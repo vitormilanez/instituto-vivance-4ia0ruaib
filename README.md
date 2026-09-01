@@ -25,10 +25,11 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - mensagens e relatórios revisáveis;
 - recebimento do objetivo e dos relatos originais da pré-consulta, separados do rascunho assistido.
 - workspace médico com edição, rejeição justificada, aprovação restrita ao preparo e histórico de versões.
+- navegação por URLs reais para agenda, dossiê, pré-consulta e consulta, com contexto sintético de paciente e atendimento.
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. As experiências usam estado local demonstrativo; a pré-consulta e suas versões de revisão permanecem na `sessionStorage` somente durante a sessão do navegador. Ainda não existem autenticação, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O contexto clínico é isolado pela combinação de paciente e consulta, e as ações de interface são isoladas por perfil/paciente. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -54,7 +55,16 @@ npm ci
 npm run dev
 ~~~
 
-Acesse http://localhost:3000.
+Acesse http://localhost:3000. A raiz encaminha para o painel médico.
+
+Rotas principais do protótipo:
+
+- `http://localhost:3000/medico`
+- `http://localhost:3000/medico/pacientes/pac-demo-001`
+- `http://localhost:3000/medico/pacientes/pac-demo-001/mensagens`
+- `http://localhost:3000/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`
+- `http://localhost:3000/medico/pacientes/pac-demo-001/consultas/enc-demo-002`
+- `http://localhost:3000/paciente/pac-demo-001`
 
 Para validar a versão de produção:
 

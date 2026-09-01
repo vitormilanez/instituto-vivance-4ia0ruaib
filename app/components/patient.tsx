@@ -1,56 +1,124 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
 import type { PreConsultationAnswers, PreConsultationSubmission } from './care-demo-types';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import {
+  getPatientPreConsultationHref,
+  getPatientSectionHref,
+  patientNavigation,
+  type PatientView,
+} from './demo-routes';
 import { cn, Heading, Status, Toast } from './shared';
+import { useSessionDemoState } from './use-session-demo-state';
 
-type PatientView = 'Hoje' | 'Plano' | 'Diário' | 'Evolução' | 'Mensagens' | 'Consultas';
 type MealRatings = [number, number, number];
 
-const nav: PatientView[] = ['Hoje', 'Plano', 'Diário', 'Evolução', 'Mensagens', 'Consultas'];
+interface PatientDemoUiState {
+  checkinDone: boolean;
+  mealAnalyzed: boolean;
+  mealRatings: MealRatings;
+  mealFeedbackSent: boolean;
+  watchConnected: boolean;
+  tasks: boolean[];
+}
 
-export default function PatientWorkspace() {
+const initialPatientDemoUiState: PatientDemoUiState = {
+  checkinDone: false,
+  mealAnalyzed: false,
+  mealRatings: [0, 0, 0],
+  mealFeedbackSent: false,
+  watchConnected: false,
+  tasks: [true, false, false],
+};
+
+function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
+  const stored = typeof value === 'object' && value !== null ? value as Partial<PatientDemoUiState> : {};
+  const ratings = Array.isArray(stored.mealRatings) && stored.mealRatings.length === 3 && stored.mealRatings.every((item) => typeof item === 'number')
+    ? stored.mealRatings as MealRatings
+    : initialPatientDemoUiState.mealRatings;
+  const tasks = Array.isArray(stored.tasks) && stored.tasks.length === 3 && stored.tasks.every((item) => typeof item === 'boolean')
+    ? stored.tasks
+    : initialPatientDemoUiState.tasks;
+
+  return {
+    checkinDone: typeof stored.checkinDone === 'boolean' ? stored.checkinDone : false,
+    mealAnalyzed: typeof stored.mealAnalyzed === 'boolean' ? stored.mealAnalyzed : false,
+    mealRatings: ratings,
+    mealFeedbackSent: typeof stored.mealFeedbackSent === 'boolean' ? stored.mealFeedbackSent : false,
+    watchConnected: typeof stored.watchConnected === 'boolean' ? stored.watchConnected : false,
+    tasks,
+  };
+}
+
+export default function PatientWorkspace({
+  patientId,
+  encounterId,
+  initialView: view,
+  preVisitRouteOpen,
+}: {
+  patientId: string;
+  encounterId: string;
+  initialView: PatientView;
+  preVisitRouteOpen: boolean;
+}) {
+  const router = useRouter();
   const {
+    hydrated,
     draft: preConsultationDraft,
     latestSubmission,
     savePreConsultationDraft,
     submitPreConsultation,
-  } = useCareDemo();
-  const [view, setView] = useState<PatientView>('Hoje');
+  } = useCareDemo(patientId, encounterId);
   const [checkinOpen, setCheckinOpen] = useState(false);
-  const [checkinDone, setCheckinDone] = useState(false);
-  const [preVisitOpen, setPreVisitOpen] = useState(false);
-  const [mealAnalyzed, setMealAnalyzed] = useState(false);
-  const [mealRatings, setMealRatings] = useState<MealRatings>([0, 0, 0]);
-  const [mealFeedbackSent, setMealFeedbackSent] = useState(false);
-  const [watchConnected, setWatchConnected] = useState(false);
-  const [tasks, setTasks] = useState([true, false, false]);
+  const [demoUi, setDemoUi, demoUiHydrated] = useSessionDemoState(
+    `instituto-vivans-demo-ui-v1:patient:${patientId}`,
+    initialPatientDemoUiState,
+    normalizePatientDemoUiState,
+  );
   const [toast, setToast] = useState('');
+  const { checkinDone, mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected, tasks } = demoUi;
   const preVisitDone = Boolean(latestSubmission);
 
   const notify = (text: string) => {
     setToast(text);
     window.setTimeout(() => setToast(''), 3200);
   };
+  const navigateToView = (nextView: PatientView) => {
+    router.push(getPatientSectionHref(patientId, nextView));
+  };
+  const openPreVisit = () => {
+    router.push(getPatientPreConsultationHref(patientId, encounterId));
+  };
+  const consultationsHref = getPatientSectionHref(patientId, 'Consultas');
+
+  if (!hydrated || !demoUiHydrated) {
+    return (
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-[#dfe8e3] bg-white p-6 text-sm text-[#60766f]">Carregando sua jornada demonstrativa...</div>
+      </main>
+    );
+  }
 
   return (
     <>
       <main id="main-content" className="mx-auto min-h-[calc(100vh-72px)] max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
         <div className="hidden gap-2 rounded-2xl border border-[#dfe8e3] bg-white p-1.5 lg:flex" aria-label="Navegação do paciente">
-          {nav.map((item) => (
-            <button
-              type="button"
-              key={item}
-              onClick={() => setView(item)}
+          {patientNavigation.map(({ label }) => (
+            <Link
+              key={label}
+              href={getPatientSectionHref(patientId, label)}
+              aria-current={view === label ? 'page' : undefined}
               className={cn(
-                'min-h-10 flex-1 rounded-xl px-4 text-sm font-semibold',
-                view === item ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#f4f7f5]'
+                'flex min-h-10 flex-1 items-center justify-center rounded-xl px-4 text-sm font-semibold',
+                view === label ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#f4f7f5]'
               )}
             >
-              {item}
-            </button>
+              {label}
+            </Link>
           ))}
         </div>
 
@@ -60,18 +128,21 @@ export default function PatientWorkspace() {
             preVisitDone={preVisitDone}
             watchConnected={watchConnected}
             onCheckin={() => setCheckinOpen(true)}
-            onPreVisit={() => setPreVisitOpen(true)}
+            onPreVisit={openPreVisit}
             onConnectWatch={() => {
-              setWatchConnected(true);
+              setDemoUi((current) => ({ ...current, watchConnected: true }));
               notify('Relógio demonstrativo conectado.');
             }}
-            onNavigate={setView}
+            onNavigate={navigateToView}
           />
         )}
         {view === 'Plano' && (
           <Plan
             tasks={tasks}
-            onToggle={(index) => setTasks(tasks.map((done, taskIndex) => taskIndex === index ? !done : done))}
+            onToggle={(index) => setDemoUi((current) => ({
+              ...current,
+              tasks: current.tasks.map((done, taskIndex) => taskIndex === index ? !done : done),
+            }))}
           />
         )}
         {view === 'Diário' && (
@@ -79,36 +150,39 @@ export default function PatientWorkspace() {
             analyzed={mealAnalyzed}
             ratings={mealRatings}
             feedbackSent={mealFeedbackSent}
-            onAnalyze={() => setMealAnalyzed(true)}
+            onAnalyze={() => setDemoUi((current) => ({ ...current, mealAnalyzed: true }))}
             onRate={(questionIndex, value) => {
-              setMealRatings((current) => current.map((rating, index) => index === questionIndex ? value : rating) as MealRatings);
+              setDemoUi((current) => ({
+                ...current,
+                mealRatings: current.mealRatings.map((rating, index) => index === questionIndex ? value : rating) as MealRatings,
+              }));
             }}
             onSubmitFeedback={() => {
-              setMealFeedbackSent(true);
+              setDemoUi((current) => ({ ...current, mealFeedbackSent: true }));
               notify('Avaliação enviada ao Dr. Guilherme.');
             }}
           />
         )}
-        {view === 'Evolução' && <Evolution onNavigate={setView} />}
+        {view === 'Evolução' && <Evolution onNavigate={navigateToView} />}
         {view === 'Mensagens' && <Messages onNotify={notify} />}
-        {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={() => setPreVisitOpen(true)} />}
+        {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={openPreVisit} />}
       </main>
 
       <nav aria-label="Navegação do paciente" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#dfe8e3] bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-6">
-          {nav.map((item) => (
-            <button
-              type="button"
-              key={item}
-              onClick={() => setView(item)}
+          {patientNavigation.map(({ label }) => (
+            <Link
+              key={label}
+              href={getPatientSectionHref(patientId, label)}
+              aria-current={view === label ? 'page' : undefined}
               className={cn(
                 'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold',
-                view === item ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'text-[#789087]'
+                view === label ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'text-[#789087]'
               )}
             >
-              <span aria-hidden="true" className={cn('size-2 rounded-full', view === item ? 'bg-[#0b7b68]' : 'bg-[#c3d0cc]')} />
-              {item}
-            </button>
+              <span aria-hidden="true" className={cn('size-2 rounded-full', view === label ? 'bg-[#0b7b68]' : 'bg-[#c3d0cc]')} />
+              {label}
+            </Link>
           ))}
         </div>
       </nav>
@@ -118,21 +192,21 @@ export default function PatientWorkspace() {
           onClose={() => setCheckinOpen(false)}
           onComplete={() => {
             setCheckinOpen(false);
-            setCheckinDone(true);
+            setDemoUi((current) => ({ ...current, checkinDone: true }));
             notify('Check-in registrado. Obrigado, Marina.');
           }}
         />
       )}
-      {preVisitOpen && (
+      {preVisitRouteOpen && (
         <PreVisitInterview
           initialDraft={preConsultationDraft}
           latestSubmission={latestSubmission}
           onSaveDraft={savePreConsultationDraft}
-          onClose={() => setPreVisitOpen(false)}
+          onClose={() => router.replace(consultationsHref)}
           onSubmit={() => {
             submitPreConsultation();
-            setPreVisitOpen(false);
             notify('Pré-consulta enviada ao Dr. Guilherme.');
+            router.replace(consultationsHref);
           }}
         />
       )}

@@ -1,3 +1,8 @@
+export interface CareDemoScope {
+  patientId: string;
+  encounterId: string;
+}
+
 export interface PreConsultationAnswers {
   consentGiven: boolean;
   aiAssistanceAllowed: boolean;
@@ -9,6 +14,8 @@ export interface PreConsultationAnswers {
 
 export interface PreConsultationSubmission extends PreConsultationAnswers {
   id: string;
+  patientId: string;
+  encounterId: string;
   version: number;
   submittedAt: string;
   consentVersion: 'pre-consulta-texto-v1';
@@ -19,6 +26,8 @@ export type PreConsultationReviewStatus = 'draft' | 'approved' | 'rejected';
 
 export interface PreConsultationReview {
   id: string;
+  patientId: string;
+  encounterId: string;
   submissionId: string;
   version: number;
   status: PreConsultationReviewStatus;

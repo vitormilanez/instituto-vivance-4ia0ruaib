@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { DEFAULT_PATIENT_ID } from './demo-routes';
 
 export type Role = 'doctor' | 'patient';
 
@@ -8,7 +10,7 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
-export function RoleHeader({ role, onRoleChange }: { role: Role; onRoleChange: (role: Role) => void }) {
+export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Role; patientId?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[#dfe8e3] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
@@ -23,28 +25,26 @@ export function RoleHeader({ role, onRoleChange }: { role: Role; onRoleChange: (
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex rounded-xl border border-[#dfe8e3] bg-[#f4f7f5] p-1" aria-label="Perfil de visualização">
-            <button
-              type="button"
-              aria-pressed={role === 'doctor'}
-              onClick={() => onRoleChange('doctor')}
+            <Link
+              href="/medico"
+              aria-current={role === 'doctor' ? 'page' : undefined}
               className={cn(
-                'min-h-9 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
+                'flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
                 role === 'doctor' ? 'bg-white text-[#17372f] shadow-sm' : 'text-[#698078] hover:text-[#17372f]'
               )}
             >
               Médico
-            </button>
-            <button
-              type="button"
-              aria-pressed={role === 'patient'}
-              onClick={() => onRoleChange('patient')}
+            </Link>
+            <Link
+              href={`/paciente/${patientId}`}
+              aria-current={role === 'patient' ? 'page' : undefined}
               className={cn(
-                'min-h-9 cursor-pointer rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
+                'flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
                 role === 'patient' ? 'bg-white text-[#17372f] shadow-sm' : 'text-[#698078] hover:text-[#17372f]'
               )}
             >
               Paciente
-            </button>
+            </Link>
           </div>
           <div className="hidden size-10 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b] sm:grid">
             {role === 'doctor' ? 'GM' : 'MC'}

@@ -1,14 +1,30 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import {
+  DEFAULT_ENCOUNTER_ID,
+  DEFAULT_PATIENT_ID,
+  doctorNavigation,
+  getConsultationHref,
+  getDefaultEncounterId,
+  getPatientDossierHref,
+  getPatientMessagesHref,
+  getPreConsultationHref,
+  type ClinicalRouteMode,
+  type DoctorView,
+} from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { cn, Heading, Status, Toast } from './shared';
+import { useSessionDemoState } from './use-session-demo-state';
 
-type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
 type AppointmentTone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
 type Appointment = {
+  patientId: string;
+  encounterId: string;
   time: string;
   patient: string;
   initials: string;
@@ -26,7 +42,23 @@ type Appointment = {
   checklist: string[];
 };
 
-const nav: DoctorView[] = ['Visão geral', 'Agenda', 'Pacientes', 'Mensagens', 'Relatórios'];
+interface DoctorDemoUiState {
+  reportApproved: boolean;
+  overdueReminderSent: boolean;
+}
+
+const initialDoctorDemoUiState: DoctorDemoUiState = {
+  reportApproved: false,
+  overdueReminderSent: false,
+};
+
+function normalizeDoctorDemoUiState(value: unknown): DoctorDemoUiState {
+  const stored = typeof value === 'object' && value !== null ? value as Partial<DoctorDemoUiState> : {};
+  return {
+    reportApproved: typeof stored.reportApproved === 'boolean' ? stored.reportApproved : false,
+    overdueReminderSent: typeof stored.overdueReminderSent === 'boolean' ? stored.overdueReminderSent : false,
+  };
+}
 
 const alerts = [
   {
@@ -54,6 +86,8 @@ const alerts = [
 
 const appointments: Appointment[] = [
   {
+    patientId: 'pac-demo-005',
+    encounterId: 'enc-demo-001',
     time: '09:00',
     patient: 'Lúcia Barbosa',
     initials: 'LB',
@@ -71,6 +105,8 @@ const appointments: Appointment[] = [
     checklist: ['Validar energia à tarde', 'Revisar percepção de esforço', 'Definir próximo acompanhamento'],
   },
   {
+    patientId: DEFAULT_PATIENT_ID,
+    encounterId: DEFAULT_ENCOUNTER_ID,
     time: '10:30',
     patient: 'Marina Costa',
     initials: 'MC',
@@ -88,6 +124,8 @@ const appointments: Appointment[] = [
     checklist: ['Validar sono', 'Confirmar tolerância', 'Decidir próximo passo'],
   },
   {
+    patientId: 'pac-demo-004',
+    encounterId: 'enc-demo-003',
     time: '11:30',
     patient: 'Rafael Lima',
     initials: 'RL',
@@ -105,6 +143,8 @@ const appointments: Appointment[] = [
     checklist: ['Completar histórico', 'Revisar exames anexados', 'Definir objetivo inicial'],
   },
   {
+    patientId: 'pac-demo-002',
+    encounterId: 'enc-demo-004',
     time: '14:00',
     patient: 'Ana Ribeiro',
     initials: 'AR',
@@ -122,6 +162,8 @@ const appointments: Appointment[] = [
     checklist: ['Aprovar relatório', 'Revisar progressão de força', 'Confirmar energia semanal'],
   },
   {
+    patientId: 'pac-demo-003',
+    encounterId: 'enc-demo-005',
     time: '16:30',
     patient: 'Paulo Mendes',
     initials: 'PM',
@@ -142,6 +184,8 @@ const appointments: Appointment[] = [
 
 const patients = [
   {
+    id: DEFAULT_PATIENT_ID,
+    nextEncounterId: DEFAULT_ENCOUNTER_ID,
     initials: 'MC',
     name: 'Marina Costa',
     focus: 'Emagrecimento · sono',
@@ -180,6 +224,8 @@ const patients = [
     nextSteps: ['Investigar despertares noturnos', 'Confirmar tolerância ao plano atual', 'Definir meta da próxima quinzena'],
   },
   {
+    id: 'pac-demo-002',
+    nextEncounterId: 'enc-demo-004',
     initials: 'AR',
     name: 'Ana Ribeiro',
     focus: 'Longevidade · força',
@@ -218,6 +264,8 @@ const patients = [
     nextSteps: ['Aprovar relatório mensal', 'Revisar progressão de força', 'Manter acompanhamento de energia'],
   },
   {
+    id: 'pac-demo-003',
+    nextEncounterId: 'enc-demo-005',
     initials: 'PM',
     name: 'Paulo Mendes',
     focus: 'Emagrecimento · rotina',
@@ -256,6 +304,8 @@ const patients = [
     nextSteps: ['Responder ao relato de enjoo', 'Revisar receita vigente', 'Decidir continuidade do plano'],
   },
   {
+    id: 'pac-demo-004',
+    nextEncounterId: 'enc-demo-003',
     initials: 'RL',
     name: 'Rafael Lima',
     focus: 'Avaliação inicial',
@@ -399,39 +449,78 @@ const marinaTimeline = [
   ['12 ago · 11:14', 'Primeira consulta concluída', 'Objetivo, plano inicial e retorno em 30 dias registrados.'],
 ];
 
-export default function DoctorWorkspace() {
-  const [view, setView] = useState<DoctorView>('Visão geral');
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+export default function DoctorWorkspace({
+  initialView = 'Visão geral',
+  patientId = DEFAULT_PATIENT_ID,
+  encounterId,
+  routeMode = 'workspace',
+}: {
+  initialView?: DoctorView;
+  patientId?: string;
+  encounterId?: string;
+  routeMode?: ClinicalRouteMode;
+}) {
+  const router = useRouter();
+  const view = initialView;
+  const { hydrated } = useCareDemo(patientId, encounterId ?? getDefaultEncounterId(patientId));
   const [selectedAlert, setSelectedAlert] = useState<(typeof alerts)[number] | null>(null);
-  const [approved, setApproved] = useState(false);
-  const [nudged, setNudged] = useState(false);
+  const [demoUi, setDemoUi, demoUiHydrated] = useSessionDemoState(
+    'instituto-vivans-demo-ui-v1:doctor',
+    initialDoctorDemoUiState,
+    normalizeDoctorDemoUiState,
+  );
   const [toast, setToast] = useState('');
+  const approved = demoUi.reportApproved;
+  const nudged = demoUi.overdueReminderSent;
+  const activeAppointment = routeMode === 'workspace'
+    ? null
+    : appointments.find((appointment) => appointment.patientId === patientId && appointment.encounterId === encounterId) ?? null;
 
   const notify = (text: string) => {
     setToast(text);
     window.setTimeout(() => setToast(''), 3200);
   };
 
+  const openPreparation = (appointment: Appointment) => {
+    router.push(getPreConsultationHref(appointment.patientId, appointment.encounterId));
+  };
+
+  const openConsultation = (appointment: Appointment) => {
+    router.push(getConsultationHref(appointment.patientId, appointment.encounterId));
+  };
+
+  const closeClinicalWorkspace = (appointment: Appointment) => {
+    router.replace(getPatientDossierHref(appointment.patientId));
+  };
+
+  if (!hydrated || !demoUiHydrated) {
+    return (
+      <main id="main-content" className="mx-auto max-w-[1540px] px-4 py-10 sm:px-6 lg:px-9">
+        <div className="rounded-3xl border border-[#dfe8e3] bg-white p-6 text-sm text-[#60766f]">Carregando o contexto demonstrativo com segurança...</div>
+      </main>
+    );
+  }
+
   return (
     <>
       <div id="doctor-workspace-content" className="mx-auto grid max-w-[1540px] lg:grid-cols-[232px_minmax(0,1fr)]">
         <aside className="hidden min-h-[calc(100vh-72px)] border-r border-[#dfe8e3] bg-white px-4 py-6 lg:block">
           <nav aria-label="Navegação do médico" className="space-y-1">
-            {nav.map((item) => (
-              <button
-                type="button"
-                key={item}
-                onClick={() => setView(item)}
+            {doctorNavigation.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={view === item.label ? 'page' : undefined}
                 className={cn(
                   'flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition-colors',
-                  view === item
+                  view === item.label
                     ? 'bg-[#e8f4f0] text-[#075f52]'
                     : 'text-[#60766f] hover:bg-[#f4f7f5] hover:text-[#17372f]'
                 )}
               >
-                <span aria-hidden="true" className={cn('size-2 rounded-full', view === item ? 'bg-[#0b7b68]' : 'bg-[#b7c7c1]')} />
-                {item}
-              </button>
+                <span aria-hidden="true" className={cn('size-2 rounded-full', view === item.label ? 'bg-[#0b7b68]' : 'bg-[#b7c7c1]')} />
+                {item.label}
+              </Link>
             ))}
           </nav>
           <div className="mt-10 rounded-2xl bg-[#17372f] p-4 text-white">
@@ -441,7 +530,7 @@ export default function DoctorWorkspace() {
               <div className="flex items-center justify-between rounded-xl bg-white/8 px-3 py-2.5"><span className="text-xs text-[#c7ddd6]">Regulares</span><strong className="text-lg text-[#9fe0ce]">17</strong></div>
               <div className="flex items-center justify-between rounded-xl bg-[#fff3df] px-3 py-2.5 text-[#70480e]"><span className="text-xs font-bold">Check-in atrasado</span><strong className="text-lg">5</strong></div>
             </div>
-            <button type="button" disabled={nudged} onClick={() => { setNudged(true); notify('Cutucão enviado para 5 pacientes com check-in atrasado.'); }} className="mt-3 min-h-11 w-full cursor-pointer rounded-xl bg-white px-3 text-xs font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f] disabled:cursor-default disabled:bg-[#b9d0c9]">
+            <button type="button" disabled={nudged} onClick={() => { setDemoUi((current) => ({ ...current, overdueReminderSent: true })); notify('Cutucão enviado para 5 pacientes com check-in atrasado.'); }} className="mt-3 min-h-11 w-full cursor-pointer rounded-xl bg-white px-3 text-xs font-bold text-[#17372f] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f] disabled:cursor-default disabled:bg-[#b9d0c9]">
               {nudged ? 'Lembrete enviado' : 'Dar um cutucão nos 5'}
             </button>
           </div>
@@ -453,43 +542,47 @@ export default function DoctorWorkspace() {
 
         <main id="main-content" className="min-w-0 px-4 pb-12 pt-6 sm:px-5 lg:px-9 lg:pt-9">
           <div className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Navegação do médico">
-            {nav.map((item) => (
-              <button
-                type="button"
-                key={item}
-                onClick={() => setView(item)}
+            {doctorNavigation.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={view === item.label ? 'page' : undefined}
                 className={cn(
-                  'min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold',
-                  view === item ? 'bg-[#17372f] text-white' : 'border border-[#dfe8e3] bg-white text-[#60766f]'
+                  'flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-semibold',
+                  view === item.label ? 'bg-[#17372f] text-white' : 'border border-[#dfe8e3] bg-white text-[#60766f]'
                 )}
               >
-                {item}
-              </button>
+                {item.label}
+              </Link>
             ))}
           </div>
 
           {view === 'Visão geral' && (
             <Overview
-              onOpenAppointment={setSelectedAppointment}
-              onPatient={() => setView('Pacientes')}
+              onOpenAppointment={openConsultation}
+              onOpenPreparation={openPreparation}
+              onPatient={(selectedPatientId) => router.push(getPatientDossierHref(selectedPatientId))}
               onAlert={setSelectedAlert}
-              onReports={() => setView('Relatórios')}
+              onReports={() => router.push('/medico/relatorios')}
             />
           )}
-          {view === 'Agenda' && <Agenda onOpenAppointment={setSelectedAppointment} onNotify={notify} />}
+          {view === 'Agenda' && <Agenda onOpenAppointment={openPreparation} onNotify={notify} />}
           {view === 'Pacientes' && (
             <Patients
-              onStart={() => setSelectedAppointment(appointments[1])}
-              onMessage={() => setView('Mensagens')}
+              patientId={patientId}
+              onSelectPatient={(selectedPatientId) => router.push(getPatientDossierHref(selectedPatientId))}
+              onStartConsultation={(selectedPatientId, selectedEncounterId) => router.push(getConsultationHref(selectedPatientId, selectedEncounterId))}
+              onOpenPreparation={(selectedPatientId, selectedEncounterId) => router.push(getPreConsultationHref(selectedPatientId, selectedEncounterId))}
+              onMessage={(selectedPatientId) => router.push(getPatientMessagesHref(selectedPatientId))}
               onNotify={notify}
             />
           )}
-          {view === 'Mensagens' && <Messages onNotify={notify} />}
+          {view === 'Mensagens' && <Messages patientId={patientId} onNotify={notify} />}
           {view === 'Relatórios' && (
             <Reports
               approved={approved}
               onApprove={() => {
-                setApproved(true);
+                setDemoUi((current) => ({ ...current, reportApproved: true }));
                 notify('Relatório aprovado e disponibilizado para Marina.');
               }}
             />
@@ -497,15 +590,17 @@ export default function DoctorWorkspace() {
         </main>
       </div>
 
-      {selectedAppointment && (
+      {activeAppointment && (
         <Consultation
-          appointment={selectedAppointment}
+          key={`${activeAppointment.encounterId}-${routeMode}`}
+          appointment={activeAppointment}
+          initialStep={routeMode === 'consultation' ? 'consulta' : 'preparo'}
           onNotify={notify}
-          onClose={() => setSelectedAppointment(null)}
+          onClose={() => closeClinicalWorkspace(activeAppointment)}
           onComplete={() => {
-            const patientName = selectedAppointment.patient;
-            setSelectedAppointment(null);
+            const patientName = activeAppointment.patient;
             notify(`Consulta de ${patientName} concluída. Plano e relatório ficaram salvos como rascunho.`);
+            closeClinicalWorkspace(activeAppointment);
           }}
         />
       )}
@@ -526,12 +621,14 @@ export default function DoctorWorkspace() {
 
 function Overview({
   onOpenAppointment,
+  onOpenPreparation,
   onPatient,
   onAlert,
   onReports,
 }: {
   onOpenAppointment: (appointment: Appointment) => void;
-  onPatient: () => void;
+  onOpenPreparation: (appointment: Appointment) => void;
+  onPatient: (patientId: string) => void;
   onAlert: (item: (typeof alerts)[number]) => void;
   onReports: () => void;
 }) {
@@ -615,7 +712,7 @@ function Overview({
         ))}
       </section>
 
-      <DayAgendaTimeline onOpenAppointment={onOpenAppointment} />
+      <DayAgendaTimeline onOpenAppointment={onOpenPreparation} />
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,0.65fr)]">
         <article className="overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white shadow-[0_10px_35px_rgba(28,55,47,0.05)]">
@@ -666,8 +763,8 @@ function Overview({
                 </details>
               )}
               <div className="mt-4 flex flex-wrap gap-3">
-                <button type="button" disabled={!latestSubmission} onClick={() => onOpenAppointment(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a59f]">{reviewAction}</button>
-                <button type="button" onClick={onPatient} className="min-h-11 cursor-pointer px-2 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prontuário completo</button>
+                <button type="button" disabled={!latestSubmission} onClick={() => onOpenPreparation(appointments[1])} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a59f]">{reviewAction}</button>
+                <button type="button" onClick={() => onPatient(DEFAULT_PATIENT_ID)} className="min-h-11 cursor-pointer px-2 text-sm font-bold text-[#0b7b68] underline decoration-[#9ccdc2] underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prontuário completo</button>
               </div>
             </div>
             <div className="rounded-2xl bg-[#f4f7f5] p-4">
@@ -769,29 +866,46 @@ function Agenda({ onOpenAppointment, onNotify }: { onOpenAppointment: (appointme
 }
 
 function Patients({
-  onStart,
+  patientId,
+  onSelectPatient,
+  onStartConsultation,
+  onOpenPreparation,
   onMessage,
   onNotify,
 }: {
-  onStart: () => void;
-  onMessage: () => void;
+  patientId: string;
+  onSelectPatient: (patientId: string) => void;
+  onStartConsultation: (patientId: string, encounterId: string) => void;
+  onOpenPreparation: (patientId: string, encounterId: string) => void;
+  onMessage: (patientId: string) => void;
   onNotify: (text: string) => void;
 }) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [intelligenceTab, setIntelligenceTab] = useState<IntelligenceTab>('Resumo IA');
   const [selectedMealIndex, setSelectedMealIndex] = useState<number | null>(null);
-  const selected = patients[selectedIndex] ?? patients[0];
+  const selectedIndex = patients.findIndex((patient) => patient.id === patientId);
+  const selected = selectedIndex >= 0 ? patients[selectedIndex] : null;
   const selectedMeal = selectedMealIndex === null ? null : marinaMeals[selectedMealIndex];
 
-  if (!selected) return null;
+  if (!selected) {
+    return (
+      <>
+        <Heading eyebrow="Carteira ativa" title="Dossiê não disponível" description="Este atendimento demonstrativo existe na agenda, mas ainda não possui um dossiê longitudinal preenchido." />
+        <section className="mt-7 rounded-3xl border border-[#dfe8e3] bg-white p-6">
+          <Status tone="gray">Dados demonstrativos</Status>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#60766f]">Nenhum dado de outra pessoa foi usado como alternativa. Volte à agenda para escolher um atendimento disponível.</p>
+          <Link href="/medico/agenda" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white">Voltar à agenda</Link>
+        </section>
+      </>
+    );
+  }
 
   const openConsultation = () => {
-    if (selected.name === 'Marina Costa') {
-      onStart();
+    if (selected.id === DEFAULT_PATIENT_ID) {
+      onStartConsultation(selected.id, selected.nextEncounterId);
       return;
     }
 
-    onNotify(`Preparo demonstrativo de ${selected.name} aberto.`);
+    onOpenPreparation(selected.id, selected.nextEncounterId);
   };
 
   return (
@@ -811,12 +925,12 @@ function Patients({
         {patients.map((patient, index) => (
           <button
             type="button"
-            key={patient.name}
+            key={patient.id}
             aria-pressed={selectedIndex === index}
             onClick={() => {
-              setSelectedIndex(index);
               setIntelligenceTab('Resumo IA');
               setSelectedMealIndex(null);
+              onSelectPatient(patient.id);
             }}
             className={cn(
               'cursor-pointer rounded-3xl border bg-white p-5 text-left shadow-[0_8px_28px_rgba(28,55,47,0.04)] transition-colors hover:border-[#9fc8bd] hover:bg-[#fbfdfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
@@ -861,11 +975,11 @@ function Patients({
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={onMessage} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+            <button type="button" onClick={() => onMessage(selected.id)} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-5 text-sm font-bold text-[#0b6a5b] hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
               Enviar mensagem
             </button>
             <button type="button" onClick={openConsultation} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white hover:bg-[#24483e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-              {selected.name === 'Marina Costa' ? 'Abrir consulta' : 'Ver preparo'}
+              {selected.id === DEFAULT_PATIENT_ID ? 'Abrir consulta' : 'Ver preparo'}
             </button>
           </div>
         </div>
@@ -1266,16 +1380,60 @@ function Patients({
   );
 }
 
-function Messages({ onNotify }: { onNotify: (text: string) => void }) {
+const messageThreads = [
+  {
+    patientId: DEFAULT_PATIENT_ID,
+    initials: 'MC',
+    name: 'Marina Costa',
+    preview: 'Consegui registrar o jantar.',
+    time: '09:18',
+    context: 'Plano iniciado há 29 dias',
+    incoming: 'Consegui registrar o jantar. Também dormi melhor esta noite.',
+    outgoing: 'Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.',
+  },
+  {
+    patientId: 'pac-demo-003',
+    initials: 'PM',
+    name: 'Paulo Mendes',
+    preview: 'Estou sentindo enjoo hoje.',
+    time: '08:12',
+    context: 'Acompanhamento · dia 18',
+    incoming: 'Estou sentindo enjoo hoje e preferi registrar antes de seguir com a rotina.',
+    outgoing: 'Obrigado por avisar, Paulo. Vou revisar seu relato antes de qualquer orientação.',
+  },
+  {
+    patientId: 'pac-demo-002',
+    initials: 'AR',
+    name: 'Ana Ribeiro',
+    preview: 'Obrigada, doutor.',
+    time: 'Ontem',
+    context: 'Ciclo de força · dia 61',
+    incoming: 'Obrigada, doutor. A rotina pela manhã ficou mais fácil de manter.',
+    outgoing: 'Ótimo, Ana. Vamos revisar essa evolução na próxima consulta.',
+  },
+  {
+    patientId: 'pac-demo-004',
+    initials: 'RL',
+    name: 'Rafael Lima',
+    preview: 'Vou concluir a anamnese.',
+    time: 'Ontem',
+    context: 'Avaliação inicial',
+    incoming: 'Vou concluir a anamnese e conferir os exames antes da consulta.',
+    outgoing: 'Perfeito, Rafael. Se algum campo gerar dúvida, deixe registrado para conversarmos.',
+  },
+] as const;
+
+function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text: string) => void }) {
   const [value, setValue] = useState('');
   const [sent, setSent] = useState(false);
+  const selected = messageThreads.find((thread) => thread.patientId === patientId) ?? null;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!value.trim()) return;
+    if (!selected || !value.trim()) return;
     setValue('');
     setSent(true);
-    onNotify('Mensagem adicionada à conversa.');
+    onNotify(`Mensagem demonstrativa adicionada à conversa de ${selected.name}.`);
   };
 
   return (
@@ -1284,36 +1442,38 @@ function Messages({ onNotify }: { onNotify: (text: string) => void }) {
       <section className="mt-7 grid min-h-[590px] overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white lg:grid-cols-[290px_1fr]">
         <div className="border-b border-[#e7eeea] lg:border-b-0 lg:border-r">
           <div className="p-4"><input aria-label="Buscar conversa" placeholder="Buscar conversa" className="min-h-11 w-full rounded-xl bg-[#f4f7f5] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></div>
-          {[
-            ['MC', 'Marina Costa', 'Consegui registrar o jantar.', '09:18'],
-            ['PM', 'Paulo Mendes', 'Estou sentindo enjoo hoje.', '08:12'],
-            ['AR', 'Ana Ribeiro', 'Obrigada, doutor.', 'Ontem'],
-          ].map((item, index) => (
-            <button type="button" key={item[1]} className={cn('flex w-full gap-3 border-t border-[#edf2ef] p-4 text-left', index === 0 ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item[0]}</span>
+          {messageThreads.map((item) => (
+            <Link href={getPatientMessagesHref(item.patientId)} key={item.patientId} aria-current={selected?.patientId === item.patientId ? 'page' : undefined} className={cn('flex min-h-20 w-full gap-3 border-t border-[#edf2ef] p-4 text-left', selected?.patientId === item.patientId ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item.initials}</span>
               <span className="min-w-0 flex-1">
-                <span className="flex justify-between gap-3"><strong className="text-sm">{item[1]}</strong><small className="text-[#8a9c96]">{item[3]}</small></span>
-                <span className="mt-1 block truncate text-xs text-[#698078]">{item[2]}</span>
+                <span className="flex justify-between gap-3"><strong className="text-sm">{item.name}</strong><small className="text-[#8a9c96]">{item.time}</small></span>
+                <span className="mt-1 block truncate text-xs text-[#698078]">{item.preview}</span>
               </span>
-            </button>
+            </Link>
           ))}
         </div>
-        <div className="flex min-h-[470px] flex-col">
-          <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:px-6">
-            <span className="grid size-10 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">MC</span>
-            <div><p className="text-sm font-bold">Marina Costa</p><p className="text-xs text-[#698078]">Plano iniciado há 29 dias</p></div>
+        {selected ? (
+          <div className="flex min-h-[470px] flex-col">
+            <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:px-6">
+              <span className="grid size-10 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{selected.initials}</span>
+              <div><p className="text-sm font-bold">{selected.name}</p><p className="text-xs text-[#698078]">{selected.context}</p></div>
+            </div>
+            <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6">
+              <div className="max-w-[78%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">{selected.incoming}<p className="mt-2 text-[11px] text-[#8a9c96]">{selected.time}</p></div>
+              <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white">{selected.outgoing}<p className="mt-2 text-[11px] text-[#b8d3cb]">Dr. Guilherme</p></div>
+              {sent && <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm text-white">Mensagem demonstrativa enviada agora.</div>}
+            </div>
+            <form onSubmit={submit} className="flex gap-2 border-t border-[#e7eeea] p-4">
+              <label className="sr-only" htmlFor="doctor-message">Escrever mensagem para {selected.name}</label>
+              <input id="doctor-message" value={value} onChange={(event) => setValue(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-[#d7e3df] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder="Escreva uma mensagem..." />
+              <button type="submit" className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar</button>
+            </form>
           </div>
-          <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6">
-            <div className="max-w-[78%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm">Consegui registrar o jantar. Também dormi melhor esta noite.<p className="mt-2 text-[11px] text-[#8a9c96]">09:18</p></div>
-            <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#17372f] p-4 text-sm leading-6 text-white">Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.<p className="mt-2 text-[11px] text-[#b8d3cb]">09:22 · Dr. Guilherme</p></div>
-            {sent && <div className="ml-auto max-w-[78%] rounded-2xl rounded-tr-md bg-[#0b7b68] p-4 text-sm text-white">Mensagem demonstrativa enviada agora.</div>}
+        ) : (
+          <div className="grid min-h-[470px] place-items-center bg-[#f8faf9] p-6 text-center">
+            <div className="max-w-md"><Status tone="gray">Sem conversa demonstrativa</Status><h2 className="mt-4 text-xl font-semibold">Nenhuma conversa foi criada para este contexto.</h2><p className="mt-2 text-sm leading-6 text-[#60766f]">O protótipo não substitui a conversa ausente por mensagens de outra pessoa.</p></div>
           </div>
-          <form onSubmit={submit} className="flex gap-2 border-t border-[#e7eeea] p-4">
-            <label className="sr-only" htmlFor="doctor-message">Escrever mensagem</label>
-            <input id="doctor-message" value={value} onChange={(event) => setValue(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-xl border border-[#d7e3df] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder="Escreva uma mensagem..." />
-            <button type="submit" className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Enviar</button>
-          </form>
-        </div>
+        )}
       </section>
     </>
   );
@@ -1362,20 +1522,23 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
   );
 }
 
+type ConsultationStep = 'preparo' | 'consulta' | 'plano' | 'fechamento';
+
 function Consultation({
   appointment,
+  initialStep,
   onClose,
   onComplete,
   onNotify,
 }: {
   appointment: Appointment;
+  initialStep: ConsultationStep;
   onClose: () => void;
   onComplete: () => void;
   onNotify: (message: string) => void;
 }) {
-  type Step = 'preparo' | 'consulta' | 'plano' | 'fechamento';
-  const { latestSubmission } = useCareDemo();
-  const [step, setStep] = useState<Step>('preparo');
+  const { latestSubmission } = useCareDemo(appointment.patientId, appointment.encounterId);
+  const [step, setStep] = useState<ConsultationStep>(initialStep);
   const [meetOpen, setMeetOpen] = useState(false);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
   const [summary, setSummary] = useState(false);
@@ -1383,8 +1546,8 @@ function Consultation({
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
-  const usesSharedPreConsultation = appointment.patient === 'Marina Costa' && Boolean(latestSubmission);
-  const steps: Array<[Step, string]> = [
+  const usesSharedPreConsultation = appointment.patientId === DEFAULT_PATIENT_ID && Boolean(latestSubmission);
+  const steps: Array<[ConsultationStep, string]> = [
     ['preparo', '1. Preparo'],
     ['consulta', '2. Consulta'],
     ['plano', '3. Plano'],
@@ -1475,7 +1638,7 @@ function Consultation({
                 </div>
                 {usesSharedPreConsultation ? (
                   <div className="mt-6">
-                    <PreConsultationReviewWorkspace onNotify={onNotify} />
+                    <PreConsultationReviewWorkspace patientId={appointment.patientId} encounterId={appointment.encounterId} onNotify={onNotify} />
                   </div>
                 ) : (
                   <div className="mt-6 rounded-3xl bg-[#17372f] p-5 text-white">
