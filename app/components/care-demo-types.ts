@@ -43,3 +43,45 @@ export interface PreConsultationReview {
   reviewedBy: string | null;
   rejectionReason: string | null;
 }
+
+export type CarePlanStatus = 'draft' | 'approved' | 'published' | 'superseded';
+export type CarePlanSourceMode = 'manual' | 'assisted';
+
+export interface CarePlanAction {
+  id: string;
+  title: string;
+  cadence: string;
+  active: boolean;
+}
+
+export interface CarePlanDraftContent {
+  title: string;
+  objective: string;
+  introduction: string;
+  actions: CarePlanAction[];
+  monitoring: string;
+  supportNotice: string;
+  sourceDescription: string;
+  sourceMode: CarePlanSourceMode;
+  sourceReviewId: string | null;
+}
+
+export interface CarePlanVersion extends CarePlanDraftContent {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  status: CarePlanStatus;
+  authoredBy: string;
+  createdAt: string;
+  createdAtIso: string;
+  updatedAt: string;
+  updatedAtIso: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  approvedAtIso: string | null;
+  publishedBy: string | null;
+  publishedAt: string | null;
+  publishedAtIso: string | null;
+  supersededByVersion: number | null;
+}

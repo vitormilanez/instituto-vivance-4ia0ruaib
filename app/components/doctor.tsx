@@ -18,6 +18,7 @@ import {
   type DoctorView,
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
+import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
@@ -592,7 +593,7 @@ export default function DoctorWorkspace({
           onClose={() => closeClinicalWorkspace(activeAppointment)}
           onComplete={() => {
             const patientName = activeAppointment.patient;
-            notify(`Consulta de ${patientName} concluída. Plano e relatório ficaram salvos como rascunho.`);
+            notify(`Consulta de ${patientName} concluída. O plano só chega à paciente se uma versão for publicada.`);
             closeClinicalWorkspace(activeAppointment);
           }}
         />
@@ -1496,12 +1497,11 @@ function Consultation({
   onComplete: () => void;
   onNotify: (message: string) => void;
 }) {
-  const { latestSubmission } = useCareDemo(appointment.patientId, appointment.encounterId);
+  const { latestSubmission, latestCarePlan, latestPublishedCarePlan } = useCareDemo(appointment.patientId, appointment.encounterId);
   const [step, setStep] = useState<ConsultationStep>(initialStep);
   const [meetOpen, setMeetOpen] = useState(false);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
   const [summary, setSummary] = useState(false);
-  const [compiled, setCompiled] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -1647,24 +1647,13 @@ function Consultation({
           )}
 
           {step === 'plano' && (
-            <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Compilador do plano</p><h3 className="mt-2 text-2xl font-semibold">Da decisão clínica ao dia a dia</h3><p className="mt-2 text-sm leading-6 text-[#698078]">Transforme a orientação em ações, frequência, monitoramento e regras de escalonamento.</p></div>
-                <Status tone={compiled ? 'green' : 'gray'}>{compiled ? 'Plano compilado' : 'Rascunho'}</Status>
-              </div>
-              <div className="mt-6 grid gap-4 lg:grid-cols-3">
-                <label className="rounded-2xl bg-[#f4f7f5] p-4 text-sm font-bold">Meta principal<select className="mt-3 min-h-11 w-full rounded-xl border border-[#d7e3df] bg-white px-3 font-normal"><option>Regularizar sono</option><option>Manter adesão alimentar</option></select></label>
-                <label className="rounded-2xl bg-[#f4f7f5] p-4 text-sm font-bold">Check-in<select className="mt-3 min-h-11 w-full rounded-xl border border-[#d7e3df] bg-white px-3 font-normal"><option>Diário · 20h</option><option>3 vezes por semana</option></select></label>
-                <label className="rounded-2xl bg-[#f4f7f5] p-4 text-sm font-bold">Se sair do esperado<select className="mt-3 min-h-11 w-full rounded-xl border border-[#d7e3df] bg-white px-3 font-normal"><option>Avisar o médico</option><option>Apenas registrar</option></select></label>
-              </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {['Registrar jantar em 3 dias', 'Meta de 7.000 passos', 'Desacelerar às 22h', 'Relatar qualquer novo sintoma'].map((item, index) => (
-                  <label key={item} className="flex min-h-14 items-center gap-3 rounded-2xl border border-[#dfe8e3] p-4 text-sm font-semibold"><input type="checkbox" defaultChecked={index !== 1} className="size-5 accent-[#0b7b68]" />{item}</label>
-                ))}
-              </div>
-              {compiled && <div className="mt-5 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4"><p className="text-sm font-bold text-[#0b6a5b]">Plano pronto para revisão</p><p className="mt-1 text-sm text-[#45655c]">4 ações, check-in diário e alerta por novo sintoma.</p></div>}
-              <div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={() => setCompiled(true)} className="min-h-11 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white">Compilar plano com IA</button><button type="button" onClick={() => setStep('fechamento')} className="min-h-11 rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b]">Revisar fechamento</button></div>
-            </section>
+            <DoctorCarePlanWorkspace
+              patientId={appointment.patientId}
+              encounterId={appointment.encounterId}
+              notesPresent={notes.trim().length > 0}
+              onNotify={onNotify}
+              onContinue={() => setStep('fechamento')}
+            />
           )}
 
           {step === 'fechamento' && (
@@ -1675,7 +1664,7 @@ function Consultation({
                 <div className="mt-6 space-y-3">
                   {[
                     ['Resumo da consulta', summary ? 'Organizado e revisável' : 'Usará as notas atuais'],
-                    ['Plano de cuidado', compiled ? '4 ações e 1 regra de alerta' : 'Rascunho básico'],
+                    ['Plano de cuidado', latestPublishedCarePlan ? `Versão ${latestPublishedCarePlan.version} publicada para a paciente` : latestCarePlan?.status === 'approved' ? `Versão ${latestCarePlan.version} aprovada, aguardando publicação` : latestCarePlan?.status === 'draft' ? `Versão ${latestCarePlan.version} em rascunho` : 'Nenhum plano iniciado'],
                     ['Relatório', 'Será salvo como rascunho'],
                     ['Próximo contato', 'Check-in amanhã às 20h'],
                   ].map((item) => <div key={item[0]} className="flex flex-col justify-between gap-1 rounded-2xl bg-[#f4f7f5] p-4 sm:flex-row"><strong className="text-sm">{item[0]}</strong><span className="text-sm text-[#60766f]">{item[1]}</span></div>)}

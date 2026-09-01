@@ -246,7 +246,7 @@ export function PreConsultationReviewWorkspace({
 
         <div className="mt-5">
           <SimulationDisclaimer>
-            A aprovação valida apenas o preparo médico. Publicação de plano para a paciente exige uma confirmação separada no Lote 3.
+            A aprovação valida apenas o preparo médico. A publicação de plano para a paciente exige uma confirmação separada no espaço de plano.
           </SimulationDisclaimer>
         </div>
 

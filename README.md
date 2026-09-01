@@ -21,7 +21,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - caixa de atenção organizada por exceção;
 - briefing longitudinal do paciente;
 - consulta com notas estruturadas e sala de vídeo simulada;
-- compilação do plano de cuidado;
+- plano de cuidado versionado: rascunho, aprovação médica e publicação separada para a paciente;
 - mensagens e relatórios revisáveis;
 - recebimento do objetivo e dos relatos originais da pré-consulta, separados do rascunho assistido.
 - workspace médico com edição, rejeição justificada, aprovação restrita ao preparo e histórico de versões.
@@ -30,7 +30,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta e as revisões criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta, as revisões e os planos criados na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 
@@ -42,6 +42,8 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - A pré-consulta registra ciência, começa com campos vazios e permite revisar o relato antes do envio.
 - A assistência de IA é opcional e sua recusa não impede o fluxo manual.
 - Aprovar a revisão da pré-consulta valida somente o preparo médico; não publica plano nem sincroniza prontuário.
+- O plano só chega à visão da paciente após rascunho, aprovação médica e publicação explícita; cada nova publicação preserva a versão anterior.
+- Publicação e transferência para prontuário são fluxos diferentes: este protótipo não envia dados ao Feegow nem a qualquer serviço externo.
 - Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.
@@ -66,6 +68,7 @@ Rotas principais do protótipo:
 - `http://localhost:3000/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`
 - `http://localhost:3000/medico/pacientes/pac-demo-001/consultas/enc-demo-002`
 - `http://localhost:3000/paciente/pac-demo-001`
+- `http://localhost:3000/paciente/pac-demo-001/plano`
 
 Para validar a versão de produção:
 

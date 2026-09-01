@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
-import type { PreConsultationAnswers, PreConsultationSubmission } from './care-demo-types';
+import type { CarePlanVersion, PreConsultationAnswers, PreConsultationSubmission } from './care-demo-types';
+import { PatientCarePlan } from './patient-care-plan';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import {
   getPatientPreConsultationHref,
@@ -24,6 +25,7 @@ interface PatientDemoUiState {
   mealFeedbackSent: boolean;
   watchConnected: boolean;
   tasks: boolean[];
+  tasksByPlan: Record<string, boolean[]>;
 }
 
 const initialPatientDemoUiState: PatientDemoUiState = {
@@ -33,6 +35,7 @@ const initialPatientDemoUiState: PatientDemoUiState = {
   mealFeedbackSent: false,
   watchConnected: false,
   tasks: [true, false, false],
+  tasksByPlan: {},
 };
 
 function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
@@ -43,6 +46,15 @@ function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
   const tasks = Array.isArray(stored.tasks) && stored.tasks.length === 3 && stored.tasks.every((item) => typeof item === 'boolean')
     ? stored.tasks
     : initialPatientDemoUiState.tasks;
+  const tasksByPlan = typeof stored.tasksByPlan === 'object' && stored.tasksByPlan !== null && !Array.isArray(stored.tasksByPlan)
+    ? Object.fromEntries(
+        Object.entries(stored.tasksByPlan).flatMap(([planId, planTasks]) =>
+          Array.isArray(planTasks) && planTasks.every((item) => typeof item === 'boolean')
+            ? [[planId, planTasks]]
+            : [],
+        ),
+      ) as Record<string, boolean[]>
+    : {};
 
   return {
     checkinDone: typeof stored.checkinDone === 'boolean' ? stored.checkinDone : false,
@@ -51,6 +63,7 @@ function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
     mealFeedbackSent: typeof stored.mealFeedbackSent === 'boolean' ? stored.mealFeedbackSent : false,
     watchConnected: typeof stored.watchConnected === 'boolean' ? stored.watchConnected : false,
     tasks,
+    tasksByPlan,
   };
 }
 
@@ -70,6 +83,7 @@ export default function PatientWorkspace({
     hydrated,
     draft: preConsultationDraft,
     latestSubmission,
+    latestPublishedCarePlan,
     savePreConsultationDraft,
     submitPreConsultation,
   } = useCareDemo(patientId, encounterId);
@@ -80,8 +94,13 @@ export default function PatientWorkspace({
     normalizePatientDemoUiState,
   );
   const [toast, setToast] = useState('');
-  const { checkinDone, mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected, tasks } = demoUi;
+  const { checkinDone, mealAnalyzed, mealRatings, mealFeedbackSent, watchConnected, tasks, tasksByPlan } = demoUi;
   const preVisitDone = Boolean(latestSubmission);
+  const visiblePublishedActions = latestPublishedCarePlan?.actions.filter((action) => action.active) ?? [];
+  const publishedPlanTasks = latestPublishedCarePlan
+    ? tasksByPlan[latestPublishedCarePlan.id]
+      ?? (latestPublishedCarePlan.version === 1 ? tasks : Array.from({ length: visiblePublishedActions.length }, () => false))
+    : tasks;
 
   const notify = (text: string) => {
     setToast(text);
@@ -138,11 +157,25 @@ export default function PatientWorkspace({
         )}
         {view === 'Plano' && (
           <Plan
-            tasks={tasks}
-            onToggle={(index) => setDemoUi((current) => ({
-              ...current,
-              tasks: current.tasks.map((done, taskIndex) => taskIndex === index ? !done : done),
-            }))}
+            plan={latestPublishedCarePlan}
+            tasks={publishedPlanTasks}
+            onToggle={(index) => {
+              if (!latestPublishedCarePlan) return;
+              setDemoUi((current) => {
+                const actionCount = latestPublishedCarePlan.actions.filter((action) => action.active).length;
+                const currentTasks = current.tasksByPlan[latestPublishedCarePlan.id]
+                  ?? (latestPublishedCarePlan.version === 1
+                    ? current.tasks
+                    : Array.from({ length: actionCount }, () => false));
+                return {
+                  ...current,
+                  tasksByPlan: {
+                    ...current.tasksByPlan,
+                    [latestPublishedCarePlan.id]: currentTasks.map((done, taskIndex) => taskIndex === index ? !done : done),
+                  },
+                };
+              });
+            }}
           />
         )}
         {view === 'Diário' && (
@@ -321,33 +354,16 @@ function Today({
   );
 }
 
-function Plan({ tasks, onToggle }: { tasks: boolean[]; onToggle: (index: number) => void }) {
-  const done = tasks.filter(Boolean).length;
-  const percent = Math.round((done / 3) * 100);
-  return (
-    <section className="mt-0 lg:mt-8">
-      <Heading eyebrow="Plano combinado" title="Seu cuidado, em passos claros" description="Você sabe o que fazer, por que importa e quando conversar com seu médico." />
-      <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_340px]">
-        <article className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-7">
-          <div className="flex items-center justify-between"><div><p className="text-sm font-bold">Hoje</p><p className="mt-1 text-xs text-[#698078]">{done} de 3 ações concluídas</p></div><span className="text-2xl font-semibold text-[#0b7b68]">{percent}%</span></div>
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#e3ebe7]"><div className="h-full rounded-full bg-[#0b7b68] transition-[width]" style={{ width: String(percent) + '%' }} /></div>
-          <div className="mt-6 space-y-3">
-            {['Tomar água antes do almoço', 'Registrar uma foto do jantar', 'Começar a desacelerar às 22h'].map((task, index) => (
-              <button type="button" key={task} onClick={() => onToggle(index)} className={cn('flex min-h-16 w-full items-center gap-4 rounded-2xl border p-4 text-left', tasks[index] ? 'border-[#b9d8cf] bg-[#edf7f4]' : 'border-[#dfe8e3] bg-white')}>
-                <span className={cn('grid size-7 shrink-0 place-items-center rounded-full border-2 text-sm font-bold', tasks[index] ? 'border-[#0b7b68] bg-[#0b7b68] text-white' : 'border-[#aebfba] text-transparent')}>✓</span>
-                <span><strong className={cn('block text-sm', tasks[index] && 'text-[#45655c] line-through')}>{task}</strong><span className="mt-1 block text-xs text-[#698078]">{index === 0 ? 'Hábitos alimentares' : index === 1 ? 'Diário · até 21h' : 'Sono e recuperação'}</span></span>
-              </button>
-            ))}
-          </div>
-        </article>
-        <aside className="space-y-5">
-          <div className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Foco desta semana</p><h2 className="mt-3 text-xl font-semibold">Recuperar regularidade do sono</h2><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">Antes de aumentar metas, vamos entender o que está atrapalhando suas noites.</p></div>
-          <div className="rounded-3xl border border-[#f0d59c] bg-[#fff8e9] p-5"><p className="text-sm font-bold text-[#6f4b0d]">Quando avisar o médico</p><p className="mt-2 text-sm leading-6 text-[#805f24]">Se surgir um novo sintoma, envie uma mensagem pelo app. Não espere o próximo relatório.</p></div>
-          <div className="rounded-3xl border border-[#dfe8e3] bg-white p-5"><p className="text-sm font-bold">Como esse plano foi criado?</p><p className="mt-2 text-sm leading-6 text-[#698078]">Foi definido pelo Dr. Guilherme. A IA apenas ajudou a transformar a orientação em lembretes simples.</p></div>
-        </aside>
-      </div>
-    </section>
-  );
+function Plan({
+  plan,
+  tasks,
+  onToggle,
+}: {
+  plan: CarePlanVersion | null;
+  tasks: boolean[];
+  onToggle: (index: number) => void;
+}) {
+  return <PatientCarePlan plan={plan} tasks={tasks} onToggle={onToggle} />;
 }
 
 function Diary({

@@ -10,6 +10,11 @@ import {
   type CareDemoStoreValue,
 } from './care-demo-store';
 import type {
+  CarePlanAction,
+  CarePlanDraftContent,
+  CarePlanSourceMode,
+  CarePlanStatus,
+  CarePlanVersion,
   CareDemoScope,
   PreConsultationAnswers,
   PreConsultationReview,
@@ -23,10 +28,48 @@ const DEFAULT_SCOPE: CareDemoScope = {
   encounterId: DEFAULT_ENCOUNTER_ID,
 };
 
+function getInitialCarePlans(): CarePlanVersion[] {
+  return [
+    {
+      id: 'plan-demo-001',
+      patientId: DEFAULT_PATIENT_ID,
+      encounterId: DEFAULT_ENCOUNTER_ID,
+      version: 1,
+      status: 'published',
+      title: 'Plano de cuidado compartilhado',
+      objective: 'Cuidar da regularidade do sono e manter os registros que ajudam a conversa de acompanhamento.',
+      introduction: 'Este é um plano demonstrativo publicado depois de revisão médica. Ele organiza o combinado em passos simples para a paciente.',
+      actions: [
+        { id: 'plan-demo-001-action-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true },
+        { id: 'plan-demo-001-action-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true },
+        { id: 'plan-demo-001-action-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true },
+      ],
+      monitoring: 'Os registros ficam disponíveis para revisão na próxima conversa; eles não são interpretados automaticamente como decisão clínica.',
+      supportNotice: 'Se algo mudar ou surgir uma dúvida, use o canal combinado com sua equipe. O protótipo não classifica urgência.',
+      sourceDescription: 'Resumo demonstrativo da primeira consulta',
+      sourceMode: 'manual',
+      sourceReviewId: null,
+      authoredBy: 'Dr. Guilherme Martins · médico responsável',
+      createdAt: '12 ago · 11:14',
+      createdAtIso: '2026-08-12T11:14:00-03:00',
+      updatedAt: '12 ago · 11:14',
+      updatedAtIso: '2026-08-12T11:14:00-03:00',
+      approvedBy: 'Dr. Guilherme Martins · médico responsável',
+      approvedAt: '12 ago · 11:14',
+      approvedAtIso: '2026-08-12T11:14:00-03:00',
+      publishedBy: 'Dr. Guilherme Martins · médico responsável',
+      publishedAt: '12 ago · 11:16',
+      publishedAtIso: '2026-08-12T11:16:00-03:00',
+      supersededByVersion: null,
+    },
+  ];
+}
+
 const emptyState: CareDemoState = {
   draftsByEncounter: {},
   submissions: [],
   reviews: [],
+  carePlans: getInitialCarePlans(),
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -154,6 +197,109 @@ function normalizeReview(
   };
 }
 
+function normalizeCarePlanAction(value: unknown): CarePlanAction | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.title !== 'string' ||
+    typeof value.cadence !== 'string' ||
+    typeof value.active !== 'boolean'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    title: value.title,
+    cadence: value.cadence,
+    active: value.active,
+  };
+}
+
+function normalizeCarePlan(value: unknown): CarePlanVersion | null {
+  if (!isRecord(value)) return null;
+  const status: CarePlanStatus | null =
+    value.status === 'draft' ||
+    value.status === 'approved' ||
+    value.status === 'published' ||
+    value.status === 'superseded'
+      ? value.status
+      : null;
+  const sourceMode: CarePlanSourceMode | null =
+    value.sourceMode === 'manual' || value.sourceMode === 'assisted' ? value.sourceMode : null;
+  const actions = Array.isArray(value.actions)
+    ? value.actions.flatMap((action) => {
+        const normalized = normalizeCarePlanAction(action);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    !status ||
+    typeof value.title !== 'string' ||
+    typeof value.objective !== 'string' ||
+    typeof value.introduction !== 'string' ||
+    actions.length === 0 ||
+    !sourceMode ||
+    typeof value.monitoring !== 'string' ||
+    typeof value.supportNotice !== 'string' ||
+    typeof value.sourceDescription !== 'string' ||
+    typeof value.authoredBy !== 'string' ||
+    typeof value.createdAt !== 'string' ||
+    typeof value.updatedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  const createdAtIso =
+    typeof value.createdAtIso === 'string' ? value.createdAtIso : isoTimestampFromOpaqueId(value.id);
+  const updatedAtIso = typeof value.updatedAtIso === 'string' ? value.updatedAtIso : createdAtIso;
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    status,
+    title: value.title,
+    objective: value.objective,
+    introduction: value.introduction,
+    actions,
+    monitoring: value.monitoring,
+    supportNotice: value.supportNotice,
+    sourceDescription: value.sourceDescription,
+    sourceMode,
+    sourceReviewId: typeof value.sourceReviewId === 'string' ? value.sourceReviewId : null,
+    authoredBy: value.authoredBy,
+    createdAt: value.createdAt,
+    createdAtIso,
+    updatedAt: value.updatedAt,
+    updatedAtIso,
+    approvedBy: typeof value.approvedBy === 'string' ? value.approvedBy : null,
+    approvedAt: typeof value.approvedAt === 'string' ? value.approvedAt : null,
+    approvedAtIso:
+      typeof value.approvedAtIso === 'string'
+        ? value.approvedAtIso
+        : typeof value.approvedAt === 'string'
+          ? updatedAtIso
+          : null,
+    publishedBy: typeof value.publishedBy === 'string' ? value.publishedBy : null,
+    publishedAt: typeof value.publishedAt === 'string' ? value.publishedAt : null,
+    publishedAtIso:
+      typeof value.publishedAtIso === 'string'
+        ? value.publishedAtIso
+        : typeof value.publishedAt === 'string'
+          ? updatedAtIso
+          : null,
+    supersededByVersion:
+      typeof value.supersededByVersion === 'number' ? value.supersededByVersion : null,
+  };
+}
+
 function normalizeCurrentState(value: unknown): CareDemoState | null {
   if (!isRecord(value) || !isRecord(value.draftsByEncounter)) return null;
 
@@ -175,8 +321,19 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
         return normalized ? [normalized] : [];
       })
     : [];
+  const parsedCarePlans = Array.isArray(value.carePlans)
+    ? value.carePlans.flatMap((plan) => {
+        const normalized = normalizeCarePlan(plan);
+        return normalized ? [normalized] : [];
+      })
+    : [];
 
-  return { draftsByEncounter, submissions, reviews };
+  return {
+    draftsByEncounter,
+    submissions,
+    reviews,
+    carePlans: parsedCarePlans.length > 0 ? parsedCarePlans : getInitialCarePlans(),
+  };
 }
 
 function migrateLegacyState(value: unknown): CareDemoState | null {
@@ -201,6 +358,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     },
     submissions,
     reviews,
+    carePlans: getInitialCarePlans(),
   };
 }
 
@@ -222,6 +380,32 @@ function formatSubmissionTime(date = new Date()) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+function getDefaultCarePlanContent(): CarePlanDraftContent {
+  return {
+    title: 'Plano de cuidado compartilhado',
+    objective: 'Registrar o que ajuda a acompanhar a rotina e levar as dúvidas para a próxima conversa.',
+    introduction: 'Rascunho demonstrativo para organização do cuidado. Edite o conteúdo antes de aprovar e publicar.',
+    actions: [
+      { id: 'plan-action-template-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true },
+      { id: 'plan-action-template-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true },
+      { id: 'plan-action-template-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true },
+    ],
+    monitoring: 'Os registros ficam disponíveis para revisão na próxima conversa; o protótipo não conclui conduta a partir deles.',
+    supportNotice: 'Se algo mudar ou surgir uma dúvida, use o canal combinado com sua equipe. O protótipo não classifica urgência.',
+    sourceDescription: 'Notas da consulta demonstrativa',
+    sourceMode: 'manual',
+    sourceReviewId: null,
+  };
+}
+
+function cloneCarePlanActions(actions: CarePlanAction[]) {
+  const prefix = `plan-action-${Date.now()}`;
+  return actions.map((action, index) => ({
+    ...action,
+    id: `${prefix}-${index + 1}`,
+  }));
 }
 
 export function CareDemoProvider({ children }: { children: ReactNode }) {
@@ -299,6 +483,74 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         : [];
     };
 
+    const carePlansFor = (patientId: string, encounterId: string) =>
+      state.carePlans
+        .filter((plan) => plan.patientId === patientId && plan.encounterId === encounterId)
+        .toSorted((left, right) => left.version - right.version);
+
+    const createCarePlan = (
+      patientId: string,
+      encounterId: string,
+      previous: CarePlanVersion | null,
+      template?: Partial<CarePlanDraftContent>,
+    ) => {
+      const now = new Date();
+      const base = previous ?? getDefaultCarePlanContent();
+      const content: CarePlanDraftContent = {
+        title: template?.title ?? base.title,
+        objective: template?.objective ?? base.objective,
+        introduction: template?.introduction ?? base.introduction,
+        actions: cloneCarePlanActions(template?.actions ?? base.actions),
+        monitoring: template?.monitoring ?? base.monitoring,
+        supportNotice: template?.supportNotice ?? base.supportNotice,
+        sourceDescription: template?.sourceDescription ?? base.sourceDescription,
+        sourceMode: template?.sourceMode ?? base.sourceMode,
+        sourceReviewId: template?.sourceReviewId ?? base.sourceReviewId,
+      };
+
+      return {
+        id: `plan-care-${Date.now()}`,
+        patientId,
+        encounterId,
+        version: (previous?.version ?? 0) + 1,
+        status: 'draft' as const,
+        ...content,
+        authoredBy: 'Dr. Guilherme Martins · médico responsável',
+        createdAt: formatSubmissionTime(now),
+        createdAtIso: now.toISOString(),
+        updatedAt: formatSubmissionTime(now),
+        updatedAtIso: now.toISOString(),
+        approvedBy: null,
+        approvedAt: null,
+        approvedAtIso: null,
+        publishedBy: null,
+        publishedAt: null,
+        publishedAtIso: null,
+        supersededByVersion: null,
+      } satisfies CarePlanVersion;
+    };
+
+    const replaceCarePlan = (updated: CarePlanVersion) => {
+      setState((current) => ({
+        ...current,
+        carePlans: current.carePlans.map((plan) => plan.id === updated.id ? updated : plan),
+      }));
+      return updated;
+    };
+
+    const requireCarePlan = (patientId: string, encounterId: string, planId: string) => {
+      const plan = state.carePlans.find(
+        (candidate) =>
+          candidate.id === planId &&
+          candidate.patientId === patientId &&
+          candidate.encounterId === encounterId,
+      );
+      if (!plan) {
+        throw new Error('Este plano não pertence ao contexto atual.');
+      }
+      return plan;
+    };
+
     const requireSubmission = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       if (!latestSubmission) {
@@ -328,6 +580,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       draftsByEncounter: state.draftsByEncounter,
       submissions: state.submissions,
       reviews: state.reviews,
+      carePlans: state.carePlans,
       savePreConsultationDraft: (patientId, encounterId, patch) => {
         const scopeKey = getCareDemoScopeKey(patientId, encounterId);
         setState((current) => ({
@@ -448,6 +701,113 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           reviewedBy: 'Dr. Guilherme Martins',
           rejectionReason: reason.trim(),
         });
+      },
+      startCarePlan: (patientId, encounterId, template) => {
+        const plans = carePlansFor(patientId, encounterId);
+        const activePlan = [...plans].reverse().find(
+          (plan) => plan.status === 'draft' || plan.status === 'approved',
+        );
+        if (activePlan) return activePlan;
+
+        const created = createCarePlan(patientId, encounterId, plans.at(-1) ?? null, template);
+        setState((current) => ({
+          ...current,
+          carePlans: [...current.carePlans, created],
+        }));
+        return created;
+      },
+      createCarePlanRevision: (patientId, encounterId, template) => {
+        const plans = carePlansFor(patientId, encounterId);
+        const activeDraft = [...plans].reverse().find((plan) => plan.status === 'draft');
+        if (activeDraft) return activeDraft;
+
+        const created = createCarePlan(patientId, encounterId, plans.at(-1) ?? null, template);
+        setState((current) => ({
+          ...current,
+          carePlans: [...current.carePlans, created],
+        }));
+        return created;
+      },
+      saveCarePlan: (patientId, encounterId, planId, patch) => {
+        const plan = requireCarePlan(patientId, encounterId, planId);
+        if (plan.status !== 'draft') {
+          throw new Error('Somente uma versão em rascunho pode ser editada.');
+        }
+        const now = new Date();
+        return replaceCarePlan({
+          ...plan,
+          ...patch,
+          actions: patch.actions ?? plan.actions,
+          updatedAt: formatSubmissionTime(now),
+          updatedAtIso: now.toISOString(),
+        });
+      },
+      approveCarePlan: (patientId, encounterId, planId) => {
+        const plan = requireCarePlan(patientId, encounterId, planId);
+        if (plan.status !== 'draft') {
+          throw new Error('Apenas um rascunho pode seguir para aprovação médica.');
+        }
+        if (plan.title.trim().length < 5 || plan.objective.trim().length < 20) {
+          throw new Error('Explique o objetivo do plano antes de aprovar esta versão.');
+        }
+        if (!plan.actions.some((action) => action.active && action.title.trim().length >= 3)) {
+          throw new Error('Mantenha ao menos uma ação clara antes de aprovar esta versão.');
+        }
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
+        return replaceCarePlan({
+          ...plan,
+          status: 'approved',
+          updatedAt: timestamp,
+          updatedAtIso: timestampIso,
+          approvedBy: 'Dr. Guilherme Martins · médico responsável',
+          approvedAt: timestamp,
+          approvedAtIso: timestampIso,
+        });
+      },
+      publishCarePlan: (patientId, encounterId, planId) => {
+        const plan = requireCarePlan(patientId, encounterId, planId);
+        if (plan.status !== 'approved') {
+          throw new Error('A publicação exige uma versão aprovada pelo médico.');
+        }
+        const latest = carePlansFor(patientId, encounterId).at(-1) ?? null;
+        if (latest && latest.id !== plan.id) {
+          throw new Error('Publique ou resolva primeiro a versão mais recente deste plano.');
+        }
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
+        const published: CarePlanVersion = {
+          ...plan,
+          status: 'published',
+          updatedAt: timestamp,
+          updatedAtIso: timestampIso,
+          publishedBy: 'Dr. Guilherme Martins · médico responsável',
+          publishedAt: timestamp,
+          publishedAtIso: timestampIso,
+        };
+        setState((current) => ({
+          ...current,
+          carePlans: current.carePlans.map((candidate) => {
+            if (candidate.id === published.id) return published;
+            if (
+              candidate.patientId === patientId &&
+              candidate.encounterId === encounterId &&
+              candidate.status === 'published'
+            ) {
+              return {
+                ...candidate,
+                status: 'superseded' as const,
+                updatedAt: timestamp,
+                updatedAtIso: timestampIso,
+                supersededByVersion: published.version,
+              };
+            }
+            return candidate;
+          }),
+        }));
+        return published;
       },
     };
   }, [hydrated, state]);

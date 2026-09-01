@@ -1,4 +1,4 @@
-export type LongitudinalRecordKind = 'patient-report' | 'recorded-data' | 'care-draft' | 'medical-review';
+export type LongitudinalRecordKind = 'patient-report' | 'recorded-data' | 'care-draft' | 'medical-review' | 'care-plan';
 
 export interface LongitudinalRecord {
   id: string;

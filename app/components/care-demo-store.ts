@@ -3,6 +3,8 @@
 import { createContext, useContext } from 'react';
 import { DEFAULT_ENCOUNTER_ID, DEFAULT_PATIENT_ID } from './demo-routes';
 import type {
+  CarePlanDraftContent,
+  CarePlanVersion,
   PreConsultationAnswers,
   PreConsultationReview,
   PreConsultationSubmission,
@@ -12,6 +14,7 @@ export interface CareDemoState {
   draftsByEncounter: Record<string, PreConsultationAnswers>;
   submissions: PreConsultationSubmission[];
   reviews: PreConsultationReview[];
+  carePlans: CarePlanVersion[];
 }
 
 export interface CareDemoStoreValue extends CareDemoState {
@@ -39,6 +42,32 @@ export interface CareDemoStoreValue extends CareDemoState {
     content: string,
     reason: string,
   ) => PreConsultationReview;
+  startCarePlan: (
+    patientId: string,
+    encounterId: string,
+    template?: Partial<CarePlanDraftContent>,
+  ) => CarePlanVersion;
+  createCarePlanRevision: (
+    patientId: string,
+    encounterId: string,
+    template?: Partial<CarePlanDraftContent>,
+  ) => CarePlanVersion;
+  saveCarePlan: (
+    patientId: string,
+    encounterId: string,
+    planId: string,
+    patch: Partial<CarePlanDraftContent>,
+  ) => CarePlanVersion;
+  approveCarePlan: (
+    patientId: string,
+    encounterId: string,
+    planId: string,
+  ) => CarePlanVersion;
+  publishCarePlan: (
+    patientId: string,
+    encounterId: string,
+    planId: string,
+  ) => CarePlanVersion;
 }
 
 export interface CareDemoContextValue {
@@ -51,12 +80,21 @@ export interface CareDemoContextValue {
   reviews: PreConsultationReview[];
   activeReview: PreConsultationReview | null;
   reviewHistory: PreConsultationReview[];
+  carePlans: CarePlanVersion[];
+  latestCarePlan: CarePlanVersion | null;
+  activeCarePlan: CarePlanVersion | null;
+  latestPublishedCarePlan: CarePlanVersion | null;
   savePreConsultationDraft: (patch: Partial<PreConsultationAnswers>) => void;
   submitPreConsultation: () => PreConsultationSubmission;
   startPreConsultationReview: () => PreConsultationReview;
   savePreConsultationReview: (content: string) => PreConsultationReview;
   approvePreConsultationReview: (content: string) => PreConsultationReview;
   rejectPreConsultationReview: (content: string, reason: string) => PreConsultationReview;
+  startCarePlan: (template?: Partial<CarePlanDraftContent>) => CarePlanVersion;
+  createCarePlanRevision: (template?: Partial<CarePlanDraftContent>) => CarePlanVersion;
+  saveCarePlan: (planId: string, patch: Partial<CarePlanDraftContent>) => CarePlanVersion;
+  approveCarePlan: (planId: string) => CarePlanVersion;
+  publishCarePlan: (planId: string) => CarePlanVersion;
 }
 
 export const EMPTY_PRECONSULTATION_DRAFT: PreConsultationAnswers = {
@@ -97,6 +135,16 @@ export function useCareDemo(
           review.submissionId === latestSubmission.id,
       )
     : [];
+  const carePlans = context.carePlans
+    .filter((plan) => plan.patientId === patientId && plan.encounterId === encounterId)
+    .toSorted((left, right) => left.version - right.version);
+  const latestCarePlan = carePlans.at(-1) ?? null;
+  const activeCarePlan = [...carePlans].reverse().find(
+    (plan) => plan.status === 'draft' || plan.status === 'approved',
+  ) ?? latestCarePlan;
+  const latestPublishedCarePlan = [...carePlans].reverse().find(
+    (plan) => plan.status === 'published',
+  ) ?? null;
 
   return {
     hydrated: context.hydrated,
@@ -108,6 +156,10 @@ export function useCareDemo(
     reviews,
     activeReview: reviewHistory.at(-1) ?? null,
     reviewHistory,
+    carePlans,
+    latestCarePlan,
+    activeCarePlan,
+    latestPublishedCarePlan,
     savePreConsultationDraft: (patch) =>
       context.savePreConsultationDraft(patientId, encounterId, patch),
     submitPreConsultation: () => context.submitPreConsultation(patientId, encounterId),
@@ -119,5 +171,11 @@ export function useCareDemo(
       context.approvePreConsultationReview(patientId, encounterId, content),
     rejectPreConsultationReview: (content, reason) =>
       context.rejectPreConsultationReview(patientId, encounterId, content, reason),
+    startCarePlan: (template) => context.startCarePlan(patientId, encounterId, template),
+    createCarePlanRevision: (template) =>
+      context.createCarePlanRevision(patientId, encounterId, template),
+    saveCarePlan: (planId, patch) => context.saveCarePlan(patientId, encounterId, planId, patch),
+    approveCarePlan: (planId) => context.approveCarePlan(patientId, encounterId, planId),
+    publishCarePlan: (planId) => context.publishCarePlan(patientId, encounterId, planId),
   };
 }

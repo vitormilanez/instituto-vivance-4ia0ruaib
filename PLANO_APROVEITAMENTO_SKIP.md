@@ -15,16 +15,19 @@ pré-consulta por texto
 -> publicação para a paciente
 ```
 
-Nesta branch, a primeira entrega implementa e valida a parte inicial dessa jornada:
+Nesta branch, os três primeiros lotes implementam e validam uma fatia completa dessa jornada:
 
 ```text
 pré-consulta por texto
 -> fonte original preservada
 -> organização assistida opcional em rascunho
--> recebimento no preparo médico
+-> revisão médica
+-> rascunho de plano versionado
+-> aprovação médica
+-> publicação explícita para a paciente
 ```
 
-Aprovação do plano e publicação para a paciente permanecem planejadas para o Lote 3; ainda não devem ser consideradas entregues.
+O plano continua demonstrativo, em sessão e sem integração com prontuário. Aprovação e publicação não representam prescrição, decisão autônoma de IA nem transferência ao Feegow.
 
 Na branch `codex/skip-lote2-workspace-medico`, o segundo incremento acrescenta:
 
@@ -79,7 +82,7 @@ Essa aprovação não publica conteúdo para a paciente e não representa sincro
 - Compartilhar a submissão entre as visões paciente e médico.
 - Persistir somente na sessão do navegador, com dados fictícios.
 
-### Lote 2 — Dossiê e workspace médico — em andamento nesta branch
+### Lote 2 — Dossiê e workspace médico — implementado nesta branch
 
 Implementado neste incremento:
 
@@ -112,17 +115,17 @@ Implementado neste incremento:
 Ainda pendente no Lote 2:
 
 - dividir outras áreas extensas de `doctor.tsx` e `patient.tsx`;
-- conectar notas produzidas durante a consulta e o futuro plano aprovado à trilha longitudinal;
 - definir persistência durável e identidade autenticada, fora do estado demonstrativo.
 
-### Lote 3 — Plano aprovado
+### Lote 3 — Plano aprovado e publicado — implementado nesta branch
 
-- Criar rascunho de plano a partir de decisões registradas.
-- Exigir confirmação explícita do médico.
-- Congelar a versão aprovada.
-- Publicar somente a versão ativa para a paciente.
-- Criar nova versão em vez de sobrescrever a anterior.
-- Registrar separadamente a transferência manual ao Feegow.
+- Criar rascunho de plano a partir do preparo aprovado quando disponível, das notas demonstrativas da consulta ou de uma estrutura manual.
+- Exigir aprovação explícita do médico antes da publicação.
+- Congelar a versão aprovada e impedir edição posterior.
+- Publicar somente a versão aprovada mais recente para a paciente.
+- Criar nova versão em vez de sobrescrever a anterior; a publicação mais recente preserva e marca a anterior como substituída.
+- Projetar rascunho, aprovação, publicação, autoria, data, origem e versão no dossiê longitudinal.
+- Manter a transferência manual ao Feegow explicitamente fora deste protótipo.
 
 ### Lote 4 — Hardening do MVP-1
 
@@ -179,6 +182,19 @@ Ainda pendente no Lote 2:
 - Preparos manuais e assistidos permanecem distinguíveis; aprovação vale apenas para uso na consulta.
 - As contagens do dossiê são calculadas somente a partir dos eventos do paciente da rota.
 - Em 375 px, a linha do tempo permanece em uma coluna e não cria rolagem horizontal na página.
+
+## Critérios de aceite do incremento do Lote 3
+
+- O médico cria um rascunho de plano a partir de uma fonte identificada, sem converter preparo ou sugestão de IA em decisão automática.
+- A aprovação só ocorre por uma ação explícita do médico e congela a versão aprovada.
+- A paciente não vê rascunhos nem versões apenas aprovadas.
+- A publicação só ocorre por uma ação separada e torna visível somente a versão aprovada mais recente.
+- Publicar uma nova versão preserva a publicada anterior como histórico substituído, sem sobrescrever seu conteúdo.
+- Cada plano aparece no dossiê com origem, ID, versão, autoria, revisão, estado e limite de uso.
+- Ações autorrelatadas da paciente ficam vinculadas à versão publicada, sem reaproveitar conclusões de uma versão anterior.
+- Planos de um paciente não aparecem em outro contexto de paciente ou consulta.
+- Nenhuma ação de aprovação ou publicação envia conteúdo a prontuário, prescrição ou integração externa.
+- Build, lint, verificação de tipos e jornada visual de rascunho -> aprovação -> publicação passam.
 
 ## Itens explicitamente excluídos
 

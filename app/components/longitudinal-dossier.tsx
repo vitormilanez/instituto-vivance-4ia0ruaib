@@ -18,6 +18,7 @@ const filterOptions: Array<{ value: DossierFilter; label: string }> = [
   { value: 'recorded-data', label: 'Dados registrados' },
   { value: 'care-draft', label: 'Preparos e sínteses' },
   { value: 'medical-review', label: 'Revisões médicas' },
+  { value: 'care-plan', label: 'Planos e versões' },
 ];
 
 const kindPresentation: Record<
@@ -48,6 +49,12 @@ const kindPresentation: Record<
     dot: 'bg-[#0b7b68]',
     border: 'border-l-[#0b7b68]',
   },
+  'care-plan': {
+    label: 'Plano de cuidado',
+    tone: 'green',
+    dot: 'bg-[#4a9a7e]',
+    border: 'border-l-[#4a9a7e]',
+  },
 };
 
 function formatTimelineTimestamp(isoTimestamp: string) {
@@ -70,7 +77,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const [filter, setFilter] = useState<DossierFilter>('all');
   const dossier = getLongitudinalDossier(patientId);
   const encounterId = getDefaultEncounterId(patientId);
-  const { hydrated, submissions, reviews } = useCareDemo(patientId, encounterId);
+  const { hydrated, submissions, reviews, carePlans } = useCareDemo(patientId, encounterId);
 
   const sessionRecords = useMemo<LongitudinalRecord[]>(() => {
     const submissionRecords = submissions.map<LongitudinalRecord>((submission) => ({
@@ -126,8 +133,46 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       };
     });
 
-    return [...submissionRecords, ...reviewRecords];
-  }, [encounterId, patientId, patientName, reviews, submissions]);
+    const carePlanRecords = carePlans.map<LongitudinalRecord>((plan) => {
+      const eventTimestampIso = plan.status === 'published'
+        ? plan.publishedAtIso ?? plan.updatedAtIso
+        : plan.status === 'approved'
+          ? plan.approvedAtIso ?? plan.updatedAtIso
+          : plan.updatedAtIso;
+      const state = plan.status === 'published'
+        ? `Publicado para a paciente${plan.publishedAt ? ` · ${plan.publishedAt}` : ''}`
+        : plan.status === 'approved'
+          ? 'Aprovado pelo médico · aguardando publicação'
+          : plan.status === 'superseded'
+            ? `Versão preservada · substituída pela versão ${plan.supersededByVersion}`
+            : 'Rascunho em edição · não visível à paciente';
+      return {
+        id: `timeline-${plan.id}`,
+        patientId,
+        encounterId,
+        occurredAt: formatTimelineTimestamp(eventTimestampIso),
+        occurredAtIso: eventTimestampIso,
+        kind: 'care-plan',
+        title: `${plan.status === 'published' ? 'Plano publicado' : plan.status === 'approved' ? 'Plano aprovado' : plan.status === 'superseded' ? 'Plano anterior preservado' : 'Plano em rascunho'} · versão ${plan.version}`,
+        summary: plan.objective,
+        source: plan.sourceDescription,
+        sourceId: plan.id,
+        sourceVersion: plan.version,
+        linkedSourceIds: plan.sourceReviewId ? [plan.sourceReviewId] : undefined,
+        author: plan.authoredBy,
+        reviewedBy: plan.approvedBy ?? undefined,
+        reviewedAt: plan.approvedAtIso ? formatTimelineTimestamp(plan.approvedAtIso) : undefined,
+        reviewState: state,
+        visibility: 'medical-team',
+        assistanceMode: plan.sourceMode,
+        limitation: plan.status === 'published'
+          ? 'A publicação é demonstrativa e não representa envio ao prontuário, prescrição ou integração externa.'
+          : 'Versões em rascunho ou aprovadas não aparecem para a paciente até uma publicação explícita.',
+      };
+    });
+
+    return [...submissionRecords, ...reviewRecords, ...carePlanRecords];
+  }, [carePlans, encounterId, patientId, patientName, reviews, submissions]);
 
   if (!hydrated) {
     return (
@@ -161,7 +206,8 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const sourceCount = new Set(records.flatMap((record) => [record.sourceId, ...(record.linkedSourceIds ?? [])])).size;
   const reviewedCount = records.filter((record) => Boolean(record.reviewedBy)).length;
   const latestUpdate = records[0]?.occurredAt ?? dossier.updatedAt;
-  const periodLabel = sessionRecords.length > 0 ? `Sessão atual + ${dossier.period}` : dossier.period;
+  const hasLiveSessionRecords = submissions.length > 0 || reviews.length > 0 || carePlans.some((plan) => !plan.id.startsWith('plan-demo-'));
+  const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (
     <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
@@ -170,7 +216,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
           <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico rastreável no protótipo</p>
           <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">O que aconteceu, quem registrou e de onde veio</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">
-            Eventos fictícios de {patientName} organizados por origem. Relatos, registros, rascunhos assistidos e revisões médicas continuam em camadas separadas.
+            Eventos fictícios de {patientName} organizados por origem. Relatos, registros, rascunhos, revisões médicas e planos publicados continuam em camadas separadas.
           </p>
         </div>
         <div className="shrink-0 rounded-2xl border border-[#d7e3df] bg-white px-4 py-3">
@@ -228,6 +274,8 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
                 const presentation = kindPresentation[record.kind];
                 const presentationLabel = record.kind === 'care-draft'
                   ? record.assistanceMode === 'manual' ? 'Preparo manual' : 'Rascunho assistido'
+                  : record.kind === 'care-plan'
+                    ? record.reviewState.startsWith('Publicado') ? 'Plano publicado' : 'Plano versionado'
                   : presentation.label;
                 return (
                   <li key={record.id}>
@@ -299,7 +347,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
               {(Object.keys(kindPresentation) as LongitudinalRecordKind[]).map((kind) => (
                 <li key={kind} className="flex items-start gap-3 text-xs leading-5 text-[#d3e4df]">
                   <span aria-hidden="true" className={cn('mt-1 size-2.5 shrink-0 rounded-full', kindPresentation[kind].dot)} />
-                  <span><strong className="text-white">{kindPresentation[kind].label}:</strong> {kind === 'patient-report' ? 'texto preservado de quem respondeu.' : kind === 'recorded-data' ? 'ocorrência ou confirmação sem interpretação clínica.' : kind === 'care-draft' ? 'organização provisória, manual ou assistida, com estado de revisão separado.' : 'conteúdo explicitamente revisado pelo médico.'}</span>
+                  <span><strong className="text-white">{kindPresentation[kind].label}:</strong> {kind === 'patient-report' ? 'texto preservado de quem respondeu.' : kind === 'recorded-data' ? 'ocorrência ou confirmação sem interpretação clínica.' : kind === 'care-draft' ? 'organização provisória, manual ou assistida, com estado de revisão separado.' : kind === 'care-plan' ? 'versão do plano com rascunho, aprovação e publicação rastreados separadamente.' : 'conteúdo explicitamente revisado pelo médico.'}</span>
                 </li>
               ))}
             </ul>
