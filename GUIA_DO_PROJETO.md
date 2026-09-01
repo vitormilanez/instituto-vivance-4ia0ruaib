@@ -111,6 +111,10 @@ Principais recursos:
 - Transcrição fictícia incremental e insights em tempo real com trecho, horário, cobertura e limite visíveis.
 - Revisão de insights por “fixar” ou “descartar”, com justificativa obrigatória para descarte.
 - Fechamento assistido que separa relatos, pontos a confirmar e hipóteses, com edição, rejeição, aprovação e versão.
+- Handoff rastreável do fechamento aprovado para o plano, preservando fonte, versão e itens selecionados.
+- Hipóteses e lacunas visíveis, mas bloqueadas para conversão automática em objetivo ou ação.
+- Ações vinculadas nascem em branco e exigem redação, frequência e aprovação médica antes da publicação.
+- Comparação da versão do plano com a anterior e prévia do conteúdo que a paciente verá.
 - Rascunhos de relatório sujeitos à aprovação médica.
 - Consulta com notas estruturadas.
 - Copiloto para organizar notas.

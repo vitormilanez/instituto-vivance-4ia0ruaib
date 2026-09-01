@@ -20,6 +20,9 @@ import type {
   CareCheckIn,
   CareCheckInReview,
   CareCheckInSleepQuality,
+  CareConsultationClosure,
+  CareConsultationClosureItem,
+  CareConsultationClosureItemKind,
   CareConversationContext,
   CareConversationMessage,
   CareConversationSender,
@@ -59,15 +62,18 @@ function getInitialCarePlans(): CarePlanVersion[] {
       objective: 'Cuidar da regularidade do sono e manter os registros que ajudam a conversa de acompanhamento.',
       introduction: 'Este é um plano demonstrativo publicado depois de revisão médica. Ele organiza o combinado em passos simples para a paciente.',
       actions: [
-        { id: 'plan-demo-001-action-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true },
-        { id: 'plan-demo-001-action-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true },
-        { id: 'plan-demo-001-action-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true },
+        { id: 'plan-demo-001-action-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true, sourceItemId: null },
+        { id: 'plan-demo-001-action-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true, sourceItemId: null },
+        { id: 'plan-demo-001-action-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true, sourceItemId: null },
       ],
       monitoring: 'Os registros ficam disponíveis para revisão na próxima conversa; eles não são interpretados automaticamente como decisão clínica.',
       supportNotice: 'Se algo mudar ou surgir uma dúvida, use o canal combinado com sua equipe. O protótipo não classifica urgência.',
       sourceDescription: 'Resumo demonstrativo da primeira consulta',
       sourceMode: 'manual',
       sourceReviewId: null,
+      sourceClosureId: null,
+      sourceClosureVersion: null,
+      sourceItemIds: [],
       authoredBy: 'Dr. Guilherme Martins · médico responsável',
       createdAt: '12 ago · 11:14',
       createdAtIso: '2026-08-12T11:14:00-03:00',
@@ -225,6 +231,87 @@ function normalizeCarePlanAction(value: unknown): CarePlanAction | null {
     title: value.title,
     cadence: value.cadence,
     active: value.active,
+    sourceItemId: typeof value.sourceItemId === 'string' ? value.sourceItemId : null,
+  };
+}
+
+function isCareConsultationClosureItemKind(
+  value: unknown,
+): value is CareConsultationClosureItemKind {
+  return value === 'patient-report' ||
+    value === 'patient-priority' ||
+    value === 'open-question' ||
+    value === 'hypothesis';
+}
+
+function normalizeConsultationClosureItem(value: unknown): CareConsultationClosureItem | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.title !== 'string' ||
+    !isCareConsultationClosureItemKind(value.kind) ||
+    typeof value.sourceExcerptId !== 'string' ||
+    typeof value.sourceTime !== 'string' ||
+    typeof value.sourceQuote !== 'string' ||
+    (value.coverage !== 'direct' && value.coverage !== 'partial') ||
+    typeof value.limitation !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    title: value.title,
+    kind: value.kind,
+    sourceExcerptId: value.sourceExcerptId,
+    sourceTime: value.sourceTime,
+    sourceQuote: value.sourceQuote,
+    coverage: value.coverage,
+    limitation: value.limitation,
+  };
+}
+
+function normalizeConsultationClosure(value: unknown): CareConsultationClosure | null {
+  if (!isRecord(value)) return null;
+  const items = Array.isArray(value.items)
+    ? value.items.flatMap((item) => {
+        const normalized = normalizeConsultationClosureItem(item);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+
+  if (
+    typeof value.id !== 'string' ||
+    typeof value.patientId !== 'string' ||
+    typeof value.encounterId !== 'string' ||
+    typeof value.version !== 'number' ||
+    typeof value.sessionVersion !== 'number' ||
+    typeof value.reviewVersion !== 'number' ||
+    typeof value.content !== 'string' ||
+    items.length === 0 ||
+    value.consentVersion !== 'teleconsulta-transcricao-v1' ||
+    value.serviceMode !== 'deterministic-mock' ||
+    typeof value.approvedBy !== 'string' ||
+    typeof value.approvedAt !== 'string' ||
+    typeof value.approvedAtIso !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    patientId: value.patientId,
+    encounterId: value.encounterId,
+    version: value.version,
+    sessionVersion: value.sessionVersion,
+    reviewVersion: value.reviewVersion,
+    content: value.content,
+    items,
+    consentVersion: 'teleconsulta-transcricao-v1',
+    serviceMode: 'deterministic-mock',
+    approvedBy: value.approvedBy,
+    approvedAt: value.approvedAt,
+    approvedAtIso: value.approvedAtIso,
   };
 }
 
@@ -255,7 +342,6 @@ function normalizeCarePlan(value: unknown): CarePlanVersion | null {
     typeof value.title !== 'string' ||
     typeof value.objective !== 'string' ||
     typeof value.introduction !== 'string' ||
-    actions.length === 0 ||
     !sourceMode ||
     typeof value.monitoring !== 'string' ||
     typeof value.supportNotice !== 'string' ||
@@ -286,6 +372,11 @@ function normalizeCarePlan(value: unknown): CarePlanVersion | null {
     sourceDescription: value.sourceDescription,
     sourceMode,
     sourceReviewId: typeof value.sourceReviewId === 'string' ? value.sourceReviewId : null,
+    sourceClosureId: typeof value.sourceClosureId === 'string' ? value.sourceClosureId : null,
+    sourceClosureVersion: typeof value.sourceClosureVersion === 'number' ? value.sourceClosureVersion : null,
+    sourceItemIds: Array.isArray(value.sourceItemIds)
+      ? value.sourceItemIds.filter((itemId): itemId is string => typeof itemId === 'string')
+      : [],
     authoredBy: value.authoredBy,
     createdAt: value.createdAt,
     createdAtIso,
@@ -694,6 +785,7 @@ function isCareAuditAction(value: unknown): value is CareAuditAction {
     'pre-consultation-review-started',
     'pre-consultation-review-approved',
     'pre-consultation-review-rejected',
+    'consultation-closure-approved',
     'care-plan-created',
     'care-plan-approved',
     'care-plan-published',
@@ -735,7 +827,8 @@ function normalizeAuditEvent(value: unknown): CareAuditEvent | null {
     relatedId: value.relatedId,
     relatedVersion: value.relatedVersion,
     summary: value.summary,
-    consentVersion: value.consentVersion === 'pre-consulta-texto-v1'
+    consentVersion: value.consentVersion === 'pre-consulta-texto-v1' ||
+      value.consentVersion === 'teleconsulta-transcricao-v1'
       ? value.consentVersion
       : null,
     aiAssistanceAllowed: typeof value.aiAssistanceAllowed === 'boolean'
@@ -759,6 +852,7 @@ function getAuditEventsFromHistory(
   diaryEntries: CareDiaryEntry[] = [],
   conversationMessages: CareConversationMessage[] = [],
   aiPreparationReviews: CareAiPreparationReview[] = [],
+  consultationClosures: CareConsultationClosure[] = [],
 ): CareAuditEvent[] {
   const checkInEvents = checkIns.map<CareAuditEvent>((checkIn) => ({
     id: `audit-derived-${checkIn.id}-submitted`,
@@ -877,6 +971,22 @@ function getAuditEventsFromHistory(
       aiAssistanceAllowed: true,
     };
   });
+
+  const consultationClosureEvents = consultationClosures.map<CareAuditEvent>((closure) => ({
+    id: `audit-derived-${closure.id}-approved`,
+    patientId: closure.patientId,
+    encounterId: closure.encounterId,
+    action: 'consultation-closure-approved',
+    actor: 'doctor',
+    actorLabel: closure.approvedBy,
+    occurredAt: closure.approvedAt,
+    occurredAtIso: closure.approvedAtIso,
+    relatedId: closure.id,
+    relatedVersion: closure.version,
+    summary: `Fechamento da teleconsulta aprovado com ${closure.items.length} ${closure.items.length === 1 ? 'item rastreável' : 'itens rastreáveis'}.`,
+    consentVersion: closure.consentVersion,
+    aiAssistanceAllowed: true,
+  }));
 
   const submissionEvents = submissions.map<CareAuditEvent>((submission) => ({
     id: `audit-derived-${submission.id}-submitted`,
@@ -1001,6 +1111,7 @@ function getAuditEventsFromHistory(
     ...diaryEvents,
     ...conversationEvents,
     ...aiPreparationEvents,
+    ...consultationClosureEvents,
     ...submissionEvents,
     ...reviewEvents,
     ...planEvents,
@@ -1013,6 +1124,7 @@ const emptyState: CareDemoState = {
   draftsByEncounter: {},
   submissions: [],
   reviews: [],
+  consultationClosures: [],
   carePlans: initialCarePlans,
   checkIns: [],
   checkInReviews: [],
@@ -1043,6 +1155,12 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
   const reviews = Array.isArray(value.reviews)
     ? value.reviews.flatMap((review) => {
         const normalized = normalizeReview(review);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+  const consultationClosures = Array.isArray(value.consultationClosures)
+    ? value.consultationClosures.flatMap((closure) => {
+        const normalized = normalizeConsultationClosure(closure);
         return normalized ? [normalized] : [];
       })
     : [];
@@ -1112,6 +1230,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     draftsByEncounter,
     submissions,
     reviews,
+    consultationClosures,
     carePlans,
     checkIns,
     checkInReviews,
@@ -1134,6 +1253,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
           diaryEntries,
           conversationMessages,
           aiPreparationReviews,
+          consultationClosures,
         ),
   };
 }
@@ -1162,6 +1282,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     },
     submissions,
     reviews,
+    consultationClosures: [],
     carePlans,
     checkIns: [],
     checkInReviews: [],
@@ -1245,15 +1366,18 @@ function getDefaultCarePlanContent(): CarePlanDraftContent {
     objective: 'Registrar o que ajuda a acompanhar a rotina e levar as dúvidas para a próxima conversa.',
     introduction: 'Rascunho demonstrativo para organização do cuidado. Edite o conteúdo antes de aprovar e publicar.',
     actions: [
-      { id: 'plan-action-template-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true },
-      { id: 'plan-action-template-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true },
-      { id: 'plan-action-template-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true },
+      { id: 'plan-action-template-1', title: 'Registrar como foi o sono ao acordar', cadence: 'Diariamente, quando for possível', active: true, sourceItemId: null },
+      { id: 'plan-action-template-2', title: 'Registrar uma foto ou relato do jantar', cadence: 'Em 3 dias desta semana', active: true, sourceItemId: null },
+      { id: 'plan-action-template-3', title: 'Guardar uma dúvida para a próxima conversa', cadence: 'Até a próxima consulta', active: true, sourceItemId: null },
     ],
     monitoring: 'Os registros ficam disponíveis para revisão na próxima conversa; o protótipo não conclui conduta a partir deles.',
     supportNotice: 'Se algo mudar ou surgir uma dúvida, use o canal combinado com sua equipe. O protótipo não classifica urgência.',
     sourceDescription: 'Notas da consulta demonstrativa',
     sourceMode: 'manual',
     sourceReviewId: null,
+    sourceClosureId: null,
+    sourceClosureVersion: null,
+    sourceItemIds: [],
   };
 }
 
@@ -1364,6 +1488,13 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         (review) => review.patientId === patientId && review.encounterId === encounterId,
       );
 
+    const consultationClosuresFor = (patientId: string, encounterId: string) =>
+      (state.consultationClosures ?? [])
+        .filter(
+          (closure) => closure.patientId === patientId && closure.encounterId === encounterId,
+        )
+        .toSorted((left, right) => left.version - right.version);
+
     const reviewHistoryFor = (patientId: string, encounterId: string) => {
       const latestSubmission = latestSubmissionFor(patientId, encounterId);
       return latestSubmission
@@ -1389,16 +1520,25 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
     ) => {
       const now = new Date();
       const base = previous ?? getDefaultCarePlanContent();
+      const sourceChanged = template?.sourceClosureId !== undefined &&
+        template.sourceClosureId !== base.sourceClosureId;
+      const actions = cloneCarePlanActions(template?.actions ?? base.actions).map((action) => ({
+        ...action,
+        sourceItemId: sourceChanged && !template?.actions ? null : action.sourceItemId,
+      }));
       const content: CarePlanDraftContent = {
         title: template?.title ?? base.title,
         objective: template?.objective ?? base.objective,
         introduction: template?.introduction ?? base.introduction,
-        actions: cloneCarePlanActions(template?.actions ?? base.actions),
+        actions,
         monitoring: template?.monitoring ?? base.monitoring,
         supportNotice: template?.supportNotice ?? base.supportNotice,
         sourceDescription: template?.sourceDescription ?? base.sourceDescription,
         sourceMode: template?.sourceMode ?? base.sourceMode,
         sourceReviewId: template?.sourceReviewId ?? base.sourceReviewId,
+        sourceClosureId: template?.sourceClosureId ?? base.sourceClosureId,
+        sourceClosureVersion: template?.sourceClosureVersion ?? base.sourceClosureVersion,
+        sourceItemIds: [...(template?.sourceItemIds ?? base.sourceItemIds)],
       };
 
       return {
@@ -1475,6 +1615,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       draftsByEncounter: state.draftsByEncounter,
       submissions: state.submissions,
       reviews: state.reviews,
+      consultationClosures: state.consultationClosures ?? [],
       carePlans: state.carePlans,
       checkIns: state.checkIns ?? [],
       checkInReviews: state.checkInReviews ?? [],
@@ -1925,6 +2066,60 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           summary: 'Preparo rejeitado; a versão e o relato original foram preservados.',
         }));
       },
+      recordConsultationClosure: (patientId, encounterId, input) => {
+        if (input.content.trim().length < 20) {
+          throw new Error('O fechamento precisa estar completo antes de ser registrado.');
+        }
+        if (input.sessionVersion < 1 || input.reviewVersion < 1 || input.items.length === 0) {
+          throw new Error('Aprovação sem sessão, versão ou item rastreável não pode seguir ao plano.');
+        }
+
+        const closures = consultationClosuresFor(patientId, encounterId);
+        const existing = closures.find(
+          (closure) =>
+            closure.sessionVersion === input.sessionVersion &&
+            closure.reviewVersion === input.reviewVersion,
+        );
+        if (existing) return existing;
+
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
+        const closure: CareConsultationClosure = {
+          id: `consultation-closure-${Date.now()}`,
+          patientId,
+          encounterId,
+          version: (closures.at(-1)?.version ?? 0) + 1,
+          sessionVersion: input.sessionVersion,
+          reviewVersion: input.reviewVersion,
+          content: input.content.trim(),
+          items: input.items.map((item) => ({ ...item })),
+          consentVersion: 'teleconsulta-transcricao-v1',
+          serviceMode: 'deterministic-mock',
+          approvedBy: 'Dr. Guilherme Martins · médico responsável',
+          approvedAt: timestamp,
+          approvedAtIso: timestampIso,
+        };
+        const auditEvent = createAuditEvent({
+          action: 'consultation-closure-approved',
+          actor: 'doctor',
+          patientId,
+          encounterId,
+          occurredAt: timestamp,
+          occurredAtIso: timestampIso,
+          relatedId: closure.id,
+          relatedVersion: closure.version,
+          summary: `Fechamento da teleconsulta aprovado com ${closure.items.length} ${closure.items.length === 1 ? 'item rastreável' : 'itens rastreáveis'}.`,
+          consentVersion: closure.consentVersion,
+          aiAssistanceAllowed: true,
+        });
+        setState((current) => ({
+          ...current,
+          consultationClosures: [...current.consultationClosures, closure],
+          auditEvents: [...current.auditEvents, auditEvent],
+        }));
+        return closure;
+      },
       startCarePlan: (patientId, encounterId, template) => {
         const plans = carePlansFor(patientId, encounterId);
         const activePlan = [...plans].reverse().find(
@@ -1997,8 +2192,40 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         if (plan.title.trim().length < 5 || plan.objective.trim().length < 20) {
           throw new Error('Explique o objetivo do plano antes de aprovar esta versão.');
         }
-        if (!plan.actions.some((action) => action.active && action.title.trim().length >= 3)) {
+        const activeActions = plan.actions.filter((action) => action.active);
+        if (activeActions.length === 0) {
           throw new Error('Mantenha ao menos uma ação clara antes de aprovar esta versão.');
+        }
+        if (activeActions.some((action) => action.title.trim().length < 3)) {
+          throw new Error('Complete a redação de cada ação ativa antes de aprovar.');
+        }
+        if (activeActions.some((action) => action.cadence.trim().length < 3)) {
+          throw new Error('Defina a frequência ou o momento de cada ação ativa.');
+        }
+        if (plan.sourceClosureId) {
+          const sourceClosure = consultationClosuresFor(patientId, encounterId).find(
+            (closure) => closure.id === plan.sourceClosureId,
+          );
+          if (!sourceClosure || sourceClosure.version !== plan.sourceClosureVersion) {
+            throw new Error('A fonte aprovada deste plano não está disponível no contexto atual.');
+          }
+          const eligibleIds = new Set(
+            sourceClosure.items
+              .filter((item) => item.kind === 'patient-report' || item.kind === 'patient-priority')
+              .map((item) => item.id),
+          );
+          if (!plan.sourceItemIds.some((itemId) => eligibleIds.has(itemId))) {
+            throw new Error('Vincule ao menos um relato ou prioridade aprovada antes de aprovar o plano.');
+          }
+          if (plan.sourceItemIds.some((itemId) => !eligibleIds.has(itemId))) {
+            throw new Error('Lacunas e hipóteses não podem ser convertidas em conteúdo do plano.');
+          }
+          if (plan.actions.some(
+            (action) => action.sourceItemId &&
+              (!eligibleIds.has(action.sourceItemId) || !plan.sourceItemIds.includes(action.sourceItemId)),
+          )) {
+            throw new Error('Uma ação perdeu o vínculo com sua fonte aprovada. Revise o rascunho.');
+          }
         }
         const now = new Date();
         const timestamp = formatSubmissionTime(now);

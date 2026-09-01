@@ -47,11 +47,48 @@ export interface PreConsultationReview {
 export type CarePlanStatus = 'draft' | 'approved' | 'published' | 'superseded';
 export type CarePlanSourceMode = 'manual' | 'assisted';
 
+export type CareConsultationClosureItemKind =
+  | 'patient-report'
+  | 'patient-priority'
+  | 'open-question'
+  | 'hypothesis';
+
+export interface CareConsultationClosureItem {
+  id: string;
+  title: string;
+  kind: CareConsultationClosureItemKind;
+  sourceExcerptId: string;
+  sourceTime: string;
+  sourceQuote: string;
+  coverage: 'direct' | 'partial';
+  limitation: string;
+}
+
+export interface CareConsultationClosureInput {
+  sessionVersion: number;
+  reviewVersion: number;
+  content: string;
+  items: CareConsultationClosureItem[];
+  consentVersion: 'teleconsulta-transcricao-v1';
+  serviceMode: 'deterministic-mock';
+}
+
+export interface CareConsultationClosure extends CareConsultationClosureInput {
+  id: string;
+  patientId: string;
+  encounterId: string;
+  version: number;
+  approvedBy: string;
+  approvedAt: string;
+  approvedAtIso: string;
+}
+
 export interface CarePlanAction {
   id: string;
   title: string;
   cadence: string;
   active: boolean;
+  sourceItemId: string | null;
 }
 
 export interface CarePlanDraftContent {
@@ -64,6 +101,9 @@ export interface CarePlanDraftContent {
   sourceDescription: string;
   sourceMode: CarePlanSourceMode;
   sourceReviewId: string | null;
+  sourceClosureId: string | null;
+  sourceClosureVersion: number | null;
+  sourceItemIds: string[];
 }
 
 export interface CarePlanVersion extends CarePlanDraftContent {
@@ -247,6 +287,7 @@ export type CareAuditAction =
   | 'pre-consultation-review-started'
   | 'pre-consultation-review-approved'
   | 'pre-consultation-review-rejected'
+  | 'consultation-closure-approved'
   | 'care-plan-created'
   | 'care-plan-approved'
   | 'care-plan-published'
@@ -266,6 +307,6 @@ export interface CareAuditEvent {
   relatedId: string;
   relatedVersion: number;
   summary: string;
-  consentVersion: 'pre-consulta-texto-v1' | null;
+  consentVersion: 'pre-consulta-texto-v1' | 'teleconsulta-transcricao-v1' | null;
   aiAssistanceAllowed: boolean | null;
 }

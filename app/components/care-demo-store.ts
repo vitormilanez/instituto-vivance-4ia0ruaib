@@ -9,6 +9,8 @@ import type {
   CareCheckIn,
   CareCheckInInput,
   CareCheckInReview,
+  CareConsultationClosure,
+  CareConsultationClosureInput,
   CareConversationMessage,
   CareConversationMessageInput,
   CareConversationSender,
@@ -29,6 +31,7 @@ export interface CareDemoState {
   draftsByEncounter: Record<string, PreConsultationAnswers>;
   submissions: PreConsultationSubmission[];
   reviews: PreConsultationReview[];
+  consultationClosures: CareConsultationClosure[];
   carePlans: CarePlanVersion[];
   checkIns: CareCheckIn[];
   checkInReviews: CareCheckInReview[];
@@ -98,6 +101,11 @@ export interface CareDemoStoreValue extends CareDemoState {
     content: string,
     reason: string,
   ) => PreConsultationReview;
+  recordConsultationClosure: (
+    patientId: string,
+    encounterId: string,
+    input: CareConsultationClosureInput,
+  ) => CareConsultationClosure;
   startCarePlan: (
     patientId: string,
     encounterId: string,
@@ -148,6 +156,8 @@ export interface CareDemoContextValue {
   reviews: PreConsultationReview[];
   activeReview: PreConsultationReview | null;
   reviewHistory: PreConsultationReview[];
+  consultationClosures: CareConsultationClosure[];
+  latestConsultationClosure: CareConsultationClosure | null;
   carePlans: CarePlanVersion[];
   checkIns: CareCheckIn[];
   latestCheckIn: CareCheckIn | null;
@@ -185,6 +195,9 @@ export interface CareDemoContextValue {
   savePreConsultationReview: (content: string) => PreConsultationReview;
   approvePreConsultationReview: (content: string) => PreConsultationReview;
   rejectPreConsultationReview: (content: string, reason: string) => PreConsultationReview;
+  recordConsultationClosure: (
+    input: CareConsultationClosureInput,
+  ) => CareConsultationClosure;
   startCarePlan: (template?: Partial<CarePlanDraftContent>) => CarePlanVersion;
   createCarePlanRevision: (template?: Partial<CarePlanDraftContent>) => CarePlanVersion;
   saveCarePlan: (planId: string, patch: Partial<CarePlanDraftContent>) => CarePlanVersion;
@@ -242,6 +255,10 @@ export function useCareDemo(
     .filter((plan) => plan.patientId === patientId && plan.encounterId === encounterId)
     .toSorted((left, right) => left.version - right.version);
   const latestCarePlan = carePlans.at(-1) ?? null;
+  const consultationClosures = (context.consultationClosures ?? [])
+    .filter((closure) => closure.patientId === patientId && closure.encounterId === encounterId)
+    .toSorted((left, right) => left.version - right.version);
+  const latestConsultationClosure = consultationClosures.at(-1) ?? null;
   const activeCarePlan = [...carePlans].reverse().find(
     (plan) => plan.status === 'draft' || plan.status === 'approved',
   ) ?? latestCarePlan;
@@ -300,6 +317,8 @@ export function useCareDemo(
     reviews,
     activeReview: reviewHistory.at(-1) ?? null,
     reviewHistory,
+    consultationClosures,
+    latestConsultationClosure,
     carePlans,
     latestCarePlan,
     activeCarePlan,
@@ -339,6 +358,8 @@ export function useCareDemo(
       context.approvePreConsultationReview(patientId, encounterId, content),
     rejectPreConsultationReview: (content, reason) =>
       context.rejectPreConsultationReview(patientId, encounterId, content, reason),
+    recordConsultationClosure: (input) =>
+      context.recordConsultationClosure(patientId, encounterId, input),
     startCarePlan: (template) => context.startCarePlan(patientId, encounterId, template),
     createCarePlanRevision: (template) =>
       context.createCarePlanRevision(patientId, encounterId, template),

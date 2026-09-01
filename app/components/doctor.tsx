@@ -1590,8 +1590,10 @@ function Consultation({
   const {
     latestAiPreparationReview,
     latestSubmission,
+    latestConsultationClosure,
     latestCarePlan,
     latestPublishedCarePlan,
+    activeFollowUpConfiguration,
   } = useCareDemo(appointment.patientId, appointment.encounterId);
   const [step, setStep] = useState<ConsultationStep>(initialStep);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
@@ -1762,15 +1764,15 @@ function Consultation({
                 <h3 className="mt-2 text-2xl font-semibold">Tudo pronto para conferir</h3>
                 <div className="mt-6 space-y-3">
                   {[
-                    ['Resumo da consulta', summary ? 'Organizado e revisável' : 'Usará as notas atuais'],
+                    ['Fechamento da consulta', latestConsultationClosure ? `Versão ${latestConsultationClosure.version} aprovada · ${latestConsultationClosure.items.length} itens rastreáveis` : summary ? 'Notas organizadas, sem fonte longitudinal registrada' : 'Usará somente as notas atuais'],
                     ['Plano de cuidado', latestPublishedCarePlan ? `Versão ${latestPublishedCarePlan.version} publicada para a paciente` : latestCarePlan?.status === 'approved' ? `Versão ${latestCarePlan.version} aprovada, aguardando publicação` : latestCarePlan?.status === 'draft' ? `Versão ${latestCarePlan.version} em rascunho` : 'Nenhum plano iniciado'],
-                    ['Relatório', 'Será salvo como rascunho'],
-                    ['Próximo contato', 'Check-in amanhã às 20h'],
+                    ['Origem do plano', latestCarePlan?.sourceClosureId && latestCarePlan.sourceClosureId === latestConsultationClosure?.id ? `${latestCarePlan.sourceItemIds.length} ${latestCarePlan.sourceItemIds.length === 1 ? 'item aprovado vinculado' : 'itens aprovados vinculados'}` : 'Sem vínculo com o fechamento aprovado'],
+                    ['Próximo acompanhamento', activeFollowUpConfiguration ? `Cadência ligada ao plano v${activeFollowUpConfiguration.planVersion}` : latestPublishedCarePlan ? 'Ainda não configurado' : 'Disponível depois da publicação'],
                   ].map((item) => <div key={item[0]} className="flex flex-col justify-between gap-1 rounded-2xl bg-[#f4f7f5] p-4 sm:flex-row"><strong className="text-sm">{item[0]}</strong><span className="text-sm text-[#60766f]">{item[1]}</span></div>)}
                 </div>
                 <p className="mt-5 text-xs leading-5 text-[#8a9c96]">Nenhuma sugestão será tratada como prescrição automática.</p>
               </section>
-              <aside className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Próximo passo</p><h3 className="mt-3 text-xl font-semibold">Manter o cuidado vivo</h3><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">O app transforma o plano em pequenos compromissos e traz de volta somente o que merece atenção.</p><button type="button" onClick={onComplete} className="mt-7 min-h-12 w-full rounded-xl bg-white px-4 text-sm font-bold text-[#17372f]">Concluir consulta</button><button type="button" onClick={onClose} className="mt-2 min-h-11 w-full text-sm font-semibold text-[#b8d3cb]">Salvar e sair</button></aside>
+              <aside className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Próximo passo</p><h3 className="mt-3 text-xl font-semibold">Manter o cuidado vivo</h3><p className="mt-3 text-sm leading-6 text-[#d6e8e2]">O app transforma o plano em pequenos compromissos e traz de volta somente o que merece atenção.</p>{latestCarePlan?.status !== 'published' ? <button type="button" onClick={() => setStep('plano')} className="mt-7 min-h-12 w-full cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#17372f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]">Voltar e revisar o plano</button> : null}<button type="button" onClick={onComplete} className={cn('min-h-12 w-full cursor-pointer rounded-xl px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0] focus-visible:ring-offset-2 focus-visible:ring-offset-[#17372f]', latestCarePlan?.status === 'published' ? 'mt-7 bg-white text-[#17372f]' : 'mt-2 border border-white/25 text-white')}>{latestCarePlan?.status === 'published' ? 'Concluir consulta' : 'Concluir mantendo como rascunho'}</button><button type="button" onClick={onClose} className="mt-2 min-h-11 w-full cursor-pointer text-sm font-semibold text-[#b8d3cb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd3c0]">Salvar e sair</button></aside>
             </div>
           )}
         </div>

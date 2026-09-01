@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import { useCareDemo } from './care-demo-store';
+import type { CareConsultationClosureItemKind } from './care-demo-types';
 import { cn, Status } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
@@ -26,6 +28,7 @@ interface LiveInsight {
   kind: LiveInsightKind;
   coverage: 'direct' | 'partial';
   limitation: string;
+  handoffKind: CareConsultationClosureItemKind;
   resolvedByExcerptId?: string;
 }
 
@@ -108,6 +111,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'patient-report',
     coverage: 'direct',
     limitation: 'Autorrelato sem validação clínica ou medida objetiva.',
+    handoffKind: 'patient-report',
   },
   {
     id: 'live-insight-002',
@@ -118,6 +122,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'gap',
     coverage: 'direct',
     limitation: 'A lacuna orienta uma pergunta; não representa risco ou urgência.',
+    handoffKind: 'open-question',
     resolvedByExcerptId: 'tele-excerpt-003',
   },
   {
@@ -129,6 +134,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'patient-report',
     coverage: 'direct',
     limitation: 'O relato não confirma padrão, causa ou efeito clínico.',
+    handoffKind: 'patient-report',
   },
   {
     id: 'live-insight-004',
@@ -139,6 +145,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'hypothesis',
     coverage: 'partial',
     limitation: 'Associação temporal não significa causa e não orienta conduta.',
+    handoffKind: 'hypothesis',
   },
   {
     id: 'live-insight-005',
@@ -149,6 +156,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'contradiction',
     coverage: 'direct',
     limitation: 'A divergência precisa ser esclarecida pelo médico; não classifica gravidade ou urgência.',
+    handoffKind: 'open-question',
   },
   {
     id: 'live-insight-006',
@@ -159,6 +167,7 @@ const liveInsights: LiveInsight[] = [
     kind: 'patient-report',
     coverage: 'direct',
     limitation: 'Preferência declarada; não equivale a decisão ou plano aprovado.',
+    handoffKind: 'patient-priority',
   },
 ];
 
@@ -280,6 +289,10 @@ function appendAuditEvent(events: TeleconsultAuditEvent[], label: string) {
   ].slice(-12);
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Não foi possível registrar o fechamento aprovado.';
+}
+
 function buildReviewDraft(insights: LiveInsight[]) {
   const reports = insights.filter((insight) => insight.kind === 'patient-report');
   const confirmationPoints = insights.filter(
@@ -334,6 +347,7 @@ export function DoctorTeleconsultationAiWorkspace({
     normalizeTeleconsultState,
   );
   const [feedback, setFeedback] = useState('');
+  const { recordConsultationClosure } = useCareDemo(patientId, encounterId);
 
   const excerptOrderById = useMemo(
     () => new Map(transcriptScript.map((excerpt, index) => [excerpt.id, index + 1])),
@@ -360,6 +374,24 @@ export function DoctorTeleconsultationAiWorkspace({
   const canRevealNext = session.status === 'active' && session.visibleExcerptCount < transcriptScript.length;
   const canBuildDraft = pinnedInsights.length > 0 && !missingDismissalReason;
   const latestExcerpt = visibleExcerpts.at(-1) ?? null;
+
+  const recordApprovedClosure = (reviewVersion: number) => recordConsultationClosure({
+    sessionVersion: session.sessionVersion,
+    reviewVersion,
+    content: session.draftContent,
+    items: pinnedInsights.map((insight) => ({
+      id: insight.id,
+      title: insight.title,
+      kind: insight.handoffKind,
+      sourceExcerptId: insight.excerptId,
+      sourceTime: excerptById.get(insight.excerptId)?.at ?? 'tempo não localizado',
+      sourceQuote: insight.sourceQuote,
+      coverage: insight.coverage,
+      limitation: insight.limitation,
+    })),
+    consentVersion: 'teleconsulta-transcricao-v1',
+    serviceMode: 'deterministic-mock',
+  });
 
   const updateWithAudit = (
     update: (current: TeleconsultDemoState) => TeleconsultDemoState,
@@ -492,19 +524,26 @@ export function DoctorTeleconsultationAiWorkspace({
       return;
     }
     const nextVersion = session.reviewVersion + 1;
-    updateWithAudit(
-      (current) => ({
-        ...current,
-        draftStatus: 'approved',
-        draftRejectionReason: null,
-        reviewVersion: nextVersion,
-      }),
-      `Rascunho revisado e aprovado para as notas: versão ${nextVersion}.`,
-    );
-    onApplyDraft(session.draftContent);
-    const message = `Resumo da teleconsulta aplicado às notas como versão ${nextVersion}.`;
-    setFeedback(message);
-    onNotify(message);
+    try {
+      const closure = recordApprovedClosure(nextVersion);
+      updateWithAudit(
+        (current) => ({
+          ...current,
+          draftStatus: 'approved',
+          draftRejectionReason: null,
+          reviewVersion: nextVersion,
+        }),
+        `Rascunho revisado e aprovado para as notas: versão ${nextVersion}.`,
+      );
+      onApplyDraft(session.draftContent);
+      const message = `Fechamento v${closure.version} aplicado às notas e liberado como fonte do plano.`;
+      setFeedback(message);
+      onNotify(message);
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setFeedback(message);
+      onNotify(message);
+    }
   };
 
   const rejectDraft = (reason: string) => {
@@ -521,10 +560,17 @@ export function DoctorTeleconsultationAiWorkspace({
 
   const reapplyApprovedDraft = () => {
     if (!session.draftContent.trim() || session.draftStatus !== 'approved') return;
-    onApplyDraft(session.draftContent);
-    const message = `Versão ${session.reviewVersion} reaplicada às notas médicas.`;
-    setFeedback(message);
-    onNotify(message);
+    try {
+      recordApprovedClosure(session.reviewVersion);
+      onApplyDraft(session.draftContent);
+      const message = `Versão ${session.reviewVersion} reaplicada às notas e mantida como fonte do plano.`;
+      setFeedback(message);
+      onNotify(message);
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setFeedback(message);
+      onNotify(message);
+    }
   };
 
   if (!hydrated) {
@@ -780,7 +826,7 @@ export function DoctorTeleconsultationAiWorkspace({
                   disabled={session.draftStatus !== 'draft' || session.status !== 'ended'}
                   className="min-h-11 cursor-pointer rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#8a9c96]"
                 >
-                  Aprovar e aplicar às notas
+                  Aprovar, aplicar às notas e liberar para o plano
                 </button>
               )}
             </div>

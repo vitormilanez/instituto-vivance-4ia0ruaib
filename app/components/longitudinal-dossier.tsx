@@ -90,6 +90,7 @@ const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' 
   'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
   'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
   'pre-consultation-review-rejected': { label: 'Preparo rejeitado', tone: 'gray' },
+  'consultation-closure-approved': { label: 'Fechamento aprovado', tone: 'green' },
   'care-plan-created': { label: 'Plano em rascunho', tone: 'amber' },
   'care-plan-approved': { label: 'Plano aprovado', tone: 'blue' },
   'care-plan-published': { label: 'Plano publicado', tone: 'green' },
