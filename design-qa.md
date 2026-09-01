@@ -1,63 +1,76 @@
-# Conferência visual — painel principal do médico
+# Conferência visual — tela do paciente na área médica
 
 ## Evidências
 
-- Referência visual: `/Users/vitormilanez/.codex/generated_images/01a05a92-1816-7081-8c0e-62a2c4f52dd6/exec-82c296de-de88-4610-9d40-964e38891fcc.png`
-- Tela implementada: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-desktop-final3.png`
-- Tela no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-mobile-final2.png`
-- Comparação completa: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-comparison-final.png`
-- Comparação do topo, menu e próxima consulta: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-comparison-top-final.png`
+- Referência visual do sistema VIVANSE: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-desktop-final3.png`
+- Tela implementada no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-desktop.png`
+- Tela na largura em uso: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-user-884.png`
+- Tela no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-mobile.png`
+- Referência e implementação lado a lado: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-design-system-comparison.png`
+- Antes e depois lado a lado: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-before-after.png`
 
 ## Medidas e estado
 
-- Área do computador: `1440 x 1024` CSS px, densidade `1`.
-- Referência original: `1487 x 1058` px; normalizada para `1440 x 1024` antes da comparação.
-- Implementação: `1440 x 1024` px.
-- Área do celular: `375 x 812` CSS px, densidade `1`; largura do conteúdo `375` px, sem rolagem lateral.
-- Estado conferido: painel do médico, Marina Costa aguardando às 10:30, pré-consulta pendente, cinco consultas e três itens para revisão.
+- Referência e implementação no computador: `1440 x 1024` px, área CSS `1440 x 1024`, densidade normalizada `1:1`.
+- Largura observada no aplicativo: `884 x 863` px, área CSS `884 x 863`, densidade normalizada `1:1`.
+- Celular: `375 x 812` px, área CSS `375 x 812`, densidade normalizada `1:1`.
+- Estado: paciente fictícia Marina Costa, visão geral selecionada, consulta às 10:30, sono para revisar, blocos de aprofundamento fechados.
+- A referência é o painel principal, não uma composição da mesma tela. A comparação avalia adoção do sistema visual — marca, menu, cores, tipografia, espaço, forma e densidade — e não igualdade de conteúdo.
 
 ## Findings
 
-- Nenhuma diferença P0, P1 ou P2 permaneceu após a última comparação.
-- Tipografia: Geist mantém a mesma leitura limpa, peso e hierarquia da referência; títulos, rótulos e texto auxiliar não colidem nem quebram de forma ruim.
-- Espaço e estrutura: menu lateral, barra superior, próxima consulta, lista do dia e coluna de atenção preservam a ordem e as proporções principais. A implementação é um pouco mais compacta, sem mudar a leitura ou esconder ações.
-- Cores: azul-marinho mais escuro, fundo quase plano e azul-claro localizado atendem à direção aprovada. O degradê ficou discreto e restrito ao menu e à ação principal.
-- Imagens e logo: o arquivo oficial da VIVANSE é usado. A transparência foi conferida sem caixa escura, halo ou corte visível.
-- Texto: os nomes e estados mantêm os dados fictícios já usados pelo protótipo. Termos visíveis foram simplificados para “Hoje”, “Histórico” e “Acompanhamento”.
-- Ícones: todos vêm da mesma biblioteca e mantêm peso, tamanho e alinhamento consistentes.
-- Celular: marca compacta, menu rolável, próxima consulta e botão principal permanecem utilizáveis em uma coluna.
-- Acessibilidade: botões e links têm foco visível, os estados têm texto além da cor, os alvos principais têm ao menos 44 px e movimento reduzido é respeitado.
+- Nenhuma diferença P0, P1 ou P2 permanece.
+- Tipografia: Geist, pesos, tamanhos e quebras acompanham o painel VIVANSE. O nome da paciente, o ponto de atenção e os números têm hierarquia clara; os textos pequenos continuam legíveis.
+- Espaço e estrutura: menu lateral, barra superior, largura de conteúdo, cantos e ritmo vertical seguem a referência. A tela passou de uma sequência longa de blocos para um resumo curto com aprofundamento opcional.
+- Cores: azul-marinho, azul de ação, branco e azul-claro usam os mesmos valores do sistema. Âmbar aparece somente no estado que pede revisão. Não há grande área verde nem grande degradê.
+- Imagens e marca: o logo oficial da VIVANSE permanece nítido, com transparência e sem caixa ou halo. Os ícones vêm de uma única biblioteca; não há desenho improvisado em HTML ou SVG.
+- Texto: a interface usa “histórico”, “acompanhamento”, “o que merece atenção” e “apoio para preparar a consulta”. A IA não ocupa o nome da tela nem é apresentada como autora clínica.
+- Responsivo: não houve rolagem lateral em `1440`, `884` ou `375` px. No celular, nome, contexto, estados e ação principal aparecem antes das abas; a aba seguinte fica parcialmente visível como indicação de rolagem.
+- Acessibilidade: abas têm papéis e estados selecionados, controles principais têm pelo menos 44 px, foco visível usa azul de ação e estados não dependem apenas de cor.
 
-## Diferenças intencionais
+## Comparação completa
 
-- A referência criada para design tinha alguns nomes e horários ilustrativos. A implementação preserva os dados de exemplo já usados nas outras telas, evitando quebrar a continuidade do protótipo.
-- A barra superior usa menos moldura ao redor do perfil para manter o resultado mais leve.
-- Os cartões de trabalho são quase sólidos; o efeito de vidro fica nos menus e na barra, conforme o último ajuste pedido.
+- A composição lado a lado confirma o mesmo menu azul-marinho, barra superior clara, logo, ação principal escura, cartões claros e densidade controlada.
+- O antes e depois confirma a remoção do grande bloco verde, a redução do comprimento inicial, a troca de cartões empilhados por grupos com divisores e a simplificação do primeiro contato com o histórico.
+- Não foi necessário um recorte adicional: os elementos de maior precisão — logo, menu, cabeçalho, abas, ação principal, bloco de atenção e métricas — permanecem legíveis nas capturas `1440 x 1024`; a captura `375 x 812` funciona como comparação focada do topo no celular.
 
 ## Histórico da comparação
 
-1. A primeira captura (`.impeccable/review/vivanse-dashboard-desktop.png`) mostrou uma caixa azul atrás do logo horizontal. Classificação: P2, qualidade do ativo e integração com o fundo.
-2. O logo recebeu fundo transparente e passou a ser usado em `app/components/shared.tsx`.
-3. O fundo principal e o menu também foram simplificados para reduzir ainda mais o degradê, conforme o último ajuste pedido.
-4. A captura final (`.impeccable/review/vivanse-dashboard-desktop-final3.png`) confirmou o logo integrado ao menu, sem a caixa anterior.
-5. As comparações finais confirmaram que não restaram diferenças P0, P1 ou P2.
+1. A primeira captura no celular mostrou o texto do ponto de atenção estreito porque o ícone mantinha uma coluna lateral durante todo o bloco. Classificação: P2 responsivo.
+2. O bloco passou a empilhar o ícone em telas pequenas e manter a composição horizontal a partir do tamanho médio.
+3. A captura final `vivanse-patient-mobile.png` confirmou título, explicação e ação com largura útil maior, sem rolagem lateral.
+4. A varredura mecânica apontou uma borda lateral grossa em item da linha do tempo, duas cores fora da paleta e texto de 10 px. A borda foi reduzida ao padrão, as cores foram alinhadas à paleta e os textos passaram para a menor medida documentada.
+5. A revisão independente pediu seis ajustes: navegação global compacta, botão de fontes inteiro no celular, registro da seed e da referência de qualidade, cartões sem desfoque, aviso em azul-marinho e rótulos do gráfico maiores.
+6. O menu foi incluído na barra superior, o bloco de atenção foi compactado, o contrato foi registrado e as superfícies, aviso e gráfico foram alinhados ao sistema.
+7. As três recapturas foram refeitas na rota de Marina Costa. A revisão final marcou os seis itens como resolvidos, sem regressão e com disposição `ship`.
+8. As capturas finais confirmaram que não restaram diferenças P0, P1 ou P2.
 
 ## Ações testadas
 
-- “Atender agora” abriu a consulta de Marina.
-- A linha de Marina abriu o preparo da consulta.
-- Um item de atenção abriu o painel de revisão com aviso de que não representa diagnóstico ou emergência.
-- “Ver agenda completa” abriu `/medico/agenda`.
-- Navegação responsiva conferida em `1440 x 1024` e `375 x 812`.
-- Registros do navegador conferidos: nenhum erro; somente mensagens normais do servidor de desenvolvimento.
+- As quatro abas trocaram o conteúdo e atualizaram a referência da página.
+- “Documentos” exibiu filtros, originais e estados de revisão.
+- “Evolução” exibiu o gráfico e os períodos sem ultrapassar a largura.
+- O menu de mais ações abriu e mostrou as ações previstas.
+- O menu principal compacto abriu e mostrou Hoje, Agenda, Pacientes, Mensagens e Relatórios abaixo de 1024 px.
+- “Ver resumo completo do acompanhamento” e “Abrir apoio para preparar a consulta” só montaram o conteúdo pesado quando abertos.
+- Registros do navegador: nenhum erro ou aviso de execução; apenas mensagens normais do servidor de desenvolvimento.
 
-## Checklist final
+## Open Questions
 
-- [x] Marca VIVANSE oficial aplicada.
-- [x] Azul mais escuro e degradê reduzido.
-- [x] Vidro limitado a menus e barras.
-- [x] Ações principais funcionando.
-- [x] Computador e celular conferidos.
-- [x] Build e lint aprovados.
+- Nenhuma questão bloqueia esta entrega. Integrações reais, permissões e registros legais continuam fora do mock.
+
+## Implementation Checklist
+
+- [x] Cabeçalho compacto do paciente.
+- [x] Abas funcionais e acessíveis.
+- [x] Ponto de atenção claro, sem aparência de urgência automática.
+- [x] Métricas e contexto na primeira leitura.
+- [x] Conteúdos profundos recolhidos e carregados sob demanda.
+- [x] Computador, largura em uso e celular conferidos.
+- [x] Lint dos arquivos alterados e build aprovados.
+
+## Follow-up Polish
+
+- P3 opcional: adicionar setas discretas aos blocos recolhidos para reforçar visualmente o estado aberto ou fechado.
 
 final result: passed

@@ -74,10 +74,8 @@ body {
 
 .vivanse-panel {
   border: 1px solid #dbe4f0;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   box-shadow: 0 14px 36px color-mix(in srgb, #03132d 5.5%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .vivanse-primary-action {

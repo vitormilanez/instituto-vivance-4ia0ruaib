@@ -1,10 +1,10 @@
 'use client';
 
-import { Bell, CaretDown } from '@phosphor-icons/react';
+import { Bell, CaretDown, List } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { DEFAULT_PATIENT_ID } from './demo-routes';
+import { DEFAULT_PATIENT_ID, doctorNavigation } from './demo-routes';
 
 export type Role = 'doctor' | 'patient';
 
@@ -35,6 +35,18 @@ export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Rol
             </Link>
 
             <div className="flex items-center gap-3 sm:gap-4">
+              <details className="relative lg:hidden">
+                <summary aria-label="Abrir menu principal" className="grid size-11 cursor-pointer list-none place-items-center rounded-xl text-[#0b2854] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c5ba8] focus-visible:ring-offset-2">
+                  <List aria-hidden="true" size={22} weight="bold" />
+                </summary>
+                <nav aria-label="Menu principal" className="vivanse-glass-menu absolute right-0 top-12 z-50 w-56 rounded-xl p-2 shadow-[0_20px_48px_rgba(3,19,45,0.3)]">
+                  {doctorNavigation.map((item) => (
+                    <Link key={item.href} href={item.href} className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
+                      {item.label === 'Visão geral' ? 'Hoje' : item.label}
+                    </Link>
+                  ))}
+                </nav>
+              </details>
               <button
                 type="button"
                 aria-label="Abrir notificações"
@@ -113,11 +125,11 @@ export function Status({
   tone?: 'green' | 'amber' | 'rose' | 'blue' | 'gray';
 }) {
   const tones = {
-    green: 'bg-[#e8f4f0] text-[#0b6a5b]',
-    amber: 'bg-[#fff4d8] text-[#825b0b]',
+    green: 'bg-[#e7f4ef] text-[#17624e]',
+    amber: 'bg-[#fff0ca] text-[#77500a]',
     rose: 'bg-[#fdecea] text-[#9c453f]',
-    blue: 'bg-[#edf3fb] text-[#456b9c]',
-    gray: 'bg-[#f1f5f3] text-[#526a62]',
+    blue: 'bg-[#edf3fb] text-[#124da0]',
+    gray: 'bg-[#eef2f7] text-[#50627f]',
   };
   return <span className={cn('inline-flex rounded-full px-3 py-1.5 text-xs font-bold', tones[tone])}>{children}</span>;
 }
@@ -154,7 +166,7 @@ export function Toast({ text, patient = false }: { text: string; patient?: boole
       )}
       aria-live="polite"
     >
-      {text && <div className="rounded-xl bg-[#17372f] px-4 py-3 text-sm font-semibold text-white shadow-2xl">{text}</div>}
+      {text && <div className="rounded-xl bg-[#03132d] px-4 py-3 text-sm font-semibold text-white shadow-2xl">{text}</div>}
     </div>
   );
 }

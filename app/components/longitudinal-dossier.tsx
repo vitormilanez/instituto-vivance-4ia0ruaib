@@ -40,8 +40,8 @@ const kindPresentation: Record<
   'recorded-data': {
     label: 'Dado registrado',
     tone: 'gray',
-    dot: 'bg-[#789087]',
-    border: 'border-l-[#789087]',
+    dot: 'bg-[#61718a]',
+    border: 'border-l-[#61718a]',
   },
   'care-draft': {
     label: 'Preparo ou síntese',
@@ -52,8 +52,8 @@ const kindPresentation: Record<
   'medical-review': {
     label: 'Revisão médica',
     tone: 'green',
-    dot: 'bg-[#0b7b68]',
-    border: 'border-l-[#0b7b68]',
+    dot: 'bg-[#124da0]',
+    border: 'border-l-[#124da0]',
   },
   'care-plan': {
     label: 'Plano de cuidado',
@@ -105,12 +105,9 @@ const sleepPresentation: Record<CareCheckIn['sleepQuality'], string> = {
 
 function OperationalCheckIn({ checkIn }: { checkIn: CareCheckIn | null }) {
   return (
-    <section aria-labelledby="operational-checkin-title" className="rounded-2xl border border-[#d7e3df] bg-white p-5">
+    <section aria-labelledby="operational-checkin-title" className="rounded-2xl border border-[#dbe4f0] bg-white p-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Acompanhamento operacional</p>
-          <h4 id="operational-checkin-title" className="mt-2 text-lg font-semibold text-[#17372f]">Check-in mais recente</h4>
-        </div>
+        <h4 id="operational-checkin-title" className="text-lg font-semibold text-[#071a3a]">Check-in mais recente</h4>
         <Status tone={checkIn?.newSymptom ? 'amber' : checkIn ? 'green' : 'gray'}>
           {checkIn?.newSymptom ? 'Revisar fonte' : checkIn ? 'Disponível' : 'Sem registro'}
         </Status>
@@ -118,14 +115,14 @@ function OperationalCheckIn({ checkIn }: { checkIn: CareCheckIn | null }) {
 
       {checkIn ? (
         <>
-          <p className="mt-3 text-sm leading-6 text-[#526a62]">
+          <p className="mt-3 text-sm leading-6 text-[#50627f]">
             Autorrelato de energia {checkIn.energy}/5 e {sleepPresentation[checkIn.sleepQuality]}. {checkIn.newSymptom ? 'A paciente marcou que surgiu um sintoma novo.' : 'A paciente não marcou sintoma novo.'}
           </p>
-          <p className="mt-3 text-xs font-semibold text-[#405d54]">Fonte: check-in da paciente · v{checkIn.version} · {checkIn.submittedAt}</p>
-          <p className="mt-3 border-t border-[#e7eeea] pt-3 text-[11px] leading-5 text-[#789087]">É um autorrelato para orientar a próxima conversa; não é triagem, classificação de urgência, diagnóstico ou conduta.</p>
+          <p className="mt-3 text-xs font-semibold text-[#405675]">Fonte: check-in da paciente · v{checkIn.version} · {checkIn.submittedAt}</p>
+          <p className="mt-3 border-t border-[#e7edf5] pt-3 text-[11px] leading-5 text-[#61718a]">É um autorrelato para orientar a próxima conversa; não é triagem, classificação de urgência, diagnóstico ou conduta.</p>
         </>
       ) : (
-        <p className="mt-3 text-sm leading-6 text-[#60766f]">Ainda não há check-in neste contexto. O protótipo não transforma a ausência em sinal clínico.</p>
+        <p className="mt-3 text-sm leading-6 text-[#61718a]">Ainda não há check-in neste contexto. O protótipo não transforma a ausência em sinal clínico.</p>
       )}
     </section>
   );
@@ -135,41 +132,38 @@ function AuditTrail({ events }: { events: CareAuditEvent[] }) {
   const visibleEvents = [...events].reverse().slice(0, 6);
 
   return (
-    <section aria-labelledby="audit-trail-title" className="rounded-2xl border border-[#d7e3df] bg-white p-5">
+    <section aria-labelledby="audit-trail-title" className="rounded-2xl border border-[#dbe4f0] bg-white p-5">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Registro de sessão</p>
-          <h4 id="audit-trail-title" className="mt-2 text-lg font-semibold text-[#17372f]">Auditoria de transições</h4>
-        </div>
+        <h4 id="audit-trail-title" className="text-lg font-semibold text-[#071a3a]">Auditoria de transições</h4>
         <Status tone="gray">{events.length}</Status>
       </div>
-      <p className="mt-2 text-xs leading-5 text-[#60766f]">Registra mudanças importantes e envios de check-in, sem repetir relatos ou conteúdo clínico.</p>
+      <p className="mt-2 text-xs leading-5 text-[#61718a]">Registra mudanças importantes e envios de check-in, sem repetir relatos ou conteúdo clínico.</p>
 
       {visibleEvents.length > 0 ? (
         <ol className="mt-4 space-y-3">
           {visibleEvents.map((event) => {
             const presentation = auditPresentation[event.action];
             return (
-              <li key={event.id} className="rounded-xl bg-[#f4f7f5] p-3">
+              <li key={event.id} className="rounded-xl bg-[#f6f9fe] p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <time dateTime={event.occurredAtIso} className="text-xs font-bold text-[#0b6a5b]">{event.occurredAt}</time>
-                    <p className="mt-1 text-xs font-bold leading-5 text-[#405d54]">{event.actorLabel}</p>
+                    <time dateTime={event.occurredAtIso} className="text-xs font-bold text-[#124da0]">{event.occurredAt}</time>
+                    <p className="mt-1 text-xs font-bold leading-5 text-[#405675]">{event.actorLabel}</p>
                   </div>
                   <Status tone={presentation.tone}>{presentation.label}</Status>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#526a62]">{event.summary}</p>
-                {event.consentVersion ? <p className="mt-2 text-[11px] leading-5 text-[#60766f]">Ciência {event.consentVersion} · IA {event.aiAssistanceAllowed ? 'autorizada' : 'não autorizada'}.</p> : null}
-                <p className="mt-2 break-all text-[10px] font-medium text-[#789087]">Referência: {event.relatedId} · v{event.relatedVersion}</p>
+                <p className="mt-2 text-xs leading-5 text-[#50627f]">{event.summary}</p>
+                {event.consentVersion ? <p className="mt-2 text-[11px] leading-5 text-[#61718a]">Ciência {event.consentVersion} · IA {event.aiAssistanceAllowed ? 'autorizada' : 'não autorizada'}.</p> : null}
+                <p className="mt-2 break-all text-[0.6875rem] font-medium text-[#61718a]">Referência: {event.relatedId} · v{event.relatedVersion}</p>
               </li>
             );
           })}
         </ol>
       ) : (
-        <p className="mt-4 rounded-xl border border-dashed border-[#bfd4cd] bg-[#fbfdfc] p-4 text-xs leading-5 text-[#60766f]">Ainda não há transições registradas neste contexto. O protótipo não inventa eventos de auditoria.</p>
+        <p className="mt-4 rounded-xl border border-dashed border-[#c7d5e7] bg-[#fbfdff] p-4 text-xs leading-5 text-[#61718a]">Ainda não há transições registradas neste contexto. O protótipo não inventa eventos de auditoria.</p>
       )}
 
-      <p className="mt-4 border-t border-[#e7eeea] pt-4 text-[11px] leading-5 text-[#789087]">Registro demonstrativo em `sessionStorage`; não é log de prontuário, prova legal, autenticação ou sincronização externa.</p>
+      <p className="mt-4 border-t border-[#e7edf5] pt-4 text-[11px] leading-5 text-[#61718a]">Registro demonstrativo em `sessionStorage`; não é log de prontuário, prova legal, autenticação ou sincronização externa.</p>
     </section>
   );
 }
@@ -495,20 +489,18 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
 
   if (!hydrated) {
     return (
-      <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico do paciente</p>
-        <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold">Carregando o contexto demonstrativo...</h3>
-        <p className="mt-2 text-sm leading-6 text-[#60766f]">Nenhum dado de outro paciente é exibido durante o carregamento.</p>
+      <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7edf5] bg-[#fbfdff] p-5 sm:p-6">
+        <h3 id="longitudinal-dossier-title" className="text-xl font-semibold">Carregando o contexto demonstrativo...</h3>
+        <p className="mt-2 text-sm leading-6 text-[#61718a]">Nenhum dado de outro paciente é exibido durante o carregamento.</p>
       </section>
     );
   }
 
   if (!dossier) {
     return (
-      <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico do paciente</p>
-        <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold">Ainda não há eventos para este contexto.</h3>
-        <p className="mt-2 text-sm leading-6 text-[#60766f]">O protótipo não completa lacunas com informações de outra pessoa.</p>
+      <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7edf5] bg-[#fbfdff] p-5 sm:p-6">
+        <h3 id="longitudinal-dossier-title" className="text-xl font-semibold">Ainda não há eventos para este contexto.</h3>
+        <p className="mt-2 text-sm leading-6 text-[#61718a]">O protótipo não completa lacunas com informações de outra pessoa.</p>
       </section>
     );
   }
@@ -529,38 +521,37 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
   const periodLabel = hasLiveSessionRecords ? `Sessão atual + ${dossier.period}` : dossier.period;
 
   return (
-    <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7eeea] bg-[#fbfdfc] p-5 sm:p-6">
+    <section aria-labelledby="longitudinal-dossier-title" className="border-t border-[#e7edf5] bg-[#fbfdff] p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Histórico rastreável no protótipo</p>
-          <h3 id="longitudinal-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">O que aconteceu, quem registrou e de onde veio</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">
+          <h3 id="longitudinal-dossier-title" className="text-xl font-semibold tracking-[-0.02em]">O que aconteceu, quem registrou e de onde veio</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">
             Eventos fictícios de {patientName} organizados por origem. Relatos, registros, rascunhos, revisões médicas e planos publicados continuam em camadas separadas.
           </p>
         </div>
-        <div className="shrink-0 rounded-2xl border border-[#d7e3df] bg-white px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">Última atualização</p>
-          <p className="mt-1 text-sm font-bold text-[#2d4d44]">{latestUpdate}</p>
-          <p className="mt-1 text-[11px] text-[#789087]">Sessão demonstrativa</p>
+        <div className="shrink-0 rounded-2xl border border-[#dbe4f0] bg-white px-4 py-3">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.09em] text-[#61718a]">Última atualização</p>
+          <p className="mt-1 text-sm font-bold text-[#405675]">{latestUpdate}</p>
+          <p className="mt-1 text-[11px] text-[#61718a]">Sessão demonstrativa</p>
         </div>
       </div>
 
-      <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-[#dfe8e3] bg-[#dfe8e3] sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-[#dbe4f0] bg-[#dbe4f0] sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-white p-4">
-          <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">Período coberto</dt>
-          <dd className="mt-1 text-sm font-bold text-[#2d4d44]">{periodLabel}</dd>
+          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.09em] text-[#61718a]">Período coberto</dt>
+          <dd className="mt-1 text-sm font-bold text-[#405675]">{periodLabel}</dd>
         </div>
         <div className="bg-white p-4">
-          <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">Eventos visíveis</dt>
-          <dd className="mt-1 text-sm font-bold text-[#2d4d44]">{records.length}</dd>
+          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.09em] text-[#61718a]">Eventos visíveis</dt>
+          <dd className="mt-1 text-sm font-bold text-[#405675]">{records.length}</dd>
         </div>
         <div className="bg-white p-4">
-          <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">Fontes identificadas</dt>
-          <dd className="mt-1 text-sm font-bold text-[#2d4d44]">{sourceCount}</dd>
+          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.09em] text-[#61718a]">Fontes identificadas</dt>
+          <dd className="mt-1 text-sm font-bold text-[#405675]">{sourceCount}</dd>
         </div>
         <div className="bg-white p-4">
-          <dt className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#789087]">Itens com revisão médica</dt>
-          <dd className="mt-1 text-sm font-bold text-[#2d4d44]">{reviewedCount}</dd>
+          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.09em] text-[#61718a]">Itens com revisão médica</dt>
+          <dd className="mt-1 text-sm font-bold text-[#405675]">{reviewedCount}</dd>
         </div>
       </dl>
 
@@ -574,10 +565,10 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
                 aria-pressed={filter === option.value}
                 onClick={() => setFilter(option.value)}
                 className={cn(
-                  'min-h-11 shrink-0 cursor-pointer rounded-xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2',
+                  'min-h-11 shrink-0 cursor-pointer rounded-xl border px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2',
                   filter === option.value
-                    ? 'border-[#17372f] bg-[#17372f] text-white'
-                    : 'border-[#d7e3df] bg-white text-[#60766f] hover:border-[#9fc8bd] hover:bg-[#edf7f4] hover:text-[#0b6a5b]',
+                    ? 'border-[#071a3a] bg-[#071a3a] text-white'
+                    : 'border-[#dbe4f0] bg-white text-[#61718a] hover:border-[#9bb5d4] hover:bg-[#edf3fb] hover:text-[#124da0]',
                 )}
               >
                 {option.label}
@@ -598,47 +589,47 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
                   : presentation.label;
                 return (
                   <li key={record.id}>
-                    <article className={cn('relative rounded-2xl border border-l-4 border-[#dfe8e3] bg-white p-5', presentation.border)}>
+                    <article className={cn('relative rounded-2xl border border-[#dbe4f0] bg-white p-5', presentation.border)}>
                       <span aria-hidden="true" className={cn('absolute -left-[9px] top-6 size-3 rounded-full border-2 border-white', presentation.dot)} />
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <time dateTime={record.occurredAtIso} className="text-xs font-bold text-[#0b6a5b]">{record.occurredAt}</time>
-                          <h4 className="mt-1.5 text-base font-bold leading-6 text-[#17372f]">{record.title}</h4>
+                          <time dateTime={record.occurredAtIso} className="text-xs font-bold text-[#124da0]">{record.occurredAt}</time>
+                          <h4 className="mt-1.5 text-base font-bold leading-6 text-[#071a3a]">{record.title}</h4>
                         </div>
                         <Status tone={presentation.tone}>{presentationLabel}</Status>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-[#526a62]">{record.summary}</p>
-                      <dl className="mt-4 grid gap-3 rounded-xl bg-[#f4f7f5] p-4 sm:grid-cols-2 xl:grid-cols-5">
+                      <p className="mt-3 text-sm leading-6 text-[#50627f]">{record.summary}</p>
+                      <dl className="mt-4 grid gap-3 rounded-xl bg-[#f6f9fe] p-4 sm:grid-cols-2 xl:grid-cols-5">
                         <div>
-                          <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#789087]">Origem</dt>
-                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405d54]">{record.source}</dd>
+                          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#61718a]">Origem</dt>
+                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405675]">{record.source}</dd>
                         </div>
                         <div>
-                          <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#789087]">ID e versão</dt>
-                          <dd className="mt-1 break-all text-xs font-semibold leading-5 text-[#405d54]">
+                          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#61718a]">ID e versão</dt>
+                          <dd className="mt-1 break-all text-xs font-semibold leading-5 text-[#405675]">
                             {record.sourceId} · v{record.sourceVersion}
-                            {record.linkedSourceIds?.length ? <span className="mt-1 block font-normal text-[#698078]">Fonte ligada: {record.linkedSourceIds.join(', ')}</span> : null}
+                            {record.linkedSourceIds?.length ? <span className="mt-1 block font-normal text-[#61718a]">Fonte ligada: {record.linkedSourceIds.join(', ')}</span> : null}
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#789087]">Autoria</dt>
-                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405d54]">{record.author}</dd>
+                          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#61718a]">Autoria</dt>
+                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405675]">{record.author}</dd>
                         </div>
                         <div>
-                          <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#789087]">Revisão</dt>
-                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405d54]">
+                          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#61718a]">Revisão</dt>
+                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405675]">
                             {record.reviewedBy ?? 'Ainda não revisado'}
-                            {record.reviewedAt ? <span className="mt-1 block font-normal text-[#698078]">{record.reviewedAt}</span> : null}
+                            {record.reviewedAt ? <span className="mt-1 block font-normal text-[#61718a]">{record.reviewedAt}</span> : null}
                           </dd>
                         </div>
                         <div>
-                          <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#789087]">Estado</dt>
-                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405d54]">{record.reviewState}</dd>
+                          <dt className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[#61718a]">Estado</dt>
+                          <dd className="mt-1 text-xs font-semibold leading-5 text-[#405675]">{record.reviewState}</dd>
                         </div>
                       </dl>
                       {record.limitation ? (
                         <details className="mt-3 rounded-xl border border-[#ead8ad] bg-[#fffaf0] px-4 py-3">
-                          <summary className="cursor-pointer text-xs font-bold text-[#704f10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Ver limite desta informação</summary>
+                          <summary className="cursor-pointer text-xs font-bold text-[#704f10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Ver limite desta informação</summary>
                           <p className="mt-2 text-xs leading-5 text-[#704f10]">{record.limitation}</p>
                         </details>
                       ) : null}
@@ -648,10 +639,10 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
               })}
             </ol>
           ) : (
-            <div className="mt-3 rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-6 text-center">
-              <p className="text-sm font-bold text-[#405d54]">Nenhum evento nesta camada.</p>
-              <p className="mt-1 text-xs leading-5 text-[#789087]">A ausência é mantida visível; o protótipo não cria conteúdo para completar o histórico.</p>
-              <button type="button" onClick={() => setFilter('all')} className="mt-4 min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
+            <div className="mt-3 rounded-2xl border border-dashed border-[#c7d5e7] bg-white p-6 text-center">
+              <p className="text-sm font-bold text-[#405675]">Nenhum evento nesta camada.</p>
+              <p className="mt-1 text-xs leading-5 text-[#61718a]">A ausência é mantida visível; o protótipo não cria conteúdo para completar o histórico.</p>
+              <button type="button" onClick={() => setFilter('all')} className="mt-4 min-h-11 cursor-pointer rounded-xl border border-[#c7d5e7] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">
                 Mostrar todos os eventos
               </button>
             </div>
@@ -659,18 +650,17 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
         </div>
 
         <aside className="h-fit space-y-4 xl:sticky xl:top-24">
-          <section aria-labelledby="dossier-reading-title" className="rounded-2xl bg-[#17372f] p-5 text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9fd6c8]">Leitura segura</p>
-            <h4 id="dossier-reading-title" className="mt-2 text-lg font-semibold">Cada camada tem um significado diferente.</h4>
+          <section aria-labelledby="dossier-reading-title" className="rounded-2xl bg-[#071a3a] p-5 text-white">
+            <h4 id="dossier-reading-title" className="text-lg font-semibold">Cada camada tem um significado diferente.</h4>
             <ul className="mt-4 space-y-3">
               {(Object.keys(kindPresentation) as LongitudinalRecordKind[]).map((kind) => (
-                <li key={kind} className="flex items-start gap-3 text-xs leading-5 text-[#d3e4df]">
+                <li key={kind} className="flex items-start gap-3 text-xs leading-5 text-[#d7e1ef]">
                   <span aria-hidden="true" className={cn('mt-1 size-2.5 shrink-0 rounded-full', kindPresentation[kind].dot)} />
                   <span><strong className="text-white">{kindPresentation[kind].label}:</strong> {kind === 'patient-report' ? 'texto preservado de quem respondeu.' : kind === 'recorded-data' ? 'ocorrência ou confirmação sem interpretação clínica.' : kind === 'care-draft' ? 'organização provisória, manual ou assistida, com estado de revisão separado.' : kind === 'care-plan' ? 'versão do plano com rascunho, aprovação e publicação rastreados separadamente.' : 'conteúdo explicitamente revisado pelo médico.'}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#b8d3cb]">Relato não vira fato, rascunho não vira decisão e confirmação manual não significa sincronização com prontuário.</p>
+            <p className="mt-5 border-t border-white/15 pt-4 text-xs leading-5 text-[#c7d5e7]">Relato não vira fato, rascunho não vira decisão e confirmação manual não significa sincronização com prontuário.</p>
           </section>
 
           <OperationalCheckIn checkIn={latestCheckIn} />
@@ -679,12 +669,12 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
 
           <AuditTrail events={auditEvents} />
 
-          <section aria-labelledby="dossier-gaps-title" className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
+          <section aria-labelledby="dossier-gaps-title" className="rounded-2xl border border-[#dbe4f0] bg-white p-5">
             <div className="flex items-center justify-between gap-3">
-              <h4 id="dossier-gaps-title" className="text-sm font-bold text-[#17372f]">Lacunas visíveis</h4>
+              <h4 id="dossier-gaps-title" className="text-sm font-bold text-[#071a3a]">Lacunas visíveis</h4>
               <Status tone="amber">{dossier.gaps.length}</Status>
             </div>
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-xs leading-5 text-[#60766f]">
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-xs leading-5 text-[#61718a]">
               {dossier.gaps.map((gap) => <li key={gap}>{gap}</li>)}
             </ul>
           </section>
