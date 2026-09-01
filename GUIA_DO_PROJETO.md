@@ -107,6 +107,10 @@ Principais recursos:
 - Perguntas sugeridas com fonte, cobertura e revisão item a item pelo médico.
 - Justificativa obrigatória para perguntas descartadas, versionamento e auditoria por metadados.
 - Pauta revisada reaproveitada no ambiente da consulta e fluxo manual preservado quando a IA não está autorizada.
+- Teleconsulta demonstrativa com ciência específica separada, pausa, retomada e encerramento da assistência.
+- Transcrição fictícia incremental e insights em tempo real com trecho, horário, cobertura e limite visíveis.
+- Revisão de insights por “fixar” ou “descartar”, com justificativa obrigatória para descarte.
+- Fechamento assistido que separa relatos, pontos a confirmar e hipóteses, com edição, rejeição, aprovação e versão.
 - Rascunhos de relatório sujeitos à aprovação médica.
 - Consulta com notas estruturadas.
 - Copiloto para organizar notas.
@@ -178,6 +182,8 @@ Ainda não existem:
 - Upload real de fotos ou documentos.
 - Dados reais de pacientes.
 - Integração real com Google Meet.
+- Captação, gravação ou transcrição real de áudio e vídeo.
+- Insights clínicos em tempo real alimentados por um provedor de IA.
 - Integração real com WhatsApp ou SMS.
 - Prescrição digital válida.
 - Integração com prontuários.

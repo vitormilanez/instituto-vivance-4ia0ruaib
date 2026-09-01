@@ -23,6 +23,7 @@ import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review'
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
 import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
+import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
@@ -1593,7 +1594,6 @@ function Consultation({
     latestPublishedCarePlan,
   } = useCareDemo(appointment.patientId, appointment.encounterId);
   const [step, setStep] = useState<ConsultationStep>(initialStep);
-  const [meetOpen, setMeetOpen] = useState(false);
   const [notes, setNotes] = useState(`${appointment.patient}: ${appointment.reported}`);
   const [summary, setSummary] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -1729,23 +1729,20 @@ function Consultation({
           )}
 
           {step === 'consulta' && (
-            <div className="grid gap-5 lg:grid-cols-[1fr_310px]">
-              <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Registro estruturado</p><h3 className="mt-1 text-xl font-semibold">Notas da consulta</h3></div>
-                  <button type="button" onClick={() => setMeetOpen(!meetOpen)} className={cn('min-h-11 rounded-xl px-4 text-sm font-bold', meetOpen ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'bg-[#17372f] text-white')}>{meetOpen ? 'Sala de vídeo aberta' : 'Abrir sala de vídeo'}</button>
-                </div>
-                {meetOpen && <div className="mt-4 flex items-center gap-3 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4 text-sm text-[#0b6a5b]"><span className="size-2.5 rounded-full bg-[#1f9d79]" />Sala demonstrativa ativa · link pronto</div>}
-                <label htmlFor="notes" className="mt-6 block text-sm font-bold">Observações</label>
-                <textarea id="notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-2 min-h-56 w-full rounded-2xl border border-[#d7e3df] p-4 text-sm leading-6 outline-none focus:ring-2 focus:ring-[#8bc6b9]" />
-                <p className="mt-2 text-xs text-[#8a9c96]">Gravação ou transcrição exigiria consentimento explícito.</p>
-              </section>
-              <aside className="space-y-4">
-                <div className="rounded-3xl border border-[#dfe8e3] bg-white p-5"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Copiloto clínico</p><p className="mt-3 text-sm leading-6 text-[#526a62]">Organiza as notas e destaca lacunas. Não diagnostica nem decide conduta.</p><button type="button" onClick={() => setSummary(true)} className="mt-4 min-h-11 w-full rounded-xl border border-[#9ccdc2] text-sm font-bold text-[#0b6a5b]">Organizar notas com IA</button></div>
-                {summary && <div className="rounded-3xl bg-[#17372f] p-5 text-white"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9cc7ba]">Síntese sugerida</p><p className="mt-3 text-sm leading-6 text-[#e0eee9]">{appointment.aiFocus}</p></div>}
-                <button type="button" onClick={() => setStep('plano')} className="min-h-11 w-full rounded-xl bg-[#0b7b68] text-sm font-bold text-white">Construir próximo plano</button>
-              </aside>
-            </div>
+            <DoctorTeleconsultationAiWorkspace
+              key={`teleconsult-${appointment.patientId}-${appointment.encounterId}`}
+              patientId={appointment.patientId}
+              patientName={appointment.patient}
+              encounterId={appointment.encounterId}
+              notes={notes}
+              onNotesChange={setNotes}
+              onApplyDraft={(draft) => {
+                setNotes((current) => current.includes(draft) ? current : `${current.trim()}\n\n${draft}`.trim());
+                setSummary(true);
+              }}
+              onContinue={() => setStep('plano')}
+              onNotify={onNotify}
+            />
           )}
 
           {step === 'plano' && (
