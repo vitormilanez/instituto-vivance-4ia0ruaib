@@ -317,7 +317,7 @@ def first_consultation():
         ),
     ]
     return build_pdf(
-        "primeira-consulta-marina-costa.pdf",
+        "doc-demo-001.pdf",
         "Sintese da primeira consulta",
         "Marina Costa - documento demonstrativo gerado automaticamente",
         story,
@@ -374,7 +374,7 @@ def evolution_report():
         ),
     ]
     return build_pdf(
-        "evolucao-quinzenal-marina-costa.pdf",
+        "doc-demo-002.pdf",
         "Relatorio de evolucao quinzenal",
         "Marina Costa - sintese longitudinal demonstrativa",
         story,
@@ -448,7 +448,7 @@ def care_plan():
         ),
     ]
     return build_pdf(
-        "plano-de-cuidado-marina-costa.pdf",
+        "doc-demo-003.pdf",
         "Plano de cuidado compartilhado",
         "Marina Costa - versao demonstrativa para revisao",
         story,

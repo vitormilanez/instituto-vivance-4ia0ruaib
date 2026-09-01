@@ -48,6 +48,7 @@ export interface CareDemoContextValue {
   draft: PreConsultationAnswers;
   latestSubmission: PreConsultationSubmission | null;
   submissions: PreConsultationSubmission[];
+  reviews: PreConsultationReview[];
   activeReview: PreConsultationReview | null;
   reviewHistory: PreConsultationReview[];
   savePreConsultationDraft: (patch: Partial<PreConsultationAnswers>) => void;
@@ -87,11 +88,12 @@ export function useCareDemo(
     (submission) => submission.patientId === patientId && submission.encounterId === encounterId,
   );
   const latestSubmission = submissions.at(-1) ?? null;
+  const reviews = context.reviews.filter(
+    (review) => review.patientId === patientId && review.encounterId === encounterId,
+  );
   const reviewHistory = latestSubmission
-    ? context.reviews.filter(
+    ? reviews.filter(
         (review) =>
-          review.patientId === patientId &&
-          review.encounterId === encounterId &&
           review.submissionId === latestSubmission.id,
       )
     : [];
@@ -103,6 +105,7 @@ export function useCareDemo(
     draft: context.draftsByEncounter[scopeKey] ?? EMPTY_PRECONSULTATION_DRAFT,
     latestSubmission,
     submissions,
+    reviews,
     activeReview: reviewHistory.at(-1) ?? null,
     reviewHistory,
     savePreConsultationDraft: (patch) =>

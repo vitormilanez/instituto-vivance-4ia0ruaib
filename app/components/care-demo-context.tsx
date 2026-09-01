@@ -33,6 +33,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isoTimestampFromOpaqueId(id: string) {
+  const timestamp = Number(id.match(/(\d{13})$/)?.[1]);
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString()
+    : '2026-08-26T00:00:00-03:00';
+}
+
 function normalizeAnswers(value: unknown): PreConsultationAnswers | null {
   if (!isRecord(value)) return null;
 
@@ -76,6 +83,10 @@ function normalizeSubmission(
     encounterId,
     version: value.version,
     submittedAt: value.submittedAt,
+    submittedAtIso:
+      typeof value.submittedAtIso === 'string'
+        ? value.submittedAtIso
+        : isoTimestampFromOpaqueId(value.id),
     consentVersion: 'pre-consulta-texto-v1',
     structuredDraft: typeof value.structuredDraft === 'string' ? value.structuredDraft : null,
   };
@@ -111,6 +122,13 @@ function normalizeReview(
     return null;
   }
 
+  const createdAtIso =
+    typeof value.createdAtIso === 'string'
+      ? value.createdAtIso
+      : isoTimestampFromOpaqueId(value.id);
+  const updatedAtIso =
+    typeof value.updatedAtIso === 'string' ? value.updatedAtIso : createdAtIso;
+
   return {
     id: value.id,
     patientId,
@@ -121,8 +139,16 @@ function normalizeReview(
     content: value.content,
     sourceMode,
     createdAt: value.createdAt,
+    createdAtIso,
     updatedAt: value.updatedAt,
+    updatedAtIso,
     reviewedAt: typeof value.reviewedAt === 'string' ? value.reviewedAt : null,
+    reviewedAtIso:
+      typeof value.reviewedAtIso === 'string'
+        ? value.reviewedAtIso
+        : typeof value.reviewedAt === 'string'
+          ? updatedAtIso
+          : null,
     reviewedBy: typeof value.reviewedBy === 'string' ? value.reviewedBy : null,
     rejectionReason: typeof value.rejectionReason === 'string' ? value.rejectionReason : null,
   };
@@ -189,13 +215,13 @@ function buildStructuredDraft(answers: PreConsultationAnswers) {
   return sections.join('\n\n');
 }
 
-function formatSubmissionTime() {
+function formatSubmissionTime(date = new Date()) {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date());
+  }).format(date);
 }
 
 export function CareDemoProvider({ children }: { children: ReactNode }) {
@@ -319,13 +345,15 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         const scopeKey = getCareDemoScopeKey(patientId, encounterId);
         const draft = state.draftsByEncounter[scopeKey] ?? EMPTY_PRECONSULTATION_DRAFT;
         const scopedSubmissions = submissionsFor(patientId, encounterId);
+        const now = new Date();
         const created: PreConsultationSubmission = {
           ...draft,
           id: `pre-consulta-${Date.now()}`,
           patientId,
           encounterId,
           version: scopedSubmissions.length + 1,
-          submittedAt: formatSubmissionTime(),
+          submittedAt: formatSubmissionTime(now),
+          submittedAtIso: now.toISOString(),
           consentVersion: 'pre-consulta-texto-v1',
           structuredDraft: draft.aiAssistanceAllowed ? buildStructuredDraft(draft) : null,
         };
@@ -343,7 +371,9 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         const activeReview = reviewHistory.at(-1) ?? null;
         if (activeReview?.status === 'draft') return activeReview;
 
-        const timestamp = formatSubmissionTime();
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
         const created: PreConsultationReview = {
           id: `revisao-pre-consulta-${Date.now()}`,
           patientId,
@@ -354,8 +384,11 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           content: activeReview?.content ?? submission.structuredDraft ?? buildStructuredDraft(submission),
           sourceMode: submission.structuredDraft ? 'assisted' : 'manual',
           createdAt: timestamp,
+          createdAtIso: timestampIso,
           updatedAt: timestamp,
+          updatedAtIso: timestampIso,
           reviewedAt: null,
+          reviewedAtIso: null,
           reviewedBy: null,
           rejectionReason: null,
         };
@@ -368,20 +401,30 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
       },
       savePreConsultationReview: (patientId, encounterId, content) => {
         const review = requireDraftReview(patientId, encounterId);
-        return replaceReview({ ...review, content, updatedAt: formatSubmissionTime() });
+        const now = new Date();
+        return replaceReview({
+          ...review,
+          content,
+          updatedAt: formatSubmissionTime(now),
+          updatedAtIso: now.toISOString(),
+        });
       },
       approvePreConsultationReview: (patientId, encounterId, content) => {
         const review = requireDraftReview(patientId, encounterId);
         if (content.trim().length < 20) {
           throw new Error('O preparo precisa ter ao menos 20 caracteres antes da aprovação.');
         }
-        const timestamp = formatSubmissionTime();
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
         return replaceReview({
           ...review,
           content: content.trim(),
           status: 'approved',
           updatedAt: timestamp,
+          updatedAtIso: timestampIso,
           reviewedAt: timestamp,
+          reviewedAtIso: timestampIso,
           reviewedBy: 'Dr. Guilherme Martins',
           rejectionReason: null,
         });
@@ -391,13 +434,17 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
         if (reason.trim().length < 10) {
           throw new Error('Explique em ao menos 10 caracteres por que o rascunho foi rejeitado.');
         }
-        const timestamp = formatSubmissionTime();
+        const now = new Date();
+        const timestamp = formatSubmissionTime(now);
+        const timestampIso = now.toISOString();
         return replaceReview({
           ...review,
           content,
           status: 'rejected',
           updatedAt: timestamp,
+          updatedAtIso: timestampIso,
           reviewedAt: timestamp,
+          reviewedAtIso: timestampIso,
           reviewedBy: 'Dr. Guilherme Martins',
           rejectionReason: reason.trim(),
         });

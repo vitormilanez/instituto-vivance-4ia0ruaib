@@ -26,10 +26,11 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 - recebimento do objetivo e dos relatos originais da pré-consulta, separados do rascunho assistido.
 - workspace médico com edição, rejeição justificada, aprovação restrita ao preparo e histórico de versões.
 - navegação por URLs reais para agenda, dossiê, pré-consulta e consulta, com contexto sintético de paciente e atendimento.
+- histórico longitudinal rastreável no protótipo por paciente, com filtros, autoria, origem, identificador, versão, estado de revisão e limites explícitos.
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O contexto clínico é isolado pela combinação de paciente e consulta, e as ações de interface são isoladas por perfil/paciente. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão e os estados das ações demonstrativas permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com a pré-consulta e as revisões criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
 

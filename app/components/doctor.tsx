@@ -18,6 +18,7 @@ import {
   type DoctorView,
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
+import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Heading, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
@@ -352,7 +353,7 @@ const marinaDocuments = [
     meta: 'PDF · 1 página · 12 ago',
     status: 'Revisão pendente',
     tone: 'amber' as const,
-    href: '/docs/primeira-consulta-marina-costa.pdf',
+    href: '/docs/doc-demo-001.pdf',
   },
   {
     title: 'Relatório de evolução quinzenal',
@@ -360,7 +361,7 @@ const marinaDocuments = [
     meta: 'PDF · 1 página · atualizado hoje',
     status: 'Revisado',
     tone: 'green' as const,
-    href: '/docs/evolucao-quinzenal-marina-costa.pdf',
+    href: '/docs/doc-demo-002.pdf',
   },
   {
     title: 'Plano de cuidado compartilhado',
@@ -368,11 +369,11 @@ const marinaDocuments = [
     meta: 'PDF · 1 página · versão 1.2',
     status: 'Aprovação médica',
     tone: 'amber' as const,
-    href: '/docs/plano-de-cuidado-marina-costa.pdf',
+    href: '/docs/doc-demo-003.pdf',
   },
 ];
 
-const intelligenceTabs = ['Resumo IA', 'Conversas sintetizadas', 'Fotos e análise', 'Linha do tempo'] as const;
+const intelligenceTabs = ['Resumo IA', 'Conversas sintetizadas', 'Fotos e análise'] as const;
 type IntelligenceTab = (typeof intelligenceTabs)[number];
 
 const marinaConversations = [
@@ -439,14 +440,6 @@ const marinaMeals = [
     confidence: 'Alta confiança nos itens visíveis',
     questions: ['Qual era o tipo de iogurte?', 'Houve açúcar ou outro ingrediente não visível?'],
   },
-];
-
-const marinaTimeline = [
-  ['26 ago · agora', 'Dossiê atualizado', '3 PDFs, 7 conversas e 3 refeições recompilados pela IA.'],
-  ['25 ago · 16:42', 'Relatório quinzenal revisado', 'Médico validou síntese e manteve uma pendência sobre sono.'],
-  ['24 ago · 20:08', 'Refeição registrada', 'Foto do jantar recebida; reconhecimento visual aguarda confirmação.'],
-  ['23 ago · 18:42', 'Sinal fora do padrão', 'Energia 2 de 5 após noite curta, sem inferência diagnóstica.'],
-  ['12 ago · 11:14', 'Primeira consulta concluída', 'Objetivo, plano inicial e retorno em 30 dias registrados.'],
 ];
 
 export default function DoctorWorkspace({
@@ -998,6 +991,8 @@ function Patients({
           ))}
         </div>
 
+        <LongitudinalDossier key={selected.id} patientId={selected.id} patientName={selected.name} />
+
         <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)_minmax(280px,0.9fr)]">
           <article className="rounded-2xl border border-[#dfe8e3] p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1058,14 +1053,14 @@ function Patients({
         <section aria-labelledby="smart-dossier-title" className="border-t border-[#e7eeea] bg-[#f8faf9] p-5 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Gerado automaticamente</p>
-              <h3 id="smart-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Dossiê inteligente do paciente</h3>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#60766f]">Documentos organizados pela IA a partir de consultas, check-ins e registros, sempre antes da revisão do médico.</p>
+              <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#0b7b68]">Documentos demonstrativos</p>
+              <h3 id="smart-dossier-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Documentos do ciclo</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#60766f]">Arquivos fictícios organizados por etapa do acompanhamento. Eles não representam documentos de prontuário nem integrações ativas.</p>
             </div>
-            <Status tone="green">3 PDFs atualizados</Status>
+            <Status tone={selected.id === DEFAULT_PATIENT_ID ? 'green' : 'gray'}>{selected.id === DEFAULT_PATIENT_ID ? '3 PDFs do mock' : 'Sem arquivos disponíveis'}</Status>
           </div>
 
-          {selected.name === 'Marina Costa' ? (
+          {selected.id === DEFAULT_PATIENT_ID ? (
             <>
               <div className="mt-5 grid gap-4 md:grid-cols-3">
                 {marinaDocuments.map((document) => (
@@ -1101,8 +1096,8 @@ function Patients({
             </>
           ) : (
             <div className="mt-5 rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-6 text-center">
-              <p className="text-sm font-bold text-[#405d54]">Dossiê automático ainda em preparação para {selected.name}.</p>
-              <p className="mt-1 text-xs text-[#789087]">Os PDFs serão liberados depois que houver dados suficientes e revisão médica.</p>
+              <p className="text-sm font-bold text-[#405d54]">Nenhum documento demonstrativo disponível para {selected.name}.</p>
+              <p className="mt-1 text-xs text-[#789087]">O histórico longitudinal acima continua separado dos PDFs deste ciclo.</p>
             </div>
           )}
         </section>
@@ -1114,7 +1109,7 @@ function Patients({
               <h3 id="clinical-copilot-title" className="mt-2 text-xl font-semibold tracking-[-0.02em]">Contexto que se atualiza entre consultas</h3>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-[#60766f]">A IA conecta conversa, documentos, imagens e rotina para reduzir leitura manual e destacar o que merece validação.</p>
             </div>
-            <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-2 text-xs font-bold text-[#526a62]">6 fontes conectadas · mock</span>
+            <span className="rounded-full border border-[#c9ddd6] bg-white px-3 py-2 text-xs font-bold text-[#526a62]">{selected.id === DEFAULT_PATIENT_ID ? '6 fontes demonstrativas · mock' : 'Sem fontes suficientes'}</span>
           </div>
 
           <div role="tablist" aria-label="Visões do copiloto clínico" className="mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-[#d7e3df] bg-white p-2">
@@ -1137,7 +1132,7 @@ function Patients({
           </div>
 
           <div id="patient-intelligence-panel" role="tabpanel" className="mt-5">
-            {selected.name !== 'Marina Costa' ? (
+            {selected.id !== DEFAULT_PATIENT_ID ? (
               <div className="rounded-2xl border border-dashed border-[#bfd4cd] bg-white p-8 text-center">
                 <p className="text-sm font-bold text-[#405d54]">Ainda não há contexto suficiente para compor esta visão de {selected.name}.</p>
                 <p className="mt-2 text-xs leading-5 text-[#789087]">O copiloto só organiza dados disponíveis e não preenche lacunas com inferências.</p>
@@ -1301,42 +1296,6 @@ function Patients({
                   </div>
                 )}
 
-                {intelligenceTab === 'Linha do tempo' && (
-                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-                    <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Linha do tempo inteligente</p><h4 className="mt-2 text-lg font-semibold">Eventos conectados por significado</h4></div><Status tone="blue">5 marcos</Status></div>
-                      <div className="mt-5 space-y-1">
-                        {marinaTimeline.map((event, index) => (
-                          <div key={event[0]} className="relative grid gap-1 border-l border-[#b9d8cf] pb-5 pl-6 last:border-transparent last:pb-0 sm:grid-cols-[120px_1fr]">
-                            <span aria-hidden="true" className={cn('absolute -left-1.5 top-1 size-3 rounded-full border-2 border-white', index === 0 ? 'bg-[#0b7b68]' : 'bg-[#8bbcaf]')} />
-                            <p className="text-xs font-bold text-[#0b6a5b]">{event[0]}</p>
-                            <div><p className="text-sm font-bold text-[#405d54]">{event[1]}</p><p className="mt-1 text-xs leading-5 text-[#789087]">{event[2]}</p></div>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-                    <article className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Automações que evoluem com a IA</p>
-                      <div className="mt-4 space-y-3">
-                        {[
-                          ['Detecção de contradições', 'Compara relato, diário, receita e dados do relógio.'],
-                          ['Resumo em duas linguagens', 'Uma versão clínica e outra clara para a paciente.'],
-                          ['Auditoria de cada insight', 'Mostra fonte, data, confiança e quem aprovou.'],
-                          ['Consentimento contextual', 'Pede somente o dado necessário para cada recurso.'],
-                          ['Próxima ação adaptativa', 'Sugere contato, pergunta ou documento sem decidir conduta.'],
-                        ].map((item) => (
-                          <div key={item[0]} className="rounded-xl bg-[#f4f7f5] p-3">
-                            <p className="text-sm font-bold text-[#405d54]">{item[0]}</p>
-                            <p className="mt-1 text-xs leading-5 text-[#789087]">{item[1]}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <button type="button" onClick={() => onNotify('Novo snapshot longitudinal gerado para revisão.')} className="mt-4 min-h-11 w-full cursor-pointer rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">
-                        Gerar novo snapshot
-                      </button>
-                    </article>
-                  </div>
-                )}
               </>
             )}
           </div>

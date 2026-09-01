@@ -18,6 +18,7 @@ export interface PreConsultationSubmission extends PreConsultationAnswers {
   encounterId: string;
   version: number;
   submittedAt: string;
+  submittedAtIso: string;
   consentVersion: 'pre-consulta-texto-v1';
   structuredDraft: string | null;
 }
@@ -34,8 +35,11 @@ export interface PreConsultationReview {
   content: string;
   sourceMode: 'assisted' | 'manual';
   createdAt: string;
+  createdAtIso: string;
   updatedAt: string;
+  updatedAtIso: string;
   reviewedAt: string | null;
+  reviewedAtIso: string | null;
   reviewedBy: string | null;
   rejectionReason: string | null;
 }

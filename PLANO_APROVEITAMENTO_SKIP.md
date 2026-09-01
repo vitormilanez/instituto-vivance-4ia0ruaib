@@ -101,11 +101,18 @@ Implementado neste incremento:
 - manter a conversa demonstrativa vinculada ao paciente selecionado;
 - preservar ações demonstrativas do médico e da paciente ao navegar entre páginas durante a mesma sessão;
 - encerrar pré-consulta e consulta sem criar uma entrada de histórico que reabra o fluxo já fechado.
+- criar eventos longitudinais tipados e isolados por paciente e atendimento;
+- exibir relato, dado registrado, preparo/síntese e revisão médica em camadas separadas;
+- mostrar em cada evento data, autoria, origem, ID sintético, versão, estado e limite de uso;
+- projetar submissões e revisões da sessão no dossiê sem sobrescrever versões anteriores;
+- manter o preparo aprovado como síntese revisada para a consulta, sem promovê-lo a decisão clínica ou plano publicado;
+- derivar contagens das fontes e eventos do paciente selecionado;
+- substituir nomes de paciente nos caminhos dos documentos demonstrativos por IDs opacos.
 
 Ainda pendente no Lote 2:
 
 - dividir outras áreas extensas de `doctor.tsx` e `patient.tsx`;
-- estruturar notas e fontes longitudinais além da pré-consulta;
+- conectar notas produzidas durante a consulta e o futuro plano aprovado à trilha longitudinal;
 - definir persistência durável e identidade autenticada, fora do estado demonstrativo.
 
 ### Lote 3 — Plano aprovado
@@ -166,6 +173,12 @@ Ainda pendente no Lote 2:
 - Mensagens abertas pelo dossiê mantêm o paciente selecionado.
 - Ações demonstrativas concluídas permanecem ao navegar entre páginas na mesma sessão.
 - Fechar ou enviar uma pré-consulta não faz o botão Voltar reabrir o fluxo encerrado.
+- Cada evento longitudinal informa camada, data, autoria, origem, ID sintético, versão e estado.
+- Filtros sem resultado mostram um estado vazio seguro e permitem voltar a todos os eventos.
+- Uma nova pré-consulta aparece no dossiê da mesma sessão sem alterar o relato original.
+- Preparos manuais e assistidos permanecem distinguíveis; aprovação vale apenas para uso na consulta.
+- As contagens do dossiê são calculadas somente a partir dos eventos do paciente da rota.
+- Em 375 px, a linha do tempo permanece em uma coluna e não cria rolagem horizontal na página.
 
 ## Itens explicitamente excluídos
 
