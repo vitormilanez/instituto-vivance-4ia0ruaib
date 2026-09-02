@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   ChartLineDown,
+  ChatCircle,
   CheckCircle,
   DotsThree,
   FileText,
@@ -13,7 +14,6 @@ import {
   VideoCamera,
   WarningCircle,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
 import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
@@ -21,19 +21,35 @@ import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
 import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, getDefaultEncounterId } from './demo-routes';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { DoctorMacroCareSummary } from './doctor-macro-care-summary';
-import { cn, Status } from './shared';
+import {
+  DoctorPatientCheckInReview,
+  DoctorPrescriptionNotice,
+} from './doctor-patient-checkin-review';
+import {
+  getPatientCareDemo,
+  type PatientDocument,
+  type PatientDocumentKind,
+  type PatientEvolutionMetric,
+  type PatientEvolutionMetricKey,
+} from './patient-care-demo-data';
+import { cn, NavigationLink as Link, Status } from './shared';
 
 type Tone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
+export type ProgramSignal = 'expected' | 'monitor' | 'review';
 
 export type PatientWorkspaceProfile = {
   id: string;
   nextEncounterId: string;
+  age?: number;
   initials: string;
   name: string;
   focus: string;
   progress: string;
   attention: string;
   tone: Tone;
+  programSignal: ProgramSignal;
+  avatarSeed: string;
+  lastContactOrder: number;
   reportCount: string;
   prescriptionCount: string;
   cycle: string;
@@ -64,8 +80,8 @@ export type PatientWorkspaceProfile = {
 
 type PatientTab = 'overview' | 'timeline' | 'documents' | 'evolution';
 type DemoScenario = 'content' | 'loading' | 'empty' | 'error' | 'incomplete' | 'permission' | 'ai-unavailable' | 'conflict';
-type DocumentKind = 'all' | 'exam' | 'order' | 'report' | 'plan';
-type EvolutionMetric = 'weight' | 'sleep' | 'activity' | 'adherence';
+type DocumentKind = PatientDocumentKind;
+type EvolutionMetric = PatientEvolutionMetricKey;
 
 const patientTabs: Array<{ id: PatientTab; label: string; description: string }> = [
   { id: 'overview', label: 'Visão geral', description: 'Decisão e pendências' },
@@ -93,165 +109,196 @@ const documentFilters: Array<{ id: DocumentKind; label: string }> = [
   { id: 'plan', label: 'Planos e orientações' },
 ];
 
-type ClinicalDocument = {
-  id: string;
-  kind: Exclude<DocumentKind, 'all'>;
-  title: string;
-  date: string;
-  author: string;
-  origin: string;
-  status: string;
-  statusTone: Tone;
-  version: string;
-  originalHref?: string;
-  aiSummary?: string;
-  values?: Array<{ marker: string; value: number; unit: string }>;
-};
+type ClinicalDocument = PatientDocument;
 
-const marinaDocuments: ClinicalDocument[] = [
-  {
-    id: 'exam-aug',
-    kind: 'exam',
-    title: 'Painel laboratorial · agosto',
-    date: '14 ago 2026',
-    author: 'Laboratório Horizonte · arquivo enviado por Marina Costa',
-    origin: 'Enviado pela paciente',
-    status: 'Revisão médica pendente',
-    statusTone: 'amber',
-    version: 'Original · v1',
-    originalHref: '/docs/doc-demo-001.pdf',
-    aiSummary: 'O rascunho apenas extraiu nomes e valores legíveis; não interpretou normalidade, risco ou conduta.',
-    values: [
-      { marker: 'Glicemia em jejum', value: 96, unit: 'mg/dL' },
-      { marker: 'Hemoglobina glicada', value: 5.5, unit: '%' },
-      { marker: 'Triglicerídeos', value: 118, unit: 'mg/dL' },
-    ],
-  },
-  {
-    id: 'exam-jul',
-    kind: 'exam',
-    title: 'Painel laboratorial · julho',
-    date: '18 jul 2026',
-    author: 'Laboratório Horizonte · arquivo enviado por Marina Costa',
-    origin: 'Enviado pela paciente',
-    status: 'Revisado',
-    statusTone: 'green',
-    version: 'Original · v1',
-    originalHref: '/docs/doc-demo-002.pdf',
-    aiSummary: 'Valores foram transcritos para comparação objetiva. O documento original permanece como fonte principal.',
-    values: [
-      { marker: 'Glicemia em jejum', value: 101, unit: 'mg/dL' },
-      { marker: 'Hemoglobina glicada', value: 5.8, unit: '%' },
-      { marker: 'Triglicerídeos', value: 132, unit: 'mg/dL' },
-    ],
-  },
-  {
-    id: 'order-aug',
-    kind: 'order',
-    title: 'Pedido de exames · acompanhamento 30 dias',
-    date: '12 ago 2026',
-    author: 'Dr. Guilherme Martins · CRM/SP 184.920',
-    origin: 'Registrado pelo profissional',
-    status: 'Aprovado',
-    statusTone: 'green',
-    version: 'v2 · substitui v1',
-    originalHref: '/docs/doc-demo-003.pdf',
-  },
-  {
-    id: 'report-aug',
-    kind: 'report',
-    title: 'Relatório quinzenal de acompanhamento',
-    date: '24 ago 2026',
-    author: 'Dr. Guilherme Martins · revisão do rascunho assistido',
-    origin: 'Revisado pelo profissional',
-    status: 'Aprovado · não publicado',
-    statusTone: 'blue',
-    version: 'v3',
-    aiSummary: 'Versão aprovada internamente. Aprovação não significa publicação ou exportação para outro sistema.',
-  },
-  {
-    id: 'plan-aug',
-    kind: 'plan',
-    title: 'Plano de cuidado · ciclo 90 dias',
-    date: '28 jul 2026',
-    author: 'Dr. Guilherme Martins · CRM/SP 184.920',
-    origin: 'Registrado pelo profissional',
-    status: 'Publicado para a paciente',
-    statusTone: 'green',
-    version: 'v2 · publicado',
-  },
-];
-
-const evolutionMetrics: Record<EvolutionMetric, {
+export const programSignalPresentation: Record<ProgramSignal, {
   label: string;
-  unit: string;
-  color: string;
-  source: string;
-  completeness: string;
-  points: Array<{ date: string; value: number }>;
+  description: string;
+  ringClass: string;
+  dotClass: string;
+  badgeClass: string;
 }> = {
-  weight: {
-    label: 'Peso', unit: 'kg', color: '#124da0', source: 'Pesagens confirmadas pela paciente', completeness: '5 de 6 registros esperados',
-    points: [{ date: '28 jul', value: 80 }, { date: '4 ago', value: 79.6 }, { date: '11 ago', value: 79.1 }, { date: '18 ago', value: 78.7 }, { date: '25 ago', value: 78.2 }],
+  expected: {
+    label: 'Dentro da expectativa',
+    description: 'Registros compatíveis com o combinado no programa',
+    ringClass: 'ring-[#63a88a]',
+    dotClass: 'bg-[#2d8a67]',
+    badgeClass: 'bg-[#e7f4ef] text-[#17624e]',
   },
-  sleep: {
-    label: 'Sono médio', unit: 'h', color: '#124da0', source: 'Check-ins e registros de sono autorrelatados', completeness: '23 de 29 noites registradas',
-    points: [{ date: '28 jul', value: 6.4 }, { date: '4 ago', value: 6.3 }, { date: '11 ago', value: 6.1 }, { date: '18 ago', value: 5.9 }, { date: '25 ago', value: 5.7 }],
+  monitor: {
+    label: 'Acompanhamento estável',
+    description: 'Sem urgência; acompanhar os próximos registros',
+    ringClass: 'ring-[#d8aa46]',
+    dotClass: 'bg-[#bf8620]',
+    badgeClass: 'bg-[#fff0ca] text-[#77500a]',
   },
-  activity: {
-    label: 'Passos médios', unit: 'passos', color: '#77500a', source: 'Dispositivo conectado · dados demonstrativos', completeness: '26 de 29 dias sincronizados',
-    points: [{ date: '28 jul', value: 5400 }, { date: '4 ago', value: 5900 }, { date: '11 ago', value: 6200 }, { date: '18 ago', value: 6800 }, { date: '25 ago', value: 7200 }],
-  },
-  adherence: {
-    label: 'Adesão autorrelatada', unit: '%', color: '#77500a', source: 'Check-ins confirmados pela paciente', completeness: '11 de 14 check-ins respondidos',
-    points: [{ date: '28 jul', value: 72 }, { date: '4 ago', value: 76 }, { date: '11 ago', value: 79 }, { date: '18 ago', value: 83 }, { date: '25 ago', value: 82 }],
+  review: {
+    label: 'Revisar registros',
+    description: 'A equipe precisa revisar a resposta relatada',
+    ringClass: 'ring-[#d66a68]',
+    dotClass: 'bg-[#bd4d4c]',
+    badgeClass: 'bg-[#fdecea] text-[#9c453f]',
   },
 };
+
+const avatarPalettes: Record<string, { background: string; skin: string; hair: string; shirt: string; hairShape: string }> = {
+  marina: { background: 'bg-[#f5e4dd]', skin: 'bg-[#efbb9b]', hair: 'bg-[#4a3430]', shirt: 'bg-[#b76669]', hairShape: 'h-[35%] w-[62%] rounded-t-[60%] rounded-b-[34%]' },
+  ana: { background: 'bg-[#e2edf8]', skin: 'bg-[#eab58d]', hair: 'bg-[#47332e]', shirt: 'bg-[#4e7eaa]', hairShape: 'h-[32%] w-[66%] rounded-[48%]' },
+  paulo: { background: 'bg-[#e9e5db]', skin: 'bg-[#c98765]', hair: 'bg-[#272a35]', shirt: 'bg-[#596b7d]', hairShape: 'h-[23%] w-[52%] rounded-t-[55%]' },
+  rafael: { background: 'bg-[#e0eeea]', skin: 'bg-[#c78464]', hair: 'bg-[#5c3931]', shirt: 'bg-[#4f8d80]', hairShape: 'h-[28%] w-[58%] rounded-t-[52%]' },
+  lucia: { background: 'bg-[#ede4f3]', skin: 'bg-[#e9b594]', hair: 'bg-[#6a4640]', shirt: 'bg-[#8564a5]', hairShape: 'h-[39%] w-[68%] rounded-t-[60%] rounded-b-[40%]' },
+  lucas: { background: 'bg-[#e7edf7]', skin: 'bg-[#d59a75]', hair: 'bg-[#3d3432]', shirt: 'bg-[#50749d]', hairShape: 'h-[21%] w-[48%] rounded-t-[50%]' },
+  fernanda: { background: 'bg-[#f5e7ee]', skin: 'bg-[#e7ae8f]', hair: 'bg-[#463034]', shirt: 'bg-[#b55d7e]', hairShape: 'h-[38%] w-[66%] rounded-[48%]' },
+  diego: { background: 'bg-[#e8e9ee]', skin: 'bg-[#b8785b]', hair: 'bg-[#2d2b30]', shirt: 'bg-[#62677a]', hairShape: 'h-[24%] w-[55%] rounded-t-[48%]' },
+  camila: { background: 'bg-[#e1f0eb]', skin: 'bg-[#d99170]', hair: 'bg-[#3e302d]', shirt: 'bg-[#398a78]', hairShape: 'h-[37%] w-[64%] rounded-t-[62%] rounded-b-[36%]' },
+  bruno: { background: 'bg-[#e8edf3]', skin: 'bg-[#c88968]', hair: 'bg-[#3d3632]', shirt: 'bg-[#5e7591]', hairShape: 'h-[22%] w-[50%] rounded-t-[48%]' },
+};
+
+export function PatientAvatar({
+  patient,
+  size = 'md',
+  className,
+}: {
+  patient: Pick<PatientWorkspaceProfile, 'name' | 'avatarSeed' | 'programSignal'>;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const palette = avatarPalettes[patient.avatarSeed] ?? avatarPalettes.marina;
+  const signal = programSignalPresentation[patient.programSignal];
+  const sizeClass = size === 'sm' ? 'size-10' : size === 'lg' ? 'size-[4.5rem]' : 'size-14';
+
+  return (
+    <span
+      role="img"
+      aria-label={`Avatar fictício de ${patient.name}. ${signal.label}.`}
+      className={cn('relative grid shrink-0 overflow-hidden rounded-full ring-[3px] ring-offset-2', sizeClass, palette.background, signal.ringClass, className)}
+    >
+      <span aria-hidden="true" className={cn('absolute -bottom-[22%] left-1/2 h-[53%] w-[86%] -translate-x-1/2 rounded-t-[52%]', palette.shirt)} />
+      <span aria-hidden="true" className={cn('absolute left-1/2 top-[22%] h-[49%] w-[49%] -translate-x-1/2 rounded-full', palette.skin)} />
+      <span aria-hidden="true" className={cn('absolute left-1/2 top-[13%] -translate-x-1/2', palette.hair, palette.hairShape)} />
+      <span aria-hidden="true" className="absolute left-[37%] top-[50%] size-[5%] rounded-full bg-[#3d302f]" />
+      <span aria-hidden="true" className="absolute right-[37%] top-[50%] size-[5%] rounded-full bg-[#3d302f]" />
+    </span>
+  );
+}
+
+type CohortSignalFilter = 'all' | ProgramSignal;
+type CohortSort = 'priority' | 'recent' | 'name';
 
 export function PatientCohort({ patients, onSelectPatient }: { patients: PatientWorkspaceProfile[]; onSelectPatient: (patientId: string) => void }) {
   const [query, setQuery] = useState('');
+  const [signalFilter, setSignalFilter] = useState<CohortSignalFilter>('all');
+  const [programFilter, setProgramFilter] = useState('all');
+  const [sort, setSort] = useState<CohortSort>('priority');
   const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
-  const filtered = patients.filter((patient) => `${patient.name} ${patient.focus}`.toLocaleLowerCase('pt-BR').includes(normalizedQuery));
+  const programs = [...new Set(patients.map((patient) => patient.focus.split(' · ')[0]))].toSorted((left, right) => left.localeCompare(right, 'pt-BR'));
+  const signalCounts = {
+    expected: patients.filter((patient) => patient.programSignal === 'expected').length,
+    monitor: patients.filter((patient) => patient.programSignal === 'monitor').length,
+    review: patients.filter((patient) => patient.programSignal === 'review').length,
+  };
+  const isFiltered = Boolean(query || signalFilter !== 'all' || programFilter !== 'all' || sort !== 'priority');
+  const visiblePatients = patients
+    .filter((patient) => {
+      const searchable = `${patient.name} ${patient.focus} ${patient.attention} ${patient.progress}`.toLocaleLowerCase('pt-BR');
+      return searchable.includes(normalizedQuery) &&
+        (signalFilter === 'all' || patient.programSignal === signalFilter) &&
+        (programFilter === 'all' || patient.focus.startsWith(programFilter));
+    })
+    .toSorted((left, right) => {
+      if (sort === 'name') return left.name.localeCompare(right.name, 'pt-BR');
+      if (sort === 'recent') return left.lastContactOrder - right.lastContactOrder;
+      const priority = { review: 0, monitor: 1, expected: 2 } as const;
+      return priority[left.programSignal] - priority[right.programSignal] || left.lastContactOrder - right.lastContactOrder;
+    });
 
   return (
     <div className="mx-auto max-w-[1240px]">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#071a3a]">Pacientes</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#61718a]">Abra uma pessoa para ver evolução, fontes, pendências e próximos passos em uma única tela.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#506681]">Carteira demonstrativa</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[#071a3a]">Pacientes</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#61718a]">Uma lista para encontrar quem precisa de contexto antes da próxima conversa.</p>
         </div>
-        <label className="flex min-h-11 items-center rounded-xl border border-[#dbe4f0] bg-white px-4 text-sm text-[#50627f] focus-within:ring-2 focus-within:ring-[#124da0]">
-          <span className="sr-only">Buscar paciente</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" className="w-full bg-transparent outline-none sm:w-56" placeholder="Buscar por nome ou foco" />
-        </label>
+        <p className="rounded-xl border border-[#dbe4f0] bg-white px-3.5 py-2 text-xs font-semibold text-[#50627f]">{patients.length} perfis fictícios nesta visualização · carteira de {doctorDemoCohortSummary.activePatients} acompanhados</p>
       </div>
 
-      <section className="mt-6 overflow-hidden rounded-2xl border border-[#dbe4f0] bg-white">
-        <div className="grid gap-px bg-[#e7edf5] sm:grid-cols-3">
-          {[
-            ['Em acompanhamento', doctorDemoCohortSummary.activePatients],
-            ['Check-ins em dia', doctorDemoCohortSummary.checkInsOnTime],
-            ['Para revisar', doctorDemoCohortSummary.checkInsToReview],
-          ].map(([label, value]) => <div key={label} className="bg-white p-4 sm:p-5"><p className="text-xs font-semibold text-[#50627f]">{label}</p><p className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value}</p></div>)}
+      <section aria-label="Resumo dos perfis demonstrativos" className="mt-6 grid overflow-hidden rounded-2xl border border-[#dbe4f0] bg-[#e7edf5] sm:grid-cols-4">
+        {[
+          ['Perfis nesta tela', patients.length, 'border-b sm:border-b-0 sm:border-r'],
+          ['Dentro da expectativa', signalCounts.expected, 'border-b sm:border-b-0 sm:border-r'],
+          ['Acompanhamento estável', signalCounts.monitor, 'border-b sm:border-b-0 sm:border-r'],
+          ['Para revisar', signalCounts.review, ''],
+        ].map(([label, value, border]) => <div key={label as string} className={cn('bg-white p-4 sm:p-5', border as string, 'border-[#e7edf5]')}><p className="text-xs font-semibold text-[#50627f]">{label as string}</p><p className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value as number}</p></div>)}
+      </section>
+
+      <section aria-labelledby="patient-filters-title" className="mt-5 rounded-2xl border border-[#dbe4f0] bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#506681]">Organizar carteira</p>
+                <h2 id="patient-filters-title" className="mt-1 text-base font-semibold text-[#071a3a]">Busca e filtros</h2>
+              </div>
+              {isFiltered ? <button type="button" onClick={() => { setQuery(''); setSignalFilter('all'); setProgramFilter('all'); setSort('priority'); }} className="min-h-10 rounded-xl px-3 text-xs font-bold text-[#124da0] underline underline-offset-4 transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]">Limpar filtros</button> : null}
+            </div>
+            <label className="mt-3 flex min-h-11 items-center rounded-xl border border-[#cbd8e9] bg-[#fbfdff] px-3.5 text-sm text-[#50627f] focus-within:ring-2 focus-within:ring-[#124da0] focus-within:ring-offset-2">
+              <span className="sr-only">Buscar paciente por nome, foco ou alerta</span>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" className="w-full bg-transparent outline-none" placeholder="Buscar por nome, programa ou ponto de atenção" />
+            </label>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:w-[390px]">
+            <label className="text-xs font-bold text-[#50627f]">Programa<select value={programFilter} onChange={(event) => setProgramFilter(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbd8e9] bg-white px-3 text-sm font-semibold text-[#071a3a] outline-none focus:ring-2 focus:ring-[#124da0]"><option value="all">Todos os programas</option>{programs.map((program) => <option key={program} value={program}>{program}</option>)}</select></label>
+            <label className="text-xs font-bold text-[#50627f]">Ordenar por<select value={sort} onChange={(event) => setSort(event.target.value as CohortSort)} className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbd8e9] bg-white px-3 text-sm font-semibold text-[#071a3a] outline-none focus:ring-2 focus:ring-[#124da0]"><option value="priority">Prioridade de revisão</option><option value="recent">Último contato</option><option value="name">Nome (A–Z)</option></select></label>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2" aria-label="Filtrar pelo sinal de acompanhamento">
+          {([
+            { id: 'all', label: 'Todos', count: patients.length, dotClass: 'bg-[#506681]' },
+            ...(['expected', 'monitor', 'review'] as ProgramSignal[]).map((signal) => ({ id: signal, label: programSignalPresentation[signal].label, count: signalCounts[signal], dotClass: programSignalPresentation[signal].dotClass })),
+          ] as Array<{ id: CohortSignalFilter; label: string; count: number; dotClass: string }>).map((filter) => (
+            <button key={filter.id} type="button" aria-pressed={signalFilter === filter.id} onClick={() => setSignalFilter(filter.id)} className={cn('inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]', signalFilter === filter.id ? 'border-[#173f78] bg-[#edf3fb] text-[#071a3a]' : 'border-[#dbe4f0] bg-white text-[#50627f] hover:bg-[#f7faff]')}><span aria-hidden="true" className={cn('size-2 rounded-full', filter.dotClass)} />{filter.label}<span className="text-[#7890ac]">{filter.count}</span></button>
+          ))}
         </div>
       </section>
 
-      {filtered.length === 0 ? (
-        <section className="mt-5 rounded-2xl border border-dashed border-[#c7d5e7] bg-white p-8 text-center"><h2 className="text-lg font-semibold text-[#071a3a]">Nenhum paciente encontrado</h2><p className="mt-2 text-sm text-[#61718a]">Tente outro nome ou foco de acompanhamento.</p></section>
-      ) : (
-        <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {filtered.map((patient) => (
-            <button key={patient.id} type="button" onClick={() => onSelectPatient(patient.id)} className="group min-h-[280px] rounded-2xl border border-[#dbe4f0] bg-white p-5 text-left transition-colors hover:border-[#8fb0d9] hover:bg-[#fbfdff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">
-              <span className="flex items-start justify-between gap-3"><span className="grid size-11 place-items-center rounded-full bg-[#e5edf8] text-sm font-bold text-[#124da0]">{patient.initials}</span><Status tone={patient.tone}>{patient.attention}</Status></span>
-              <strong className="mt-5 block text-lg text-[#071a3a]">{patient.name}</strong>
-              <span className="mt-1 block text-sm text-[#50627f]">{patient.focus}</span>
-              <span className="mt-5 block text-2xl font-semibold tracking-[-0.04em] text-[#071a3a]">{patient.progress}</span>
-              <span className="mt-1 block text-xs text-[#50627f]">desde o último ciclo</span>
-              <span className="mt-5 flex min-h-11 items-center justify-between border-t border-[#e7edf5] pt-4 text-sm font-bold text-[#124da0]"><span>Abrir histórico</span><span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span></span>
+      <section aria-labelledby="patient-list-title" className="mt-5 overflow-hidden rounded-2xl border border-[#dbe4f0] bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf5] px-4 py-4 sm:px-5">
+          <div>
+            <h2 id="patient-list-title" className="text-base font-semibold text-[#071a3a]">Lista de pacientes</h2>
+            <p className="mt-1 text-xs text-[#61718a]">{visiblePatients.length} de {patients.length} perfis demonstrativos</p>
+          </div>
+          <p className="text-xs leading-5 text-[#61718a]">O anel indica o acompanhamento demonstrativo, não uma conclusão clínica.</p>
+        </div>
+
+        <div className="hidden grid-cols-[minmax(260px,1.4fr)_minmax(150px,0.7fr)_minmax(130px,0.6fr)_minmax(140px,0.65fr)_minmax(160px,0.8fr)_24px] gap-4 border-b border-[#e7edf5] bg-[#f7faff] px-5 py-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[#61718a] lg:grid">
+          <span>Paciente</span><span>Progresso</span><span>Último contato</span><span>Próxima consulta</span><span>Sinal do programa</span><span aria-hidden="true" />
+        </div>
+
+        {visiblePatients.length === 0 ? (
+          <div className="p-8 text-center"><h3 className="text-lg font-semibold text-[#071a3a]">Nenhum perfil encontrado</h3><p className="mt-2 text-sm leading-6 text-[#61718a]">Ajuste a busca ou os filtros para ver os perfis demonstrativos.</p></div>
+        ) : visiblePatients.map((patient) => {
+          const signal = programSignalPresentation[patient.programSignal];
+          return (
+            <button key={patient.id} type="button" onClick={() => onSelectPatient(patient.id)} className="group grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-[#e7edf5] px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-[#f7faff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0] sm:px-5 lg:grid-cols-[minmax(260px,1.4fr)_minmax(150px,0.7fr)_minmax(130px,0.6fr)_minmax(140px,0.65fr)_minmax(160px,0.8fr)_24px] lg:gap-4">
+              <span className="flex min-w-0 items-center gap-4">
+                <PatientAvatar patient={patient} />
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm font-bold text-[#071a3a] sm:text-base">{patient.name}</strong>
+                  <span className="mt-1 block truncate text-xs text-[#50627f]">{patient.age ?? 38} anos · {patient.focus}</span>
+                  <span className="mt-2 flex flex-wrap gap-2 text-xs lg:hidden"><span className="font-semibold text-[#071a3a]">{patient.progress}</span><span className="text-[#61718a]">{patient.lastContact}</span></span>
+                </span>
+              </span>
+              <span className="hidden min-w-0 lg:block"><strong className="block truncate text-sm text-[#071a3a]">{patient.progress}</strong><span className="mt-1 block truncate text-xs text-[#61718a]">{patient.attention}</span></span>
+              <span className="hidden text-sm text-[#405675] lg:block">{patient.lastContact}</span>
+              <span className="hidden text-sm font-semibold text-[#405675] lg:block">{patient.nextConsultation}</span>
+              <span className="hidden lg:block"><span className={cn('inline-flex max-w-full items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold', signal.badgeClass)}><span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', signal.dotClass)} />{signal.label}</span><span className="mt-1.5 block text-[11px] leading-4 text-[#61718a]">{signal.description}</span></span>
+              <span className="grid size-8 place-items-center rounded-full bg-[#f0f5fb] text-[#50709c] transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</span>
             </button>
-          ))}
-        </section>
-      )}
+          );
+        })}
+      </section>
     </div>
   );
 }
@@ -259,6 +306,7 @@ export function PatientCohort({ patients, onSelectPatient }: { patients: Patient
 export function PatientLongitudinalWorkspace({
   patient,
   patients,
+  hasLiveCheckIn,
   onSelectPatient,
   onStartConsultation,
   onOpenPreparation,
@@ -267,6 +315,7 @@ export function PatientLongitudinalWorkspace({
 }: {
   patient: PatientWorkspaceProfile;
   patients: PatientWorkspaceProfile[];
+  hasLiveCheckIn: boolean;
   onSelectPatient: (patientId: string) => void;
   onStartConsultation: (patientId: string, encounterId: string) => void;
   onOpenPreparation: (patientId: string, encounterId: string) => void;
@@ -287,13 +336,20 @@ export function PatientLongitudinalWorkspace({
   }, []);
 
   const isDefaultPatient = patient.id === DEFAULT_PATIENT_ID;
-  const primaryLabel = isDefaultPatient ? 'Iniciar consulta online' : 'Preparar próxima consulta';
+  const isPendingPatient = patient.id === 'pac-demo-006';
+  const primaryLabel = isDefaultPatient
+    ? 'Iniciar consulta online'
+    : isPendingPatient
+      ? 'Solicitar informações'
+      : 'Preparar próxima consulta';
   const attentionDetail = isDefaultPatient
     ? 'Sono médio caiu para 5h42, com despertares relatados às 3h em quatro noites.'
     : patient.insight.detail;
+  const PrimaryActionIcon = isPendingPatient ? ChatCircle : VideoCamera;
 
   const runPrimaryAction = () => {
     if (isDefaultPatient) onStartConsultation(patient.id, patient.nextEncounterId);
+    else if (isPendingPatient) onMessage(patient.id);
     else onOpenPreparation(patient.id, patient.nextEncounterId);
   };
 
@@ -320,12 +376,12 @@ export function PatientLongitudinalWorkspace({
 
           <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-start gap-3 sm:items-center">
-              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#e5edf8] text-sm font-extrabold text-[#082553] ring-1 ring-[#c7d5e7]">{patient.initials}</span>
+              <PatientAvatar patient={patient} size="lg" className="ring-offset-[#f6f9fe]" />
               <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-2">
                   <h1 className="truncate text-2xl font-semibold tracking-[-0.03em] text-[#071a3a] sm:text-[2rem]">{patient.name}</h1>
                 </div>
-                <p className="mt-1 text-xs leading-5 text-[#61718a] sm:text-sm">38 anos · {patient.focus} · {patient.cycle}</p>
+                <p className="mt-1 text-xs leading-5 text-[#61718a] sm:text-sm">{patient.age ?? 38} anos · {patient.focus} · {patient.cycle}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Status tone={patient.tone}>{patient.attention} para revisar</Status>
                   <Status tone="gray">Dados fictícios</Status>
@@ -334,7 +390,7 @@ export function PatientLongitudinalWorkspace({
             </div>
             <div className="flex w-full gap-2 sm:w-auto">
               <button type="button" onClick={runPrimaryAction} className="vivanse-primary-action inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-colors focus-visible:outline-none sm:flex-none">
-                <VideoCamera aria-hidden="true" size={20} /> {primaryLabel}
+                <PrimaryActionIcon aria-hidden="true" size={20} /> {primaryLabel}
               </button>
               <details className="relative">
                 <summary aria-label="Abrir mais ações" className="grid size-12 cursor-pointer list-none place-items-center rounded-xl border border-[#c7d5e7] bg-white text-[#082553] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">
@@ -365,8 +421,8 @@ export function PatientLongitudinalWorkspace({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-[#dbe4f0] pt-3 text-xs text-[#61718a]">
-            <span><strong className="text-[#071a3a]">Plano:</strong> v2 publicado</span>
-            <span className="hidden sm:inline"><strong className="text-[#071a3a]">Última consulta:</strong> 28 jul · 09:30</span>
+            <span><strong className="text-[#071a3a]">Plano:</strong> {isPendingPatient ? 'Ainda não publicado' : 'v2 publicado'}</span>
+            <span className="hidden sm:inline"><strong className="text-[#071a3a]">Última consulta:</strong> {isPendingPatient ? 'Não realizada' : '28 jul · 09:30'}</span>
             <span><strong className="text-[#071a3a]">Próxima:</strong> {patient.nextConsultation}</span>
           </div>
         </div>
@@ -407,13 +463,13 @@ export function PatientLongitudinalWorkspace({
           ) : scenario === 'empty' ? (
             <EmptyPatientState onNotify={onNotify} />
           ) : activeTab === 'overview' ? (
-            <OverviewPanel patient={patient} scenario={scenario} attentionDetail={attentionDetail} onMessage={onMessage} onNotify={onNotify} />
+            <OverviewPanel patient={patient} scenario={scenario} attentionDetail={attentionDetail} hasLiveCheckIn={hasLiveCheckIn} onMessage={onMessage} onNotify={onNotify} />
           ) : activeTab === 'timeline' ? (
             <TimelinePanel patient={patient} />
           ) : activeTab === 'documents' ? (
             <DocumentsPanel patient={patient} permissionDenied={scenario === 'permission'} onNotify={onNotify} />
           ) : (
-            <EvolutionPanel error={scenario === 'error'} incomplete={scenario === 'incomplete'} onNotify={onNotify} />
+            <EvolutionPanel patient={patient} error={scenario === 'error'} incomplete={scenario === 'incomplete'} onNotify={onNotify} />
           )}
         </section>
       </div>
@@ -425,26 +481,52 @@ function OverviewPanel({
   patient,
   scenario,
   attentionDetail,
+  hasLiveCheckIn,
   onMessage,
   onNotify,
 }: {
   patient: PatientWorkspaceProfile;
   scenario: DemoScenario;
   attentionDetail: string;
+  hasLiveCheckIn: boolean;
   onMessage: (patientId: string) => void;
   onNotify: (text: string) => void;
 }) {
   const [careDetailsOpen, setCareDetailsOpen] = useState(false);
   const [aiDetailsOpen, setAiDetailsOpen] = useState(false);
-  const metrics = patient.id === DEFAULT_PATIENT_ID
-    ? [['Peso atual', '78,2 kg', '−1,8 kg no ciclo'], ['Sono médio', '5h42', '23 de 29 noites'], ['Atividade', '7.200', 'passos médios'], ['Adesão', patient.adherence, '11 de 14 check-ins']]
-    : patient.report.metrics.map(([label, value]) => [label, value, 'fonte demonstrativa']);
+  const isPendingPatient = patient.id === 'pac-demo-006';
+  const careDemo = getPatientCareDemo(patient.id, patient.name);
+  const metrics = careDemo.overviewMetrics.map(({ label, value, detail }) => [
+    label,
+    isPendingPatient && hasLiveCheckIn && label === 'Etapas'
+      ? '2 de 5'
+      : isPendingPatient && hasLiveCheckIn && label === 'Check-in'
+        ? 'Recebido'
+        : value,
+    detail,
+  ]);
   const metricIcons = [ChartLineDown, Moon, Footprints, CheckCircle];
+  const reviewStatus = isPendingPatient
+    ? hasLiveCheckIn ? 'Revisar fonte recebida' : 'Aguardar preenchimento'
+    : 'Revisar na consulta';
+  const reviewEvidence = isPendingPatient
+    ? hasLiveCheckIn ? 'Relato inicial recebido' : 'Sem check-ins recebidos'
+    : '23 noites · 11 check-ins';
+  const nextSteps = isPendingPatient && hasLiveCheckIn
+    ? patient.nextSteps.map((step) => step === 'Aguardar relato inicial' ? 'Revisar relato inicial recebido' : step)
+    : patient.nextSteps;
 
   return (
     <div className="space-y-4 sm:space-y-5">
       {scenario === 'incomplete' && <InlineState tone="amber" title="Dados incompletos" description="Seis dias não têm registros de sono e três check-ins ainda não foram respondidos. A síntese preserva essas lacunas." />}
       {scenario === 'error' && <InlineState tone="rose" title="Uma fonte não carregou" description="O exame mais recente está temporariamente indisponível. Os demais módulos e o acesso manual continuam funcionando." />}
+
+      <DoctorPrescriptionNotice patientId={patient.id} />
+
+      <DoctorPatientCheckInReview
+        patientId={patient.id}
+        encounterId={getDefaultEncounterId(patient.id)}
+      />
 
       <section aria-labelledby="review-now-title" className="vivanse-panel overflow-hidden rounded-2xl">
         <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center sm:p-6">
@@ -454,8 +536,8 @@ function OverviewPanel({
                 <WarningCircle aria-hidden="true" size={20} weight="fill" />
               </span>
               <div className="flex flex-wrap items-center gap-2">
-                <Status tone="amber">Revisar na consulta</Status>
-                <span className="text-xs font-semibold text-[#61718a]">23 noites · 11 check-ins</span>
+                <Status tone="amber">{reviewStatus}</Status>
+                <span className="text-xs font-semibold text-[#61718a]">{reviewEvidence}</span>
               </div>
             </div>
             <span className="hidden size-11 shrink-0 place-items-center rounded-xl bg-[#fff0ca] text-[#77500a] sm:grid">
@@ -463,15 +545,15 @@ function OverviewPanel({
             </span>
             <div className="min-w-0">
               <div className="hidden flex-wrap items-center gap-2 sm:flex">
-                <Status tone="amber">Revisar na consulta</Status>
-                <span className="text-xs font-semibold text-[#61718a]">23 noites · 11 check-ins</span>
+                <Status tone="amber">{reviewStatus}</Status>
+                <span className="text-xs font-semibold text-[#61718a]">{reviewEvidence}</span>
               </div>
-              <h2 id="review-now-title" className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#071a3a] sm:text-2xl">O que merece atenção agora</h2>
+              <h2 id="review-now-title" className="mt-3 text-xl font-semibold tracking-[-0.02em] text-[#071a3a] sm:text-2xl">{isPendingPatient ? 'O que está pendente agora' : 'O que merece atenção agora'}</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#405675]">{attentionDetail}</p>
-              <p className="mt-2 text-xs leading-5 text-[#61718a]">É uma mudança observada no período. Não define causa, diagnóstico, urgência ou conduta.</p>
+              <p className="mt-2 text-xs leading-5 text-[#61718a]">{isPendingPatient ? 'Ainda não há dados suficientes para análise. A equipe decide se e quando solicitar o restante.' : 'É uma mudança observada no período. Não define causa, diagnóstico, urgência ou conduta.'}</p>
             </div>
           </div>
-          <button type="button" onClick={() => onNotify('Fontes do sono abertas para conferência no mock.')} className="min-h-11 rounded-xl border border-[#9bb5d4] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">Conferir fontes</button>
+          <button type="button" onClick={() => isPendingPatient ? onMessage(patient.id) : onNotify('Fontes do sono abertas para conferência no mock.')} className="min-h-11 rounded-xl border border-[#9bb5d4] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">{isPendingPatient ? 'Solicitar informações' : 'Conferir fontes'}</button>
         </div>
       </section>
 
@@ -502,16 +584,18 @@ function OverviewPanel({
           <dl className="mt-5 grid gap-x-6 sm:grid-cols-2">
               {[
                 ['Objetivo atual', patient.focus],
-                ['Plano vigente', 'v2 · publicado em 28 jul'],
+                ['Meta demonstrativa', `${careDemo.goal.label} · ${careDemo.goal.target}`],
+                ['Progresso da meta', careDemo.goal.progress],
+                ['Plano vigente', isPendingPatient ? 'Ainda não publicado' : 'v2 · publicado em 28 jul'],
                 ['Último contato', patient.lastContact],
                 ['Próxima consulta', patient.nextConsultation],
-              ].map(([label, value]) => <div key={label} className="border-t border-[#e7edf5] py-3"><dt className="text-xs font-semibold text-[#61718a]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd></div>)}
+              ].map(([label, value]) => <div key={label} className="border-t border-[#e7edf5] py-3"><dt className="text-xs font-semibold text-[#61718a]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd>{label === 'Progresso da meta' ? <p className="mt-1 text-xs leading-5 text-[#61718a]">{careDemo.goal.source}</p> : null}</div>)}
           </dl>
         </section>
         <aside className="vivanse-panel rounded-2xl p-5">
             <h2 className="text-lg font-semibold text-[#071a3a]">Próximas ações</h2>
             <ol className="mt-4 space-y-3">
-              {patient.nextSteps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-[#50627f]"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#edf3fb] text-xs font-bold text-[#124da0]">{index + 1}</span><span>{step}</span></li>)}
+              {nextSteps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-[#50627f]"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#edf3fb] text-xs font-bold text-[#124da0]">{index + 1}</span><span>{step}</span></li>)}
             </ol>
             <button type="button" onClick={() => onMessage(patient.id)} className="mt-5 min-h-11 w-full rounded-xl border border-[#9bb5d4] px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">Solicitar informação</button>
         </aside>
@@ -573,7 +657,7 @@ function DocumentsPanel({ patient, permissionDenied, onNotify }: { patient: Pati
   const [filter, setFilter] = useState<DocumentKind>('all');
   const [selected, setSelected] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
-  const documents = patient.id === DEFAULT_PATIENT_ID ? marinaDocuments : [];
+  const documents = getPatientCareDemo(patient.id, patient.name).documents;
   const filtered = filter === 'all' ? documents : documents.filter((document) => document.kind === filter);
   const comparable = documents.filter((document) => selected.includes(document.id) && document.values);
 
@@ -646,10 +730,11 @@ function ExamComparison({ documents }: { documents: ClinicalDocument[] }) {
   );
 }
 
-function EvolutionPanel({ error, incomplete, onNotify }: { error: boolean; incomplete: boolean; onNotify: (text: string) => void }) {
+function EvolutionPanel({ patient, error, incomplete, onNotify }: { patient: PatientWorkspaceProfile; error: boolean; incomplete: boolean; onNotify: (text: string) => void }) {
   const [metricKey, setMetricKey] = useState<EvolutionMetric>('weight');
   const [period, setPeriod] = useState('30 dias');
-  const metric = evolutionMetrics[metricKey];
+  const careDemo = getPatientCareDemo(patient.id, patient.name);
+  const metric = careDemo.evolution[metricKey];
   const first = metric.points[0].value;
   const last = metric.points.at(-1)?.value ?? first;
 
@@ -662,26 +747,25 @@ function EvolutionPanel({ error, incomplete, onNotify }: { error: boolean; incom
       {incomplete && <InlineState tone="amber" title="Período incompleto" description="A linha interrompida não foi interpolada. A leitura considera apenas registros confirmados e mostra a cobertura de cada fonte." />}
       <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Histórico e evolução</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">Compare períodos e veja o que aconteceu perto de consultas, exames e mudanças no plano, sem afirmar que um evento causou o outro.</p></div><div className="flex gap-2 overflow-x-auto" aria-label="Selecionar período">{['30 dias', '90 dias', '6 meses'].map((item) => <button key={item} type="button" aria-pressed={period === item} onClick={() => setPeriod(item)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', period === item ? 'bg-[#071a3a] text-white' : 'border border-[#dbe4f0] text-[#50627f]')}>{item}</button>)}</div></div>
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Selecionar indicador">{(Object.keys(evolutionMetrics) as EvolutionMetric[]).map((key) => <button key={key} type="button" aria-pressed={metricKey === key} onClick={() => setMetricKey(key)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', metricKey === key ? 'bg-[#edf3fb] text-[#124da0] ring-1 ring-[#c8d8eb]' : 'border border-[#dbe4f0] text-[#50627f]')}>{evolutionMetrics[key].label}</button>)}</div>
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Selecionar indicador">{(Object.keys(careDemo.evolution) as EvolutionMetric[]).map((key) => <button key={key} type="button" aria-pressed={metricKey === key} onClick={() => setMetricKey(key)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', metricKey === key ? 'bg-[#edf3fb] text-[#124da0] ring-1 ring-[#c8d8eb]' : 'border border-[#dbe4f0] text-[#50627f]')}>{careDemo.evolution[key].label}</button>)}</div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0 rounded-2xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold text-[#071a3a]">{metric.label}</h3><p className="mt-1 text-sm text-[#61718a]">{metric.source}</p></div><Status tone="gray">{period}</Status></div>
-          <EvolutionChart metricKey={metricKey} />
-          <div className="mt-4 rounded-xl bg-[#f6f9fe] p-4"><p className="text-sm font-bold text-[#071a3a]">Mudança observada: {formatMetricValue(first, metric.unit)} → {formatMetricValue(last, metric.unit)}</p><p className="mt-1 text-xs leading-5 text-[#61718a]">A consulta de 11 ago e a publicação do plano v2 em 18 ago coincidiram com este período. O produto não atribui causalidade.</p></div>
+          <EvolutionChart metric={metric} chartId={`${patient.id}-${metricKey}`} />
+          <div className="mt-4 grid gap-3 rounded-xl bg-[#f6f9fe] p-4 sm:grid-cols-2"><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Mudança observada</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{formatMetricValue(first, metric.unit)} → {formatMetricValue(last, metric.unit)}</p></div><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Meta do ciclo</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{metric.target === undefined ? 'Não registrada' : `${metric.targetLabel ?? 'Meta demonstrativa'} · ${formatMetricValue(metric.target, metric.unit)}`}</p></div><p className="sm:col-span-2 text-xs leading-5 text-[#61718a]">Eventos, registros e metas aparecem no mesmo período para dar contexto; o produto não atribui causalidade nem cria orientação clínica.</p></div>
         </section>
         <aside className="space-y-5">
-          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Qualidade dos dados</h3><p className="mt-3 text-sm font-bold text-[#405675]">{metric.completeness}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e7edf5]"><div className="h-full w-[82%] rounded-full bg-[#124da0]" /></div><p className="mt-3 text-xs leading-5 text-[#61718a]">Lacunas permanecem visíveis e não são preenchidas por estimativa.</p></section>
-          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Outros domínios</h3><dl className="mt-4 divide-y divide-[#e7edf5]">{[['Alimentação', '9 refeições confirmadas'], ['Sintomas', '1 relato para revisar'], ['Bem-estar', '11 check-ins'], ['Adesão ao plano', '82% autorrelatada']].map(([label, value]) => <div key={label} className="py-3 first:pt-0"><dt className="text-xs text-[#50627f]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd></div>)}</dl></section>
+          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Qualidade dos dados</h3><p className="mt-3 text-sm font-bold text-[#405675]">{metric.completeness}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e7edf5]"><div style={{ width: `${getCompletenessPercent(metric.completeness)}%` }} className="h-full rounded-full bg-[#124da0] transition-[width] duration-300 motion-reduce:transition-none" /></div><p className="mt-3 text-xs leading-5 text-[#61718a]">Lacunas permanecem visíveis e não são preenchidas por estimativa.</p></section>
+          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Outros domínios</h3><dl className="mt-4 divide-y divide-[#e7edf5]">{careDemo.domains.map(([label, value]) => <div key={label} className="py-3 first:pt-0"><dt className="text-xs text-[#50627f]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd></div>)}</dl></section>
         </aside>
       </div>
     </div>
   );
 }
 
-function EvolutionChart({ metricKey }: { metricKey: EvolutionMetric }) {
-  const metric = evolutionMetrics[metricKey];
+function EvolutionChart({ metric, chartId }: { metric: PatientEvolutionMetric; chartId: string }) {
   const values = metric.points.map((point) => point.value);
   const rawMin = Math.min(...values);
   const rawMax = Math.max(...values);
@@ -699,19 +783,24 @@ function EvolutionChart({ metricKey }: { metricKey: EvolutionMetric }) {
   const x = (index: number) => left + (index / (metric.points.length - 1)) * plotWidth;
   const y = (value: number) => top + ((max - value) / (max - min)) * plotHeight;
   const points = metric.points.map((point, index) => `${x(index)},${y(point.value)}`).join(' ');
-  const chartId = `evolution-chart-${metricKey}`;
+  const gradientId = `${chartId}-fill`;
+  const targetPosition = metric.target === undefined ? null : y(metric.target);
+  const areaPoints = `${left},${height - bottom} ${points} ${width - right},${height - bottom}`;
 
   return (
     <div className="mt-5">
       <svg viewBox={`0 0 ${width} ${height}`} className="h-auto w-full" role="img" aria-labelledby={`${chartId}-title ${chartId}-desc`}>
-        <title id={`${chartId}-title`}>{metric.label} nos últimos 30 dias</title>
-        <desc id={`${chartId}-desc`}>Gráfico de linha com cinco registros. Há marcadores de consulta em 11 de agosto e publicação do plano em 18 de agosto.</desc>
+        <title id={`${chartId}-title`}>{metric.label} no período demonstrativo</title>
+        <desc id={`${chartId}-desc`}>Gráfico de linha com cinco registros fictícios, meta demonstrativa e marcos de consulta e envio de exame. Os valores não representam uma interpretação clínica.</desc>
+        <defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={metric.color} stopOpacity="0.25" /><stop offset="100%" stopColor={metric.color} stopOpacity="0.02" /></linearGradient></defs>
         {[0, 1, 2, 3].map((index) => { const value = max - (index / 3) * (max - min); const position = top + (index / 3) * plotHeight; return <g key={index}><line x1={left} x2={width - right} y1={position} y2={position} stroke="#dbe4f0" strokeDasharray="4 5" /><text x={left - 10} y={position + 4} textAnchor="end" fill="#50627f" fontSize="11">{formatAxisValue(value, metric.unit)}</text></g>; })}
-        {[2, 3].map((index) => <g key={index}><line x1={x(index)} x2={x(index)} y1={top} y2={height - bottom} stroke="#9bb5d4" strokeDasharray="3 5" /><text x={x(index)} y={top - 9} textAnchor="middle" fill="#124da0" fontSize="12">{index === 2 ? 'Consulta' : 'Plano v2'}</text></g>)}
+        {[2, 3].map((index) => <g key={index}><line x1={x(index)} x2={x(index)} y1={top} y2={height - bottom} stroke="#9bb5d4" strokeDasharray="3 5" /><text x={x(index)} y={top - 9} textAnchor="middle" fill="#124da0" fontSize="12">{index === 2 ? 'Consulta' : 'Exame'}</text></g>)}
+        {targetPosition !== null && targetPosition >= top && targetPosition <= height - bottom ? <g><line x1={left} x2={width - right} y1={targetPosition} y2={targetPosition} stroke="#50627f" strokeDasharray="7 5" strokeWidth="1.5" /><text x={width - right} y={targetPosition - 7} textAnchor="end" fill="#50627f" fontSize="11">{metric.targetLabel ?? 'Meta demonstrativa'}</text></g> : null}
+        <polygon points={areaPoints} fill={`url(#${gradientId})`} />
         <polyline points={points} fill="none" stroke={metric.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         {metric.points.map((point, index) => <g key={point.date}><circle cx={x(index)} cy={y(point.value)} r="5" fill="white" stroke={metric.color} strokeWidth="3" /><text x={x(index)} y={height - 20} textAnchor="middle" fill="#61718a" fontSize="11">{point.date}</text></g>)}
       </svg>
-      <details className="mt-3 rounded-xl border border-[#dbe4f0] bg-[#fbfdff] p-4"><summary className="min-h-11 cursor-pointer text-sm font-bold text-[#071a3a]">Ver dados em tabela</summary><table className="mt-3 w-full text-left text-sm"><thead><tr className="border-b border-[#dbe4f0]"><th className="py-2 text-xs text-[#50627f]">Data</th><th className="py-2 text-xs text-[#50627f]">Valor</th><th className="py-2 text-xs text-[#50627f]">Fonte</th></tr></thead><tbody>{metric.points.map((point) => <tr key={point.date} className="border-b border-[#eef3f9] last:border-0"><td className="py-2 text-[#50627f]">{point.date}</td><td className="py-2 font-bold text-[#071a3a]">{formatMetricValue(point.value, metric.unit)}</td><td className="py-2 text-xs text-[#61718a]">Confirmada no mock</td></tr>)}</tbody></table></details>
+      <details className="mt-3 rounded-xl border border-[#dbe4f0] bg-[#fbfdff] p-4"><summary className="min-h-11 cursor-pointer text-sm font-bold text-[#071a3a]">Ver dados em tabela</summary><table className="mt-3 w-full text-left text-sm"><thead><tr className="border-b border-[#dbe4f0]"><th className="py-2 text-xs text-[#50627f]">Data</th><th className="py-2 text-xs text-[#50627f]">Valor</th><th className="py-2 text-xs text-[#50627f]">Fonte</th></tr></thead><tbody>{metric.points.map((point) => <tr key={point.date} className="border-b border-[#eef3f9] last:border-0"><td className="py-2 text-[#50627f]">{point.date}</td><td className="py-2 font-bold text-[#071a3a]">{formatMetricValue(point.value, metric.unit)}</td><td className="py-2 text-xs text-[#61718a]">{point.source}</td></tr>)}</tbody></table></details>
     </div>
   );
 }
@@ -740,4 +829,13 @@ function formatMetricValue(value: number, unit: string) {
 function formatAxisValue(value: number, unit: string) {
   if (unit === 'passos') return `${Math.round(value / 100) * 100}`;
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+}
+
+function getCompletenessPercent(completeness: string) {
+  const match = completeness.match(/(\d+)\s+de\s+(\d+)/i);
+  if (!match) return 0;
+  const completed = Number(match[1]);
+  const expected = Number(match[2]);
+  if (!Number.isFinite(completed) || !Number.isFinite(expected) || expected <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((completed / expected) * 100)));
 }

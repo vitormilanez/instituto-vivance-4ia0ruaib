@@ -127,11 +127,20 @@ export interface CarePlanVersion extends CarePlanDraftContent {
 }
 
 export type CareCheckInSleepQuality = 'poor' | 'regular' | 'good';
+export type CareCheckInInputMode = 'voice' | 'text';
+export type CareCheckInPlanExperience = 'easy' | 'partial' | 'difficult' | 'not-applicable';
 
 export interface CareCheckInInput {
   energy: 1 | 2 | 3 | 4 | 5;
   sleepQuality: CareCheckInSleepQuality;
   newSymptom: boolean;
+  inputMode?: CareCheckInInputMode;
+  originalText?: string;
+  aiSummary?: string[];
+  aiAssistanceAllowed?: boolean;
+  planExperience?: CareCheckInPlanExperience;
+  audioRef?: string | null;
+  audioDurationSeconds?: number | null;
 }
 
 export interface CareCheckIn extends CareCheckInInput {
@@ -139,6 +148,13 @@ export interface CareCheckIn extends CareCheckInInput {
   patientId: string;
   encounterId: string;
   version: number;
+  inputMode: CareCheckInInputMode;
+  originalText: string;
+  aiSummary: string[];
+  aiAssistanceAllowed: boolean;
+  planExperience: CareCheckInPlanExperience;
+  audioRef: string | null;
+  audioDurationSeconds: number | null;
   submittedAt: string;
   submittedAtIso: string;
 }
@@ -154,7 +170,7 @@ export interface CareCheckInReview {
   reviewedAtIso: string;
 }
 
-export type CareFollowUpCadence = 'daily' | 'three-times-week' | 'weekly';
+export type CareFollowUpCadence = 'daily' | 'every-three-days' | 'three-times-week' | 'weekly';
 
 export interface CareFollowUpConfiguration {
   id: string;

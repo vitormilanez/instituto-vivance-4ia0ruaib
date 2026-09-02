@@ -7,6 +7,7 @@ import { cn, Status } from './shared';
 
 const cadencePresentation: Record<CareFollowUpCadence, { short: string; detail: string }> = {
   daily: { short: 'Diário', detail: '1 registro por dia' },
+  'every-three-days': { short: 'A cada 3 dias', detail: 'um registro a cada três dias' },
   'three-times-week': { short: '3x por semana', detail: 'três momentos na semana' },
   weekly: { short: 'Semanal', detail: '1 registro por semana' },
 };
@@ -29,7 +30,7 @@ export function DoctorFollowUpWorkspace({
     recordFollowUpContact,
   } = useCareDemo(patientId, encounterId);
   const [selectedCadence, setSelectedCadence] = useState<CareFollowUpCadence>(
-    activeFollowUpConfiguration?.cadence ?? 'three-times-week',
+    activeFollowUpConfiguration?.cadence ?? 'every-three-days',
   );
   const [message, setMessage] = useState('');
 
