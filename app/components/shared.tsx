@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { DEFAULT_PATIENT_ID } from './demo-routes';
@@ -10,42 +11,65 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
+export function RoleSwitcher({
+  role,
+  patientId,
+  className,
+}: {
+  role: Role;
+  patientId: string;
+  className?: string;
+}) {
+  const linkClass = 'flex min-h-10 items-center justify-center rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 sm:px-3.5 sm:text-sm';
+  const patientLabel = role === 'doctor' ? 'Marina demo' : 'Paciente';
+
+  return (
+    <nav
+      aria-label="Alternar entre área médica e área do paciente"
+      className={cn('rounded-xl border border-[#dbe4f0] bg-[#edf3fb]/82 p-1 backdrop-blur', className)}
+    >
+      <Link
+        href="/medico"
+        aria-current={role === 'doctor' ? 'page' : undefined}
+        className={cn(
+          linkClass,
+          role === 'doctor'
+            ? 'bg-[#03132d] text-white shadow-[0_5px_14px_rgba(3,19,45,0.16)]'
+            : 'text-[#405675] hover:bg-white/75 hover:text-[#071a3a]',
+        )}
+      >
+        Médico
+      </Link>
+      <Link
+        href={`/paciente/${patientId}`}
+        aria-label={role === 'doctor' ? 'Abrir demonstração da paciente Marina Costa' : undefined}
+        aria-current={role === 'patient' ? 'page' : undefined}
+        className={cn(
+          linkClass,
+          role === 'patient'
+            ? 'bg-[#03132d] text-white shadow-[0_5px_14px_rgba(3,19,45,0.16)]'
+            : 'text-[#405675] hover:bg-white/75 hover:text-[#071a3a]',
+        )}
+      >
+        {patientLabel}
+      </Link>
+    </nav>
+  );
+}
+
 export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Role; patientId?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[#dfe8e3] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#0b7b68] text-sm font-bold text-white shadow-[0_8px_24px_rgba(11,123,104,0.2)]">
-            IV
-          </div>
+          <Image src="/brand/vivanse-mark.png" alt="" width={40} height={40} className="size-10 shrink-0 rounded-xl" />
           <div className="min-w-0">
-            <p className="truncate text-[17px] font-bold tracking-[-0.02em]">Instituto Vivans</p>
+            <p className="truncate text-[17px] font-bold tracking-[0.12em]">VIVANSE</p>
             <p className="hidden text-xs font-medium text-[#698078] sm:block">Cuidado contínuo</p>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex rounded-xl border border-[#dfe8e3] bg-[#f4f7f5] p-1" aria-label="Perfil de visualização">
-            <Link
-              href="/medico"
-              aria-current={role === 'doctor' ? 'page' : undefined}
-              className={cn(
-                'flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
-                role === 'doctor' ? 'bg-white text-[#17372f] shadow-sm' : 'text-[#698078] hover:text-[#17372f]'
-              )}
-            >
-              Médico
-            </Link>
-            <Link
-              href={`/paciente/${patientId}`}
-              aria-current={role === 'patient' ? 'page' : undefined}
-              className={cn(
-                'flex min-h-10 items-center rounded-lg px-3 text-xs font-semibold transition-colors sm:px-4 sm:text-sm',
-                role === 'patient' ? 'bg-white text-[#17372f] shadow-sm' : 'text-[#698078] hover:text-[#17372f]'
-              )}
-            >
-              Paciente
-            </Link>
-          </div>
+          <RoleSwitcher role={role} patientId={patientId} className="flex items-center" />
           <div className="hidden size-10 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b] sm:grid">
             {role === 'doctor' ? 'GM' : 'MC'}
           </div>
@@ -63,11 +87,11 @@ export function Status({
   tone?: 'green' | 'amber' | 'rose' | 'blue' | 'gray';
 }) {
   const tones = {
-    green: 'bg-[#e8f4f0] text-[#0b6a5b]',
-    amber: 'bg-[#fff4d8] text-[#825b0b]',
+    green: 'bg-[#e7f4ef] text-[#17624e]',
+    amber: 'bg-[#fff0ca] text-[#77500a]',
     rose: 'bg-[#fdecea] text-[#9c453f]',
-    blue: 'bg-[#edf3fb] text-[#456b9c]',
-    gray: 'bg-[#f1f5f3] text-[#526a62]',
+    blue: 'bg-[#edf3fb] text-[#124da0]',
+    gray: 'bg-[#eef2f7] text-[#50627f]',
   };
   return <span className={cn('inline-flex rounded-full px-3 py-1.5 text-xs font-bold', tones[tone])}>{children}</span>;
 }
@@ -104,7 +128,7 @@ export function Toast({ text, patient = false }: { text: string; patient?: boole
       )}
       aria-live="polite"
     >
-      {text && <div className="rounded-xl bg-[#17372f] px-4 py-3 text-sm font-semibold text-white shadow-2xl">{text}</div>}
+      {text && <div className="rounded-xl bg-[#03132d] px-4 py-3 text-sm font-semibold text-white shadow-2xl">{text}</div>}
     </div>
   );
 }

@@ -99,8 +99,8 @@ function ConsultationSourcePanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#456b9c]">Handoff consulta → plano</p>
-          <h4 id="consultation-plan-source-title" className="mt-2 text-base font-bold text-[#17372f]">Fechamento aprovado · versão {closure.version}</h4>
-          <p className="mt-1 text-xs leading-5 text-[#60766f]">Escolha o que sustenta o plano. A fonte permanece preservada; selecionar não publica nem define conduta.</p>
+          <h4 id="consultation-plan-source-title" className="mt-2 text-base font-bold text-[#071a3a]">Fechamento aprovado · versão {closure.version}</h4>
+          <p className="mt-1 text-xs leading-5 text-[#61718a]">Escolha o que sustenta o plano. A fonte permanece preservada; selecionar não publica nem define conduta.</p>
         </div>
         <Status tone="blue">{closure.items.length} itens rastreáveis</Status>
       </div>
@@ -110,19 +110,19 @@ function ConsultationSourcePanel({
           const presentation = sourceKindPresentation[item.kind];
           const isSelected = selected.has(item.id);
           return (
-            <article key={item.id} className={cn('rounded-xl border bg-white p-4', isSelected ? 'border-[#8bbcaf]' : 'border-[#dce6f2]')}>
+            <article key={item.id} className={cn('rounded-xl border bg-white p-4', isSelected ? 'border-[#8fb0d9]' : 'border-[#dce6f2]')}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Status tone={presentation.tone}>{presentation.label}</Status>
-                <span className="text-[11px] font-bold text-[#789087]">{item.sourceTime} · {item.sourceExcerptId}</span>
+                <span className="text-[11px] font-bold text-[#7890ac]">{item.sourceTime} · {item.sourceExcerptId}</span>
               </div>
-              <p className="mt-3 text-sm font-bold leading-5 text-[#17372f]">{item.title}</p>
-              <blockquote className="mt-2 border-l-2 border-[#9eb9dd] pl-3 text-xs italic leading-5 text-[#526a62]">{item.sourceQuote}</blockquote>
+              <p className="mt-3 text-sm font-bold leading-5 text-[#071a3a]">{item.title}</p>
+              <blockquote className="mt-2 border-l-2 border-[#9eb9dd] pl-3 text-xs italic leading-5 text-[#526681]">{item.sourceQuote}</blockquote>
               {presentation.eligible ? (
                 <button
                   type="button"
                   disabled={!editable || isSelected}
                   onClick={() => item.kind === 'patient-priority' ? onUseAsObjective(item) : onCreateAction(item)}
-                  className="mt-3 min-h-11 w-full cursor-pointer rounded-xl border border-[#9ccdc2] px-3 text-xs font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d7e3df] disabled:bg-[#f4f7f5] disabled:text-[#789087]"
+                  className="mt-3 min-h-11 w-full cursor-pointer rounded-xl border border-[#9bb8db] px-3 text-xs font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#dbe4f0] disabled:bg-[#f4f7fc] disabled:text-[#7890ac]"
                 >
                   {isSelected ? 'Vinculado ao plano' : !editable ? lockedActionLabel : item.kind === 'patient-priority' ? 'Usar como objetivo' : 'Criar ação em branco vinculada'}
                 </button>
@@ -154,40 +154,40 @@ function PlanActionInputs({
 }) {
   return (
     <fieldset disabled={disabled} className="mt-5">
-      <legend className="text-sm font-bold text-[#17372f]">Ações visíveis para a paciente</legend>
-      <p className="mt-1 text-xs leading-5 text-[#698078]">Escreva passos observáveis; a publicação não substitui prescrição, prontuário ou orientação de urgência.</p>
+      <legend className="text-sm font-bold text-[#071a3a]">Ações visíveis para a paciente</legend>
+      <p className="mt-1 text-xs leading-5 text-[#61718a]">Escreva passos observáveis; a publicação não substitui prescrição, prontuário ou orientação de urgência.</p>
       <div className="mt-3 space-y-3">
         {actions.map((action, index) => {
           const sourceItem = action.sourceItemId ? sourceItemsById.get(action.sourceItemId) : null;
           return (
-          <div key={action.id} className="rounded-2xl border border-[#dfe8e3] bg-[#fbfdfc] p-4">
+          <div key={action.id} className="rounded-2xl border border-[#dbe4f0] bg-[#f7faff] p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] font-bold text-[#60766f]">{sourceItem ? `Ligada à fonte: ${sourceItem.title}` : 'Ação escrita manualmente'}</p>
-              <button type="button" onClick={() => onRemove(index)} className="min-h-11 cursor-pointer rounded-xl px-3 text-xs font-bold text-[#8a3b3b] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Remover ação</button>
+              <p className="text-[11px] font-bold text-[#61718a]">{sourceItem ? `Ligada à fonte: ${sourceItem.title}` : 'Ação escrita manualmente'}</p>
+              <button type="button" onClick={() => onRemove(index)} className="min-h-11 cursor-pointer rounded-xl px-3 text-xs font-bold text-[#8a3b3b] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]">Remover ação</button>
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_190px_auto] sm:items-end">
-            <label className="block text-xs font-bold text-[#405d54]">
+            <label className="block text-xs font-bold text-[#405675]">
               Ação {index + 1}
               <input
                 value={action.title}
                 onChange={(event) => onChange(index, { title: event.target.value })}
-                className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbdcd5] bg-white px-3 text-sm font-normal text-[#17372f] outline-none focus:ring-2 focus:ring-[#0b7b68] disabled:cursor-not-allowed disabled:bg-[#f1f5f3]"
+                className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbd8e9] bg-white px-3 text-sm font-normal text-[#071a3a] outline-none focus:ring-2 focus:ring-[#124da0] disabled:cursor-not-allowed disabled:bg-[#eef2f7]"
               />
             </label>
-            <label className="block text-xs font-bold text-[#405d54]">
+            <label className="block text-xs font-bold text-[#405675]">
               Frequência ou momento
               <input
                 value={action.cadence}
                 onChange={(event) => onChange(index, { cadence: event.target.value })}
-                className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbdcd5] bg-white px-3 text-sm font-normal text-[#17372f] outline-none focus:ring-2 focus:ring-[#0b7b68] disabled:cursor-not-allowed disabled:bg-[#f1f5f3]"
+                className="mt-1.5 min-h-11 w-full rounded-xl border border-[#cbd8e9] bg-white px-3 text-sm font-normal text-[#071a3a] outline-none focus:ring-2 focus:ring-[#124da0] disabled:cursor-not-allowed disabled:bg-[#eef2f7]"
               />
             </label>
-            <label className="flex min-h-11 items-center gap-2 text-xs font-bold text-[#405d54]">
+            <label className="flex min-h-11 items-center gap-2 text-xs font-bold text-[#405675]">
               <input
                 type="checkbox"
                 checked={action.active}
                 onChange={(event) => onChange(index, { active: event.target.checked })}
-                className="size-4 accent-[#0b7b68]"
+                className="size-4 accent-[#124da0]"
               />
               Exibir
             </label>
@@ -195,9 +195,9 @@ function PlanActionInputs({
           </div>
           );
         })}
-        {actions.length === 0 ? <p className="rounded-xl border border-dashed border-[#bfd4cd] bg-white p-4 text-xs leading-5 text-[#60766f]">Nenhuma ação criada. Adicione uma ação manual ou transforme um relato aprovado em campo de decisão.</p> : null}
+        {actions.length === 0 ? <p className="rounded-xl border border-dashed border-[#cbd8e9] bg-white p-4 text-xs leading-5 text-[#61718a]">Nenhuma ação criada. Adicione uma ação manual ou transforme um relato aprovado em campo de decisão.</p> : null}
       </div>
-      <button type="button" onClick={onAddManual} className="mt-3 min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] px-4 text-xs font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Adicionar ação manual</button>
+      <button type="button" onClick={onAddManual} className="mt-3 min-h-11 cursor-pointer rounded-xl border border-[#cbd8e9] px-4 text-xs font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Adicionar ação manual</button>
     </fieldset>
   );
 }
@@ -211,24 +211,24 @@ function ReadOnlyPlan({
 }) {
   return (
     <>
-      <div className="mt-6 rounded-2xl bg-[#f4f7f5] p-5">
-        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#0b7b68]">Objetivo desta versão</p>
-        <p className="mt-2 text-base font-semibold leading-6 text-[#17372f]">{plan.objective}</p>
-        <p className="mt-3 text-sm leading-6 text-[#526a62]">{plan.introduction}</p>
+      <div className="mt-6 rounded-2xl bg-[#f4f7fc] p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#124da0]">Objetivo desta versão</p>
+        <p className="mt-2 text-base font-semibold leading-6 text-[#071a3a]">{plan.objective}</p>
+        <p className="mt-3 text-sm leading-6 text-[#526681]">{plan.introduction}</p>
       </div>
       <div className="mt-5 space-y-3">
         {plan.actions.filter((action) => action.active).map((action) => (
-          <article key={action.id} className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
-            <p className="text-sm font-bold text-[#17372f]">{action.title}</p>
-            <p className="mt-1 text-xs text-[#698078]">{action.cadence}</p>
+          <article key={action.id} className="rounded-2xl border border-[#dbe4f0] bg-white p-4">
+            <p className="text-sm font-bold text-[#071a3a]">{action.title}</p>
+            <p className="mt-1 text-xs text-[#61718a]">{action.cadence}</p>
             {action.sourceItemId && sourceItemsById.has(action.sourceItemId) ? <p className="mt-2 text-[11px] font-semibold leading-5 text-[#456b9c]">Fonte clínica vinculada e preservada no fechamento aprovado.</p> : null}
           </article>
         ))}
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <article className="rounded-2xl border border-[#dfe8e3] bg-white p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#789087]">Acompanhamento</p>
-          <p className="mt-2 text-sm leading-6 text-[#526a62]">{plan.monitoring}</p>
+        <article className="rounded-2xl border border-[#dbe4f0] bg-white p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#7890ac]">Acompanhamento</p>
+          <p className="mt-2 text-sm leading-6 text-[#526681]">{plan.monitoring}</p>
         </article>
         <article className="rounded-2xl border border-[#f0d59c] bg-[#fff8e9] p-4">
           <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#704f10]">Canal combinado</p>
@@ -290,7 +290,7 @@ export function DoctorCarePlanWorkspace({
   }, [activeReview, latestConsultationClosure, notesPresent]);
 
   if (!hydrated) {
-    return <div className="rounded-3xl border border-[#dfe8e3] bg-white p-6 text-sm text-[#60766f]">Carregando o estado demonstrativo do plano...</div>;
+    return <div className="rounded-3xl border border-[#dbe4f0] bg-white p-6 text-sm text-[#61718a]">Carregando o estado demonstrativo do plano...</div>;
   }
 
   const plan = activeCarePlan;
@@ -423,12 +423,12 @@ export function DoctorCarePlanWorkspace({
   };
 
   return (
-    <section aria-labelledby="care-plan-workspace-title" className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6">
+    <section aria-labelledby="care-plan-workspace-title" className="rounded-3xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Plano versionado</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#124da0]">Plano versionado</p>
           <h3 id="care-plan-workspace-title" className="mt-2 text-2xl font-semibold tracking-[-0.03em]">Da consulta ao plano que a paciente vê</h3>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#60766f]">Rascunhar, aprovar e publicar são ações distintas. A publicação não envia dados para prontuário ou integrações externas.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">Rascunhar, aprovar e publicar são ações distintas. A publicação não envia dados para prontuário ou integrações externas.</p>
         </div>
         <Status tone={presentation.tone}>{plan ? `v${plan.version} · ${presentation.label}` : presentation.label}</Status>
       </div>
@@ -445,39 +445,39 @@ export function DoctorCarePlanWorkspace({
           />
         </div>
       ) : (
-        <p className="mt-6 rounded-2xl border border-dashed border-[#bfd4cd] bg-[#fbfdfc] p-4 text-xs leading-5 text-[#60766f]">Nenhum fechamento de teleconsulta aprovado foi encontrado. O fluxo manual continua disponível e não depende da assistência de IA.</p>
+        <p className="mt-6 rounded-2xl border border-dashed border-[#cbd8e9] bg-[#f7faff] p-4 text-xs leading-5 text-[#61718a]">Nenhum fechamento de teleconsulta aprovado foi encontrado. O fluxo manual continua disponível e não depende da assistência de IA.</p>
       )}
 
       {!plan ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-[#bfd4cd] bg-[#fbfdfc] p-6 text-center">
-          <p className="text-sm font-bold text-[#405d54]">Ainda não há um plano para este contexto.</p>
-          <p className="mt-1 text-xs leading-5 text-[#789087]">Crie um rascunho; a fonte aprovada será ligada, mas nenhum relato será transformado automaticamente em orientação.</p>
-          <button type="button" onClick={createOrResume} className="mt-4 min-h-11 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">{handoffClosure ? 'Criar rascunho a partir do fechamento' : 'Criar rascunho manual'}</button>
+        <div className="mt-6 rounded-2xl border border-dashed border-[#cbd8e9] bg-[#f7faff] p-6 text-center">
+          <p className="text-sm font-bold text-[#405675]">Ainda não há um plano para este contexto.</p>
+          <p className="mt-1 text-xs leading-5 text-[#7890ac]">Crie um rascunho; a fonte aprovada será ligada, mas nenhum relato será transformado automaticamente em orientação.</p>
+          <button type="button" onClick={createOrResume} className="mt-4 min-h-11 cursor-pointer rounded-xl bg-[#124da0] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f3f83] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">{handoffClosure ? 'Criar rascunho a partir do fechamento' : 'Criar rascunho manual'}</button>
         </div>
       ) : (
         <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div>
-            <div className={cn('rounded-2xl border p-4', plan.status === 'published' ? 'border-[#b9d8cf] bg-[#edf7f4]' : plan.status === 'approved' ? 'border-[#c8d9e8] bg-[#f0f6fb]' : 'border-[#f0d59c] bg-[#fff8e9]')}>
-              <p className="text-sm font-bold text-[#17372f]">{presentation.label}</p>
-              <p className="mt-1 text-sm leading-6 text-[#526a62]">{presentation.description}</p>
+            <div className={cn('rounded-2xl border p-4', plan.status === 'published' ? 'border-[#c9d8ec] bg-[#edf3fb]' : plan.status === 'approved' ? 'border-[#c8d9e8] bg-[#f0f6fb]' : 'border-[#f0d59c] bg-[#fff8e9]')}>
+              <p className="text-sm font-bold text-[#071a3a]">{presentation.label}</p>
+              <p className="mt-1 text-sm leading-6 text-[#526681]">{presentation.description}</p>
             </div>
 
             {isEditable ? (
               <div className="mt-5 space-y-5">
-                <label className="block text-sm font-bold text-[#17372f]">
+                <label className="block text-sm font-bold text-[#071a3a]">
                   Nome do plano
-                  <input value={plan.title} onChange={(event) => updatePlan({ title: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-[#cbdcd5] px-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[#0b7b68]" />
+                  <input value={plan.title} onChange={(event) => updatePlan({ title: event.target.value })} className="mt-2 min-h-11 w-full rounded-xl border border-[#cbd8e9] px-3 text-sm font-normal outline-none focus:ring-2 focus:ring-[#124da0]" />
                 </label>
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label htmlFor="care-plan-objective" className="text-sm font-bold text-[#17372f]">Objetivo combinado</label>
-                    {objectiveSourceItem ? <button type="button" onClick={unlinkObjectiveSource} className="min-h-11 cursor-pointer rounded-xl px-3 text-xs font-bold text-[#8a3b3b] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Remover vínculo da fonte</button> : null}
+                    <label htmlFor="care-plan-objective" className="text-sm font-bold text-[#071a3a]">Objetivo combinado</label>
+                    {objectiveSourceItem ? <button type="button" onClick={unlinkObjectiveSource} className="min-h-11 cursor-pointer rounded-xl px-3 text-xs font-bold text-[#8a3b3b] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]">Remover vínculo da fonte</button> : null}
                   </div>
-                  <textarea id="care-plan-objective" value={plan.objective} onChange={(event) => updatePlan({ objective: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbdcd5] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#0b7b68]" />
+                  <textarea id="care-plan-objective" value={plan.objective} onChange={(event) => updatePlan({ objective: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbd8e9] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#124da0]" />
                 </div>
-                <label className="block text-sm font-bold text-[#17372f]">
+                <label className="block text-sm font-bold text-[#071a3a]">
                   Texto de abertura para a paciente
-                  <textarea value={plan.introduction} onChange={(event) => updatePlan({ introduction: event.target.value })} className="mt-2 min-h-24 w-full rounded-2xl border border-[#cbdcd5] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#0b7b68]" />
+                  <textarea value={plan.introduction} onChange={(event) => updatePlan({ introduction: event.target.value })} className="mt-2 min-h-24 w-full rounded-2xl border border-[#cbd8e9] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#124da0]" />
                 </label>
                 <PlanActionInputs
                   actions={plan.actions}
@@ -488,21 +488,21 @@ export function DoctorCarePlanWorkspace({
                   onRemove={removeAction}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block text-sm font-bold text-[#17372f]">
+                  <label className="block text-sm font-bold text-[#071a3a]">
                     Como acompanhar
-                    <textarea value={plan.monitoring} onChange={(event) => updatePlan({ monitoring: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbdcd5] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#0b7b68]" />
+                    <textarea value={plan.monitoring} onChange={(event) => updatePlan({ monitoring: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbd8e9] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#124da0]" />
                   </label>
-                  <label className="block text-sm font-bold text-[#17372f]">
+                  <label className="block text-sm font-bold text-[#071a3a]">
                     Mensagem sobre o canal combinado
-                    <textarea value={plan.supportNotice} onChange={(event) => updatePlan({ supportNotice: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbdcd5] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#0b7b68]" />
+                    <textarea value={plan.supportNotice} onChange={(event) => updatePlan({ supportNotice: event.target.value })} className="mt-2 min-h-28 w-full rounded-2xl border border-[#cbd8e9] p-3 text-sm font-normal leading-6 outline-none focus:ring-2 focus:ring-[#124da0]" />
                   </label>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <button type="button" onClick={() => { updatePlan({}); onNotify(`Rascunho da versão ${plan.version} salvo nesta sessão.`); }} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Salvar rascunho</button>
-                  <button type="button" onClick={approve} className="min-h-11 cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0b6a5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Aprovar versão {plan.version}</button>
+                  <button type="button" onClick={() => { updatePlan({}); onNotify(`Rascunho da versão ${plan.version} salvo nesta sessão.`); }} className="min-h-11 cursor-pointer rounded-xl border border-[#cbd8e9] px-5 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Salvar rascunho</button>
+                  <button type="button" onClick={approve} className="min-h-11 cursor-pointer rounded-xl bg-[#03132d] px-5 text-sm font-bold text-white transition-colors hover:bg-[#124da0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Aprovar versão {plan.version}</button>
                 </div>
-                <details className="rounded-2xl border border-[#dfe8e3] bg-[#f8faf9] p-4">
-                  <summary className="cursor-pointer text-sm font-bold text-[#405d54] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68]">Ver prévia da paciente antes de aprovar</summary>
+                <details className="rounded-2xl border border-[#dbe4f0] bg-[#f7faff] p-4">
+                  <summary className="cursor-pointer text-sm font-bold text-[#405675] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]">Ver prévia da paciente antes de aprovar</summary>
                   <ReadOnlyPlan plan={plan} sourceItemsById={sourceItemsById} />
                 </details>
               </div>
@@ -511,43 +511,43 @@ export function DoctorCarePlanWorkspace({
                 <ReadOnlyPlan plan={plan} sourceItemsById={sourceItemsById} />
                 <div className="mt-6 flex flex-wrap gap-3">
                   {plan.status === 'approved' ? (
-                    <button type="button" onClick={publish} className="min-h-11 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Publicar versão {plan.version} para a paciente</button>
+                    <button type="button" onClick={publish} className="min-h-11 cursor-pointer rounded-xl bg-[#124da0] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f3f83] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Publicar versão {plan.version} para a paciente</button>
                   ) : null}
-                  <button type="button" onClick={createRevision} className="min-h-11 cursor-pointer rounded-xl border border-[#bfd4cd] px-5 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Criar nova versão</button>
-                  <button type="button" onClick={onContinue} className="min-h-11 cursor-pointer rounded-xl px-5 text-sm font-bold text-[#405d54] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2">Revisar fechamento</button>
+                  <button type="button" onClick={createRevision} className="min-h-11 cursor-pointer rounded-xl border border-[#cbd8e9] px-5 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Criar nova versão</button>
+                  <button type="button" onClick={onContinue} className="min-h-11 cursor-pointer rounded-xl px-5 text-sm font-bold text-[#405675] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Revisar fechamento</button>
                 </div>
               </>
             )}
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-2xl bg-[#17372f] p-5 text-white">
+            <section className="rounded-2xl bg-[#03132d] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#9cc7ba]">Origem desta versão</p>
               <p className="mt-3 text-sm font-semibold leading-6">{plan.sourceDescription}</p>
-              <p className="mt-3 text-xs leading-5 text-[#c9e4dd]">{plan.sourceMode === 'assisted' ? 'A organização assistida é uma referência revisável; a autoria e a decisão permanecem médicas.' : 'Esta versão começou no fluxo manual do protótipo.'}</p>
-              {plan.sourceReviewId ? <p className="mt-3 break-all text-[11px] text-[#b8d3cb]">Fonte ligada: {plan.sourceReviewId}</p> : null}
-              {plan.sourceClosureId ? <p className="mt-2 break-all text-[11px] text-[#b8d3cb]">Fechamento ligado: {plan.sourceClosureId} · {plan.sourceItemIds.length} {plan.sourceItemIds.length === 1 ? 'item usado' : 'itens usados'}</p> : null}
+              <p className="mt-3 text-xs leading-5 text-[#cfe0f4]">{plan.sourceMode === 'assisted' ? 'A organização assistida é uma referência revisável; a autoria e a decisão permanecem médicas.' : 'Esta versão começou no fluxo manual do protótipo.'}</p>
+              {plan.sourceReviewId ? <p className="mt-3 break-all text-[11px] text-[#b7c9df]">Fonte ligada: {plan.sourceReviewId}</p> : null}
+              {plan.sourceClosureId ? <p className="mt-2 break-all text-[11px] text-[#b7c9df]">Fechamento ligado: {plan.sourceClosureId} · {plan.sourceItemIds.length} {plan.sourceItemIds.length === 1 ? 'item usado' : 'itens usados'}</p> : null}
             </section>
             {plan ? (
-              <section className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-                <h4 className="text-sm font-bold text-[#17372f]">Diferenças da versão anterior</h4>
+              <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5">
+                <h4 className="text-sm font-bold text-[#071a3a]">Diferenças da versão anterior</h4>
                 <ul className="mt-3 space-y-2">
-                  {changeSummary.map((change) => <li key={change} className="flex gap-2 text-xs leading-5 text-[#60766f]"><span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-[#0b7b68]" />{change}</li>)}
+                  {changeSummary.map((change) => <li key={change} className="flex gap-2 text-xs leading-5 text-[#61718a]"><span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-[#124da0]" />{change}</li>)}
                 </ul>
               </section>
             ) : null}
-            <section className="rounded-2xl border border-[#dfe8e3] bg-white p-5">
-              <div className="flex items-center justify-between gap-3"><h4 className="text-sm font-bold text-[#17372f]">Histórico de versões</h4><Status tone="gray">{carePlans.length}</Status></div>
+            <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5">
+              <div className="flex items-center justify-between gap-3"><h4 className="text-sm font-bold text-[#071a3a]">Histórico de versões</h4><Status tone="gray">{carePlans.length}</Status></div>
               <ol className="mt-4 space-y-3">
                 {[...carePlans].reverse().map((version) => (
-                  <li key={version.id} className={cn('rounded-xl border p-3', version.id === plan.id ? 'border-[#9fc9bd] bg-[#edf7f4]' : 'border-[#e0e9e4] bg-[#fbfdfc]')}>
-                    <div className="flex items-start justify-between gap-2"><p className="text-xs font-bold text-[#17372f]">Versão {version.version}</p><Status tone={statusPresentation[version.status].tone}>{statusPresentation[version.status].label}</Status></div>
-                    <p className="mt-2 text-xs leading-5 text-[#60766f]">{version.status === 'published' ? `Publicada em ${version.publishedAt}` : version.status === 'approved' ? `Aprovada em ${version.approvedAt}` : version.status === 'superseded' ? `Substituída pela versão ${version.supersededByVersion}` : `Atualizada em ${version.updatedAt}`}</p>
+                  <li key={version.id} className={cn('rounded-xl border p-3', version.id === plan.id ? 'border-[#9bb8db] bg-[#edf3fb]' : 'border-[#dbe4f0] bg-[#f7faff]')}>
+                    <div className="flex items-start justify-between gap-2"><p className="text-xs font-bold text-[#071a3a]">Versão {version.version}</p><Status tone={statusPresentation[version.status].tone}>{statusPresentation[version.status].label}</Status></div>
+                    <p className="mt-2 text-xs leading-5 text-[#61718a]">{version.status === 'published' ? `Publicada em ${version.publishedAt}` : version.status === 'approved' ? `Aprovada em ${version.approvedAt}` : version.status === 'superseded' ? `Substituída pela versão ${version.supersededByVersion}` : `Atualizada em ${version.updatedAt}`}</p>
                   </li>
                 ))}
               </ol>
             </section>
-            {latestPublishedCarePlan ? <p className="rounded-xl border border-[#b9d8cf] bg-[#edf7f4] p-4 text-xs leading-5 text-[#0b6a5b]">A paciente vê a versão {latestPublishedCarePlan.version} publicada em {latestPublishedCarePlan.publishedAt}.</p> : <p className="rounded-xl border border-dashed border-[#bfd4cd] bg-[#fbfdfc] p-4 text-xs leading-5 text-[#60766f]">Nenhuma versão foi publicada para a paciente neste contexto.</p>}
+            {latestPublishedCarePlan ? <p className="rounded-xl border border-[#c9d8ec] bg-[#edf3fb] p-4 text-xs leading-5 text-[#124da0]">A paciente vê a versão {latestPublishedCarePlan.version} publicada em {latestPublishedCarePlan.publishedAt}.</p> : <p className="rounded-xl border border-dashed border-[#cbd8e9] bg-[#f7faff] p-4 text-xs leading-5 text-[#61718a]">Nenhuma versão foi publicada para a paciente neste contexto.</p>}
           </aside>
         </div>
       )}

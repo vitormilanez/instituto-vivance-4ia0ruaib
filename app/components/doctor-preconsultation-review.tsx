@@ -81,7 +81,7 @@ export function PreConsultationReviewWorkspace({
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <section className="rounded-3xl border border-[#dfe8e3] bg-white p-5 sm:p-6" aria-labelledby="source-title">
+      <section className="rounded-3xl border border-[#dbe4f0] bg-white p-5 sm:p-6" aria-labelledby="source-title">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <ClinicalLayerBadge layer="relato" />
@@ -89,28 +89,28 @@ export function PreConsultationReviewWorkspace({
           </div>
           <Status tone="gray">Versão {latestSubmission.version}</Status>
         </div>
-        <p className="mt-3 text-xs leading-5 text-[#698078]">
+        <p className="mt-3 text-xs leading-5 text-[#61718a]">
           Enviada em {latestSubmission.submittedAt} · ciência {latestSubmission.consentVersion}
         </p>
-        <dl className="mt-5 space-y-4 text-sm leading-6 text-[#526a62]">
-          <div className="rounded-2xl bg-[#f4f7f5] p-4">
-            <dt className="font-bold text-[#17372f]">Objetivo principal</dt>
+        <dl className="mt-5 space-y-4 text-sm leading-6 text-[#526681]">
+          <div className="rounded-2xl bg-[#f4f7fc] p-4">
+            <dt className="font-bold text-[#071a3a]">Objetivo principal</dt>
             <dd className="mt-1 whitespace-pre-wrap">{latestSubmission.objective}</dd>
           </div>
           <div>
-            <dt className="font-bold text-[#17372f]">Mudanças recentes</dt>
+            <dt className="font-bold text-[#071a3a]">Mudanças recentes</dt>
             <dd className="mt-1 whitespace-pre-wrap">{latestSubmission.changes}</dd>
           </div>
           <div>
-            <dt className="font-bold text-[#17372f]">Dúvidas</dt>
+            <dt className="font-bold text-[#071a3a]">Dúvidas</dt>
             <dd className="mt-1 whitespace-pre-wrap">{latestSubmission.questions || 'Não informado.'}</dd>
           </div>
           <div>
-            <dt className="font-bold text-[#17372f]">Contexto adicional</dt>
+            <dt className="font-bold text-[#071a3a]">Contexto adicional</dt>
             <dd className="mt-1 whitespace-pre-wrap">{latestSubmission.additionalContext || 'Não informado.'}</dd>
           </div>
         </dl>
-        <p className="mt-5 border-t border-[#e7eeea] pt-4 text-xs leading-5 text-[#698078]">
+        <p className="mt-5 border-t border-[#e7eeea] pt-4 text-xs leading-5 text-[#61718a]">
           Esta fonte permanece íntegra mesmo quando um rascunho é editado ou rejeitado.
         </p>
       </section>
@@ -122,7 +122,7 @@ export function PreConsultationReviewWorkspace({
             <h3 id="review-title" className="mt-3 text-xl font-semibold">Workspace de revisão médica</h3>
           </div>
           {activeReview && (
-            <Status tone={status === 'approved' ? 'green' : status === 'rejected' ? 'rose' : 'amber'}>
+            <Status tone={status === 'approved' ? 'blue' : status === 'rejected' ? 'rose' : 'amber'}>
               {status === 'approved' ? 'Preparo aprovado' : status === 'rejected' ? 'Rascunho rejeitado' : 'Em revisão'} · v{activeReview.version}
             </Status>
           )}
@@ -130,7 +130,7 @@ export function PreConsultationReviewWorkspace({
 
         {!activeReview ? (
           <>
-            <p className="mt-5 text-sm leading-6 text-[#526a62]">
+            <p className="mt-5 text-sm leading-6 text-[#526681]">
               {latestSubmission.structuredDraft
                 ? 'Abra uma cópia revisável da organização assistida. O relato original continuará separado.'
                 : 'A paciente não autorizou IA. Abra uma preparação manual criada somente a partir das respostas originais.'}
@@ -138,17 +138,17 @@ export function PreConsultationReviewWorkspace({
             <button
               type="button"
               onClick={beginReview}
-              className="mt-5 min-h-12 cursor-pointer rounded-xl bg-[#17372f] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f2d26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2"
+              className="mt-5 min-h-12 cursor-pointer rounded-xl bg-[#03132d] px-5 text-sm font-bold text-white transition-colors hover:bg-[#082553] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2"
             >
               Iniciar revisão médica
             </button>
           </>
         ) : (
           <>
-            <label htmlFor="preconsultation-review" className="mt-5 block text-sm font-bold text-[#17372f]">
+            <label htmlFor="preconsultation-review" className="mt-5 block text-sm font-bold text-[#071a3a]">
               Conteúdo preparado para a consulta
             </label>
-            <p id="preconsultation-review-helper" className="mt-1 text-xs leading-5 text-[#698078]">
+            <p id="preconsultation-review-helper" className="mt-1 text-xs leading-5 text-[#61718a]">
               Edite livremente. Aprovar este conteúdo não publica um plano nem altera o relato original.
             </p>
             <textarea
@@ -162,11 +162,11 @@ export function PreConsultationReviewWorkspace({
               maxLength={3000}
               aria-describedby={`preconsultation-review-helper${error && !showRejection ? ' preconsultation-review-error' : ''}`}
               aria-invalid={Boolean(error && !showRejection)}
-              className="mt-3 min-h-64 w-full rounded-2xl border border-[#b8cce5] bg-white p-4 text-sm leading-6 text-[#17372f] outline-none transition-colors focus:border-[#5578a9] focus:ring-3 focus:ring-[#c9d8ec] read-only:bg-[#f1f4f8] read-only:text-[#526a62]"
+              className="mt-3 min-h-64 w-full rounded-2xl border border-[#b8cce5] bg-white p-4 text-sm leading-6 text-[#071a3a] outline-none transition-colors focus:border-[#5578a9] focus:ring-3 focus:ring-[#c9d8ec] read-only:bg-[#f1f4f8] read-only:text-[#526681]"
             />
             <div className="mt-2 flex min-h-6 items-start justify-between gap-3">
               <span id="preconsultation-review-error" role={error && !showRejection ? 'alert' : undefined} className="text-sm font-semibold text-[#9c453f]">{showRejection ? '' : error}</span>
-              <span className="shrink-0 text-xs text-[#698078]">{activeReview.content.length}/3000</span>
+              <span className="shrink-0 text-xs text-[#61718a]">{activeReview.content.length}/3000</span>
             </div>
 
             {status === 'draft' && (
@@ -186,7 +186,7 @@ export function PreConsultationReviewWorkspace({
                     <button
                       type="button"
                       onClick={approveReview}
-                      className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2"
+                      className="min-h-12 cursor-pointer rounded-xl bg-[#124da0] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f3f83] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2"
                     >
                       Aprovar para uso na consulta
                     </button>
@@ -219,8 +219,8 @@ export function PreConsultationReviewWorkspace({
             )}
 
             {status === 'approved' && (
-              <div className="mt-5 rounded-2xl border border-[#b9d8cf] bg-[#edf7f4] p-4 text-sm leading-6 text-[#45655c]">
-                <p className="font-bold text-[#0b6a5b]">Aprovado por {activeReview.reviewedBy}</p>
+              <div className="mt-5 rounded-2xl border border-[#c9d8ec] bg-[#edf3fb] p-4 text-sm leading-6 text-[#405675]">
+                <p className="font-bold text-[#124da0]">Aprovado por {activeReview.reviewedBy}</p>
                 <p className="mt-1">{activeReview.reviewedAt} · válido somente como preparo desta consulta.</p>
               </div>
             )}
@@ -236,7 +236,7 @@ export function PreConsultationReviewWorkspace({
               <button
                 type="button"
                 onClick={beginReview}
-                className="mt-4 min-h-11 cursor-pointer rounded-xl border border-[#9ccdc2] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2"
+                className="mt-4 min-h-11 cursor-pointer rounded-xl border border-[#9bb8db] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2"
               >
                 Criar nova versão de revisão
               </button>
@@ -251,12 +251,12 @@ export function PreConsultationReviewWorkspace({
         </div>
 
         {reviewHistory.length > 1 && (
-          <details className="mt-4 rounded-2xl border border-[#d7e3df] bg-white p-4">
-            <summary className="cursor-pointer text-sm font-bold text-[#0b6a5b]">Histórico de revisão ({reviewHistory.length} versões)</summary>
+          <details className="mt-4 rounded-2xl border border-[#dbe4f0] bg-white p-4">
+            <summary className="cursor-pointer text-sm font-bold text-[#124da0]">Histórico de revisão ({reviewHistory.length} versões)</summary>
             <ol className="mt-4 space-y-3">
               {[...reviewHistory].reverse().map((review) => (
-                <li key={review.id} className="rounded-xl bg-[#f4f7f5] p-3 text-xs leading-5 text-[#526a62]">
-                  <strong className="text-[#17372f]">Versão {review.version}</strong> · {review.status === 'approved' ? 'aprovada' : review.status === 'rejected' ? 'rejeitada' : 'em revisão'} · {review.updatedAt}
+                <li key={review.id} className="rounded-xl bg-[#f4f7fc] p-3 text-xs leading-5 text-[#526681]">
+                  <strong className="text-[#071a3a]">Versão {review.version}</strong> · {review.status === 'approved' ? 'aprovada' : review.status === 'rejected' ? 'rejeitada' : 'em revisão'} · {review.updatedAt}
                 </li>
               ))}
             </ol>

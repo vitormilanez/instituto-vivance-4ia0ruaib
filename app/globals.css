@@ -1,8 +1,19 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #f4f7f5;
-  --foreground: #17372f;
+  --background: #f6f9fe;
+  --foreground: #071a3a;
+  --vivanse-navy: #03132d;
+  --vivanse-navy-soft: #082553;
+  --vivanse-blue: #124da0;
+  --vivanse-blue-soft: #edf3fb;
+  --vivanse-border: #dbe4f0;
+  --doctor-topbar-expanded-height: 80px;
+  --doctor-topbar-compact-height: 56px;
+  --doctor-nav-height: 60px;
+  --doctor-chrome-expanded-height: 80px;
+  --doctor-chrome-compact-height: 56px;
+  --doctor-chrome-current-height: var(--doctor-chrome-expanded-height);
 }
 
 @theme inline {
@@ -32,17 +43,245 @@ body {
   font-family: var(--font-playfair-display), Georgia, 'Times New Roman', serif;
 }
 
+::selection {
+  background: #edf3fb;
+  color: #03132d;
+}
+
+.vivanse-app-shell {
+  background: #f6f9fe;
+  padding-bottom: calc(var(--doctor-nav-height) + 32px + env(safe-area-inset-bottom));
+}
+
+.vivanse-app-shell:has(.doctor-chrome[data-collapsed='true']) {
+  --doctor-chrome-current-height: var(--doctor-chrome-compact-height);
+}
+
+.vivanse-sidebar-surface {
+  background: #03132d;
+}
+
+.vivanse-glass-bar {
+  border-bottom: 1px solid #dbe4f0;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 12px 32px color-mix(in srgb, #03132d 5%, transparent);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+.doctor-chrome {
+  height: var(--doctor-chrome-expanded-height);
+  isolation: isolate;
+}
+
+.doctor-chrome-surface {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-bottom: 1px solid var(--vivanse-border);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--vivanse-navy) 5%, transparent);
+  clip-path: inset(0 0 0 0);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  transition: clip-path 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doctor-chrome-top {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--doctor-topbar-expanded-height);
+}
+
+.doctor-chrome-brand {
+  background: var(--vivanse-navy);
+}
+
+.doctor-chrome-title-block,
+.doctor-chrome-actions,
+.doctor-chrome-navigation,
+.doctor-chrome-context,
+.doctor-chrome-mobile-mark,
+.doctor-chrome-expanded-only,
+.doctor-chrome-compact-only {
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doctor-chrome-title-block,
+.doctor-chrome-actions,
+.doctor-chrome-navigation,
+.doctor-chrome-mobile-mark {
+  transition-property: transform, opacity, visibility;
+}
+
+.doctor-chrome-context,
+.doctor-chrome-expanded-only,
+.doctor-chrome-compact-only {
+  transition-property: transform, opacity, visibility;
+}
+
+.doctor-chrome-navigation {
+  position: fixed;
+  inset: auto 0 calc(12px + env(safe-area-inset-bottom));
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding-inline: 12px;
+  visibility: visible;
+  opacity: 1;
+}
+
+.floating-navigation-glass {
+  border: 1px solid rgba(169, 191, 219, 0.72);
+  background: rgba(246, 249, 254, 0.72);
+  box-shadow: 0 16px 42px rgba(3, 19, 45, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+}
+
+.patient-bottom-navigation {
+  position: fixed;
+  inset: auto 0 calc(12px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  padding-inline: 12px;
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition-property: transform, opacity, visibility;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.patient-bottom-navigation[data-visible='false'] {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(calc(100% + 28px));
+  pointer-events: none;
+}
+
+.doctor-chrome-compact-only {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-surface {
+  clip-path: inset(0 0 calc(var(--doctor-topbar-expanded-height) - var(--doctor-topbar-compact-height)) 0);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-title-block {
+  transform: translateY(-12px) scale(0.91);
+  transform-origin: left center;
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-actions {
+  transform: translateY(-12px);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-navigation {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(calc(100% + 28px));
+  pointer-events: none;
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-context,
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-mobile-mark,
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-expanded-only {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-compact-only {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.doctor-sticky-offset {
+  transition-property: top, height;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#main-content {
+  scroll-margin-top: calc(var(--doctor-chrome-current-height) + 16px);
+}
+
+.vivanse-glass-menu {
+  border: 1px solid color-mix(in srgb, #124da0 28%, transparent);
+  background: color-mix(in srgb, #082553 62%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.vivanse-glass-menu-active {
+  border-color: color-mix(in srgb, #124da0 52%, transparent);
+  background: color-mix(in srgb, #082553 88%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, #03132d 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.vivanse-panel {
+  border: 1px solid #dbe4f0;
+  background: #ffffff;
+  box-shadow: 0 14px 36px color-mix(in srgb, #03132d 5.5%, transparent);
+}
+
+.vivanse-primary-action {
+  background: linear-gradient(135deg, #03132d, #082553);
+  box-shadow: 0 12px 24px rgba(3, 19, 45, 0.2);
+}
+
+.vivanse-primary-action:hover {
+  background: #082553;
+}
+
+#doctor-workspace-content :where(a, button, summary, select, input, textarea):focus-visible {
+  outline: 2px solid #124da0;
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .vivanse-sidebar-surface {
+    min-height: 76px;
+  }
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 
 #patient-longitudinal-workspace :where(a, button, summary, select, input):focus-visible {
-  outline: 2px solid #0b7b68;
+  outline: 2px solid #124da0;
   outline-offset: 2px;
 }
 
+* {
+  scrollbar-color: #9bb5d4 #eef3f9;
+  scrollbar-width: thin;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .doctor-chrome-surface,
+  .doctor-chrome-title-block,
+  .doctor-chrome-actions,
+  .doctor-chrome-navigation,
+  .doctor-chrome-context,
+  .doctor-chrome-mobile-mark,
+  .doctor-chrome-expanded-only,
+  .doctor-chrome-compact-only,
+  .doctor-sticky-offset,
+  .patient-bottom-navigation {
+    transition: none !important;
+  }
+
   *,
   *::before,
   *::after {

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { DEFAULT_PATIENT_ID } from './demo-routes';
+import { DoctorChrome } from './doctor-chrome';
 import { RoleHeader, type Role } from './shared';
 
 export function WorkspaceShell({
@@ -12,14 +13,14 @@ export function WorkspaceShell({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f4f7f5] text-[#17372f]">
+    <div className={role === 'doctor' ? 'vivanse-app-shell min-h-screen text-[#071a3a]' : 'min-h-screen bg-[#f4f7f5] text-[#17372f]'}>
       <a
         href="#main-content"
-        className="sr-only z-[90] rounded-lg bg-[#17372f] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-[90] rounded-lg bg-[#061b3e] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         Ir para o conteúdo
       </a>
-      <RoleHeader role={role} patientId={patientId} />
+      {role === 'doctor' ? <DoctorChrome patientId={patientId} /> : <RoleHeader role={role} patientId={patientId} />}
       {children}
     </div>
   );

@@ -6,6 +6,12 @@ export type ClinicalRouteMode = 'workspace' | 'pre-consultation' | 'consultation
 export const DEFAULT_PATIENT_ID = 'pac-demo-001';
 export const DEFAULT_ENCOUNTER_ID = 'enc-demo-002';
 
+export const doctorDemoCohortSummary = {
+  activePatients: 22,
+  checkInsOnTime: 17,
+  checkInsToReview: 5,
+} as const;
+
 export const doctorNavigation: Array<{ label: DoctorView; href: string; section?: string }> = [
   { label: 'Visão geral', href: '/medico' },
   { label: 'Agenda', href: '/medico/agenda', section: 'agenda' },
@@ -47,6 +53,14 @@ export function getDefaultEncounterId(patientId: string) {
 
 export function getDoctorView(section: string): DoctorView | null {
   return doctorNavigation.find((item) => item.section === section)?.label ?? null;
+}
+
+export function getDoctorViewFromPathname(pathname: string): DoctorView {
+  if (pathname.includes('/mensagens')) return 'Mensagens';
+  if (pathname.startsWith('/medico/agenda')) return 'Agenda';
+  if (pathname.startsWith('/medico/relatorios')) return 'Relatórios';
+  if (pathname.startsWith('/medico/pacientes')) return 'Pacientes';
+  return 'Visão geral';
 }
 
 export function getPatientView(section: string): PatientView | null {

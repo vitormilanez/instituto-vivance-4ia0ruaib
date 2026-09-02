@@ -1,4 +1,4 @@
-# Product
+# Produto
 
 <!-- impeccable:product-schema 1 -->
 
@@ -13,13 +13,13 @@ web
 
 ## Product Purpose
 
-O Instituto Vivans organiza o ciclo longitudinal `coleta -> sintese -> revisao medica -> orientacao -> acompanhamento`. O produto deve reduzir o tempo necessário para o profissional compreender o contexto de uma pessoa, revisar as fontes e preparar a próxima conversa, mantendo todas as decisões clínicas sob responsabilidade humana.
+A VIVANSE organiza o cuidado ao longo do tempo: `coleta -> resumo -> revisão médica -> orientação -> acompanhamento`. O produto deve reduzir o tempo necessário para o profissional entender o contexto de uma pessoa, revisar as fontes e preparar a próxima conversa, mantendo todas as decisões clínicas sob responsabilidade humana.
 
 O sucesso da área profissional é permitir que o médico identifique rapidamente quem está sendo acompanhado, o que mudou, o que precisa de revisão, quais fontes sustentam a informação e qual ação humana pode ser tomada em seguida.
 
 ## Positioning
 
-O produto não tenta substituir o prontuário ou automatizar condutas. Ele combina contexto pré-consulta, evolução longitudinal e rascunhos rastreáveis em um workspace de revisão médica no qual o original permanece acessível ao lado de qualquer derivado.
+O produto não tenta substituir o prontuário ou automatizar decisões médicas. Ele combina contexto antes da consulta, histórico, evolução e rascunhos rastreáveis em uma área de revisão na qual o material original permanece acessível.
 
 ## Operating Context
 
@@ -40,8 +40,9 @@ O produto não tenta substituir o prontuário ou automatizar condutas. Ele combi
 
 ## Brand Commitments
 
-- Nome público: Instituto Vivans.
-- Identidade atual preservada: verde institucional, superfícies claras, linguagem acolhedora e sóbria, controles arredondados e hierarquia orientada à leitura.
+- Nome público: VIVANSE.
+- Identidade: azul-marinho, branco, azul-claro em pontos de orientação e dourado restrito ao logo.
+- Menus e barras podem usar transparência semelhante a vidro quando isso ajuda a separar navegação e conteúdo; o restante permanece claro e simples.
 - A interface profissional deve parecer confiável, elegante e funcional; expressão visual não pode competir com tarefa, estado ou evidência.
 
 ## Evidence on Hand
