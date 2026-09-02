@@ -289,11 +289,8 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
         </div>
       </div>
 
-      <div className="doctor-chrome-navigation grid lg:grid-cols-[252px_minmax(0,1fr)]">
-        <div className="doctor-chrome-nav-rail hidden items-center px-5 text-xs font-semibold uppercase tracking-[0.12em] text-[#9db5d2] lg:flex">
-          Área médica
-        </div>
-        <nav aria-label="Navegação principal do médico" className="grid min-w-0 grid-cols-5 items-stretch px-1 sm:px-2 md:flex md:items-center md:gap-1 md:px-5 lg:px-7">
+      <div className="doctor-chrome-navigation pointer-events-none">
+        <nav aria-label="Navegação principal do médico" className="floating-navigation-glass pointer-events-auto grid w-full max-w-[720px] grid-cols-5 items-stretch gap-1 rounded-[22px] p-1.5">
           {doctorNavigation.map((item) => {
             const Icon = navigationIcons[item.label];
             const active = item.label === activeView;
@@ -303,8 +300,8 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'pointer-events-auto flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:shrink-0 md:flex-row md:gap-2 md:rounded-xl md:px-4 md:text-sm',
-                  active ? 'bg-[#061b3e] text-white' : 'text-[#50627f] hover:bg-[#edf3fb] hover:text-[#071a3a]',
+                  'pointer-events-auto flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:flex-row md:gap-2 md:px-3 md:text-xs',
+                  active ? 'bg-[#061b3e]/92 text-white shadow-[0_7px_18px_rgba(3,19,45,0.18)]' : 'text-[#405675] hover:bg-white/70 hover:text-[#071a3a]',
                 )}
               >
                 <Icon aria-hidden="true" size={15} weight={active ? 'fill' : 'regular'} className="shrink-0" />

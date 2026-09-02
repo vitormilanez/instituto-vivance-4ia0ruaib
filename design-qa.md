@@ -77,29 +77,33 @@ final result: passed
 
 ---
 
-# Conferência visual — cabeçalho recolhível e navegação persistente
+# Conferência visual — cabeçalho recolhível e navegação inferior
 
 ## Evidências
 
-- Cabeçalho completo e menu em cinco colunas no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-collapsible-header-mobile-2026-09-02.png`
-- Cabeçalho compacto e navegação persistente no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-collapsible-header-desktop-compact-2026-09-02.png`
+- Barra inferior flutuante no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-floating-bottom-navigation-mobile-2026-09-02.png`
+- Barra inferior flutuante no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-floating-bottom-navigation-desktop-2026-09-02.png`
+- Barra inferior da paciente no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-floating-bottom-navigation-mobile-2026-09-02.png`
+- Barra inferior da paciente no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-floating-bottom-navigation-desktop-2026-09-02.png`
 
 ## Comportamento validado
 
 - No topo, o cabeçalho mostra título, contexto da rota, próxima ação, troca de área, notificações e perfil conforme o espaço disponível.
-- Após `32 px` acumulados de rolagem para baixo e além de `96 px` da página, contexto, carteira, perfil e ações secundárias saem; título, “Atender” e a navegação permanecem.
-- Com `16 px` acumulados para cima ou retorno ao topo, o cabeçalho expande novamente.
-- O contêiner preserva a altura de `136 px`; o modo compacto usa recorte, movimento e transparência para chegar a `112 px` visuais sem alterar o fluxo do documento.
-- O menu fica em uma faixa própria abaixo do cabeçalho. Em `320 px`, os cinco itens medem cerca de `62 px`, usam ícones de `15 px`, rótulos de `10 px` e ocupam exatamente a largura disponível: `nav.scrollWidth === nav.clientWidth === 320`.
+- Após `32 px` acumulados de rolagem para baixo e além de `96 px` da página, contexto, carteira, perfil e ações secundárias saem; título e “Atender” permanecem. A barra inferior desliza para fora da tela e fica indisponível para clique.
+- Com `16 px` acumulados para cima ou retorno ao topo, o cabeçalho expande e a barra inferior reaparece.
+- O cabeçalho preserva `80 px` no fluxo; o modo compacto usa recorte, movimento e transparência para chegar a `56 px` visuais sem alterar o fluxo do documento.
+- O menu fica flutuante no rodapé, com `12 px` de respiro. Em `320 px`, ocupa `295 px`, usa cinco colunas, ícones de `15 px`, rótulos de `10 px` e não cria rolagem lateral.
+- A superfície usa branco a `72%`, desfoque de `20 px` e saturação discreta para produzir vidro sem esconder o conteúdo.
+- A área da paciente usa o mesmo comportamento com quatro destinos e uma única navegação: `295 px` em `320 px` e `600 px` em `1440 px`. O item “Meu cuidado” abriu `/paciente/pac-demo-001/cuidado` e permaneceu marcado como atual.
 - O menu móvel mantém “Abrir área da Marina”, notificações e identificação do médico; aberto em `320 px`, permanece entre `x=48` e `x=304`.
 - Nas rotas internas, o título e o botão voltar acompanham o contexto. `/medico/pacientes/pac-demo-001/mensagens` mantém “Mensagens” como item ativo.
-- O menu lateral e os demais blocos presos acompanham suavemente a altura visível do cabeçalho, sem sobreposição: `136 px` expandido e `112 px` compacto.
+- O menu lateral e os demais blocos presos acompanham suavemente a altura visível do cabeçalho, sem sobreposição: `80 px` expandido e `56 px` compacto.
 
 ## Medidas
 
 - Sem rolagem lateral estrutural em `320`, `375`, `768`, `1024` e `1440` px.
 - Celular: a altura do documento permaneceu em `1678 px` durante a troca de estado.
-- Computador: a altura do documento permaneceu em `1424 px`; o menu ficou em `top=56 px`. Em `1440 px`, o bloco preso ficou em `top=136 px` expandido, `top=112 px` compacto e voltou a `top=136 px` ao rolar para cima.
+- Computador: a barra fica centralizada com largura máxima de `720 px`. Os blocos presos acompanham `top=80 px` expandido e `top=56 px` compacto.
 - A transição usa `requestAnimationFrame`, listener passivo e `180ms`; com movimento reduzido, não há transição.
 
 final result: passed

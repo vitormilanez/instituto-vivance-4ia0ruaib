@@ -1,5 +1,6 @@
 'use client';
 
+import { ChartLineUp, ChatCircle, Heart, House } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -64,6 +65,68 @@ const conversationContextLabel: Record<CareConversationContext, string> = {
   'general': 'Outro assunto',
 };
 
+const patientNavigationIcons = {
+  Hoje: House,
+  'Meu cuidado': Heart,
+  Conversas: ChatCircle,
+  Evolução: ChartLineUp,
+} as const;
+
+function useScrollAwarePatientNavigation() {
+  const [visible, setVisible] = useState(true);
+  const lastY = useRef(0);
+  const downwardTravel = useRef(0);
+  const upwardTravel = useRef(0);
+  const frame = useRef<number | null>(null);
+
+  useEffect(() => {
+    lastY.current = Math.max(0, window.scrollY);
+    setVisible(lastY.current <= 96);
+
+    const update = () => {
+      frame.current = null;
+      const nextY = Math.max(0, window.scrollY);
+      const delta = nextY - lastY.current;
+
+      if (nextY <= 24) {
+        downwardTravel.current = 0;
+        upwardTravel.current = 0;
+        setVisible(true);
+      } else if (Math.abs(delta) >= 2) {
+        if (delta > 0) {
+          downwardTravel.current += delta;
+          upwardTravel.current = 0;
+          if (nextY > 96 && downwardTravel.current >= 32) {
+            setVisible(false);
+            downwardTravel.current = 0;
+          }
+        } else {
+          upwardTravel.current += Math.abs(delta);
+          downwardTravel.current = 0;
+          if (upwardTravel.current >= 16) {
+            setVisible(true);
+            upwardTravel.current = 0;
+          }
+        }
+      }
+
+      lastY.current = nextY;
+    };
+
+    const onScroll = () => {
+      if (frame.current === null) frame.current = window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame.current !== null) window.cancelAnimationFrame(frame.current);
+    };
+  }, []);
+
+  return visible;
+}
+
 function normalizePatientDemoUiState(value: unknown): PatientDemoUiState {
   const stored = typeof value === 'object' && value !== null ? value as Partial<PatientDemoUiState> : {};
   const ratings = Array.isArray(stored.mealRatings) && stored.mealRatings.length === 3 && stored.mealRatings.every((item) => typeof item === 'number')
@@ -123,6 +186,7 @@ export default function PatientWorkspace({
     ?? visiblePublishedActions.at(0)
     ?? null;
   const primaryView = getPatientPrimaryView(view);
+  const patientNavigationVisible = useScrollAwarePatientNavigation();
 
   const notify = (text: string) => {
     setToast(text);
@@ -146,23 +210,7 @@ export default function PatientWorkspace({
 
   return (
     <>
-      <main id="main-content" className="mx-auto min-h-[calc(100vh-72px)] max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
-        <div className="hidden gap-2 rounded-2xl border border-[#dfe8e3] bg-white p-1.5 lg:flex" aria-label="Navegação do paciente">
-          {patientNavigation.map(({ label }) => (
-            <Link
-              key={label}
-              href={getPatientSectionHref(patientId, label)}
-              aria-current={primaryView === label ? 'page' : undefined}
-              className={cn(
-                'flex min-h-10 flex-1 items-center justify-center rounded-xl px-4 text-sm font-semibold',
-                primaryView === label ? 'bg-[#17372f] text-white' : 'text-[#60766f] hover:bg-[#f4f7f5]'
-              )}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-
+      <main id="main-content" className="mx-auto min-h-[calc(100vh-72px)] max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pt-9">
         {view === 'Hoje' && (
           <Today
             checkinDone={checkinDone}
@@ -241,24 +289,29 @@ export default function PatientWorkspace({
         {view === 'Consultas' && <Appointments preVisitDone={preVisitDone} onPreVisit={openPreVisit} />}
       </main>
 
-      <nav aria-label="Navegação do paciente" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#dfe8e3] bg-white px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 lg:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
-          {patientNavigation.map(({ label }) => (
+      <div className="patient-bottom-navigation" data-visible={patientNavigationVisible ? 'true' : 'false'}>
+        <nav aria-label="Navegação do paciente" className="floating-navigation-glass grid w-full max-w-[600px] grid-cols-4 gap-1 rounded-[22px] p-1.5">
+          {patientNavigation.map(({ label }) => {
+            const Icon = patientNavigationIcons[label];
+            return (
             <Link
               key={label}
               href={getPatientSectionHref(patientId, label)}
               aria-current={primaryView === label ? 'page' : undefined}
               className={cn(
-                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-bold',
-                primaryView === label ? 'bg-[#e8f4f0] text-[#0b6a5b]' : 'text-[#789087]'
+                'flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:flex-row md:gap-2 md:px-3 md:text-xs',
+                primaryView === label
+                  ? 'bg-[#061b3e]/92 text-white shadow-[0_7px_18px_rgba(3,19,45,0.18)]'
+                  : 'text-[#405675] hover:bg-white/70 hover:text-[#071a3a]'
               )}
             >
-              <span aria-hidden="true" className={cn('size-2 rounded-full', primaryView === label ? 'bg-[#0b7b68]' : 'bg-[#c3d0cc]')} />
+              <Icon aria-hidden="true" size={15} weight={primaryView === label ? 'fill' : 'regular'} className="shrink-0" />
               {label}
             </Link>
-          ))}
-        </div>
-      </nav>
+            );
+          })}
+        </nav>
+      </div>
 
       {checkinOpen && (
         <Checkin
