@@ -1,10 +1,10 @@
 'use client';
 
-import { Bell, CaretDown, List } from '@phosphor-icons/react';
+import { Bell, CaretDown, CheckCircle, List, UsersThree, WarningCircle } from '@phosphor-icons/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { DEFAULT_PATIENT_ID, doctorNavigation } from './demo-routes';
+import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, doctorNavigation } from './demo-routes';
 
 export type Role = 'doctor' | 'patient';
 
@@ -28,10 +28,32 @@ export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Rol
             />
           </Link>
 
-          <div className="vivanse-glass-bar flex items-center justify-between gap-4 px-4 sm:px-6 lg:justify-end lg:px-8">
+          <div className="vivanse-glass-bar flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <Link href="/medico" aria-label="VIVANSE — início" className="flex items-center gap-2.5 lg:hidden">
               <Image src="/brand/vivanse-mark.png" alt="" width={40} height={40} className="size-10 rounded-xl" />
               <span className="text-sm font-semibold tracking-[0.22em] text-[#071a3a]">VIVANSE</span>
+            </Link>
+
+            <Link
+              href="/medico/pacientes"
+              aria-label={`${doctorDemoCohortSummary.activePatients} pacientes em acompanhamento, ${doctorDemoCohortSummary.checkInsOnTime} com check-ins em dia e ${doctorDemoCohortSummary.checkInsToReview} check-ins para revisar. Abrir pacientes.`}
+              className="hidden min-h-12 items-center overflow-hidden rounded-xl border border-[#dbe4f0] bg-white/72 text-[#405675] shadow-[0_8px_24px_rgba(3,19,45,0.05)] backdrop-blur transition-colors hover:border-[#a9bfdb] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 xl:flex"
+            >
+              <span className="flex items-center gap-2.5 px-4">
+                <UsersThree aria-hidden="true" size={19} className="text-[#124da0]" />
+                <strong className="text-sm tabular-nums text-[#071a3a]">{doctorDemoCohortSummary.activePatients}</strong>
+                <span className="text-xs font-medium">acompanhados</span>
+              </span>
+              <span className="flex items-center gap-2.5 border-l border-[#dbe4f0] px-4">
+                <CheckCircle aria-hidden="true" size={18} className="text-[#124da0]" />
+                <strong className="text-sm tabular-nums text-[#071a3a]">{doctorDemoCohortSummary.checkInsOnTime}</strong>
+                <span className="text-xs font-medium">check-ins em dia</span>
+              </span>
+              <span className="flex items-center gap-2.5 border-l border-[#dbe4f0] px-4">
+                <WarningCircle aria-hidden="true" size={18} className="text-[#9b6a12]" />
+                <strong className="text-sm tabular-nums text-[#071a3a]">{doctorDemoCohortSummary.checkInsToReview}</strong>
+                <span className="text-xs font-medium">check-ins para revisar</span>
+              </span>
             </Link>
 
             <div className="flex items-center gap-3 sm:gap-4">

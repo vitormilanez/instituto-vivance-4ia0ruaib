@@ -74,3 +74,54 @@
 - P3 opcional: adicionar setas discretas aos blocos recolhidos para reforçar visualmente o estado aberto ou fechado.
 
 final result: passed
+
+---
+
+# Conferência visual — painel e pré-consulta do médico
+
+## Evidências
+
+- Referência enviada pelo usuário: `/var/folders/_0/xfp11_y96x18jcq9n9cl3d900000gn/T/TemporaryItems/NSIRD_screencaptureui_P3lh79/Captura de Tela 2026-09-02 às 00.25.31.png`
+- Painel final no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-dashboard-final-2026-09-02.png`
+- Pré-consulta final no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-consultation-blue-desktop-2026-09-02.png`
+- Pré-consulta final no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-consultation-mobile-2026-09-02.png`
+- Painel final no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-dashboard-mobile-2026-09-02.png`
+- Antes e depois da pré-consulta: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-consultation-before-after-2026-09-02.png`
+
+## Medidas e estado
+
+- Painel: área CSS de `1440 x 900` px, página no topo, dados demonstrativos e Marina Costa como próxima consulta.
+- Pré-consulta: referência original em `3018 x 1762` px, equivalente a `1509 x 881` px em densidade 2x; implementação conferida em largura CSS de `1509` px.
+- Celular: painel e pré-consulta conferidos em área CSS de `375 x 812` px, sem rolagem horizontal estrutural.
+
+## Findings e correções
+
+- P2: a pré-consulta mantinha grandes superfícies verdes e reforçava uma identidade diferente do restante do produto. Correção: estrutura em azul-marinho, seleção e foco em azul de ação, cartões de leitura em branco e azul-claro.
+- P2: o topo tinha espaço sem função ao lado das notificações. Correção: resumo compacto e clicável com `22 acompanhados`, `17 check-ins em dia` e `5 para revisar`, usando a mesma fonte demonstrativa do resumo de pacientes.
+- P2: o menu terminava sem contexto de trabalho. Correção: bloco “Próxima consulta” logo abaixo de Relatórios, com horário, pessoa, estado e atalho real para preparar a consulta.
+- P1 encontrado na revisão independente: o estado do bloco lateral podia acompanhar o paciente aberto, embora o cartão mostrasse Marina. Correção: o estado agora consulta explicitamente a pessoa e a consulta do próprio cartão.
+- P3: termos de implementação deixavam a teleconsulta com aparência de demonstração técnica. Correção: “Sala e consentimento”, “Apoio em tempo real”, “Pontos para o médico revisar” e “Demonstração”.
+- P3: a varredura de acabamento encontrou sete tamanhos fora da escala tipográfica. Todos foram alinhados às medidas registradas no sistema visual.
+
+## Resultado visual
+
+- A leitura do painel começa por quem será atendido e pelo que precisa de atenção; a tecnologia não domina a tela.
+- O azul-marinho aparece somente em navegação, ação principal e áreas decisivas. Verde não é mais usado como estrutura da pré-consulta.
+- “Pré-consulta pendente” continua em âmbar porque pede revisão; estados recebidos, revisados ou aprovados usam azul. Rosa fica reservado a erro ou rejeição e cinza a indisponibilidade.
+- O menu, a barra superior e o menu móvel preservam o efeito de vidro. Cartões clínicos continuam sólidos e claros.
+
+## Ações testadas
+
+- O resumo da carteira abre `/medico/pacientes`.
+- “Preparar consulta” abre `/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`.
+- “Atender agora” abre a teleconsulta e mantém a etapa Consulta selecionada.
+- A pré-consulta foi aberta e conferida também em `375 x 812` px; as etapas permanecem roláveis e o conteúdo se mantém dentro da tela.
+- Painel, tela da paciente e teleconsulta não apresentaram rolagem lateral estrutural nas larguras testadas.
+- Console do navegador: nenhum erro ou aviso.
+- Lint dos arquivos alterados e build completo aprovados.
+
+## Open Questions
+
+- Os números `22/17/5` ainda são dados demonstrativos. Quando existir uma fonte real, devem ser calculados a partir da mesma regra usada na lista de pacientes.
+
+final result: passed

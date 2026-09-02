@@ -6,6 +6,12 @@ export type ClinicalRouteMode = 'workspace' | 'pre-consultation' | 'consultation
 export const DEFAULT_PATIENT_ID = 'pac-demo-001';
 export const DEFAULT_ENCOUNTER_ID = 'enc-demo-002';
 
+export const doctorDemoCohortSummary = {
+  activePatients: 22,
+  checkInsOnTime: 17,
+  checkInsToReview: 5,
+} as const;
+
 export const doctorNavigation: Array<{ label: DoctorView; href: string; section?: string }> = [
   { label: 'Visão geral', href: '/medico' },
   { label: 'Agenda', href: '/medico/agenda', section: 'agenda' },

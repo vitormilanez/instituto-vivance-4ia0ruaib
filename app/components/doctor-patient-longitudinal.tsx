@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
 import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
-import { DEFAULT_PATIENT_ID, getDefaultEncounterId } from './demo-routes';
+import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, getDefaultEncounterId } from './demo-routes';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import { cn, Status } from './shared';
 
@@ -227,7 +227,11 @@ export function PatientCohort({ patients, onSelectPatient }: { patients: Patient
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-[#dbe4f0] bg-white">
         <div className="grid gap-px bg-[#e7edf5] sm:grid-cols-3">
-          {[['Carteira ativa', '22'], ['Revisões humanas', '3'], ['Consultas hoje', '5']].map(([label, value]) => <div key={label} className="bg-white p-4 sm:p-5"><p className="text-xs font-semibold text-[#50627f]">{label}</p><p className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value}</p></div>)}
+          {[
+            ['Em acompanhamento', doctorDemoCohortSummary.activePatients],
+            ['Check-ins em dia', doctorDemoCohortSummary.checkInsOnTime],
+            ['Para revisar', doctorDemoCohortSummary.checkInsToReview],
+          ].map(([label, value]) => <div key={label} className="bg-white p-4 sm:p-5"><p className="text-xs font-semibold text-[#50627f]">{label}</p><p className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value}</p></div>)}
         </div>
       </section>
 

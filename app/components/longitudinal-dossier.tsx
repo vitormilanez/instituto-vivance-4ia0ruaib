@@ -88,7 +88,7 @@ const auditPresentation: Record<CareAuditAction, { label: string; tone: 'green' 
   'conversation-message-sent': { label: 'Mensagem contextualizada', tone: 'blue' },
   'pre-consultation-submitted': { label: 'Pré-consulta enviada', tone: 'blue' },
   'pre-consultation-review-started': { label: 'Revisão iniciada', tone: 'amber' },
-  'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'green' },
+  'pre-consultation-review-approved': { label: 'Preparo aprovado', tone: 'blue' },
   'pre-consultation-review-rejected': { label: 'Preparo rejeitado', tone: 'gray' },
   'consultation-closure-approved': { label: 'Fechamento aprovado', tone: 'green' },
   'care-plan-created': { label: 'Plano em rascunho', tone: 'amber' },

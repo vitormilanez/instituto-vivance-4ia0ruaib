@@ -18,3 +18,7 @@ related_targets: ["app/components/doctor.tsx", "app/components/shared.tsx", "app
 - Estados: consultas concluída, próxima, confirmada ou a confirmar; pré-consulta recebida ou pendente; lista de atenção vazia, carregando ou com conteúdo.
 - Responsivo: menu lateral no computador; marca e menu horizontal no celular; próxima consulta antes das listas; sem rolagem horizontal estrutural.
 - Segurança: todos os dados são exemplos; itens de atenção não representam urgência nem decisão clínica.
+- Barra superior no computador: resumo compacto e clicável com acompanhados, check-ins em dia e itens para revisar. Usar uma única fonte demonstrativa para evitar números divergentes.
+- Menu lateral no computador: abaixo de Relatórios, mostrar a próxima consulta com horário, pessoa, estado e um único atalho “Preparar consulta”. Não repetir uma segunda lista de alertas.
+- Semântica da pré-consulta: pendente ou “revisar” em âmbar; recebida, revisada ou aprovada em azul; rejeitada ou com erro em rosa; ausente ou indisponível em cinza. Nunca depender apenas da cor.
+- Fluxo de consulta: azul-marinho e azul são as cores estruturais. Verde não deve preencher grandes áreas; quando necessário, fica restrito a um estado positivo explícito.
