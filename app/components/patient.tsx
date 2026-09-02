@@ -23,6 +23,7 @@ import type {
 } from './care-demo-types';
 import { PatientCarePlan } from './patient-care-plan';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import { PatientMacroCareSummary } from './patient-macro-care-summary';
 import {
   getPatientPreConsultationHref,
   getPatientPrimaryView,
@@ -213,6 +214,7 @@ export default function PatientWorkspace({
       <main id="main-content" className="mx-auto min-h-[calc(100vh-72px)] max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pt-9">
         {view === 'Hoje' && (
           <Today
+            patientId={patientId}
             checkinDone={checkinDone}
             latestCheckIn={latestCheckIn}
             followUpConfiguration={activeFollowUpConfiguration}
@@ -342,6 +344,7 @@ export default function PatientWorkspace({
 }
 
 function Today({
+  patientId,
   checkinDone,
   latestCheckIn,
   followUpConfiguration,
@@ -355,6 +358,7 @@ function Today({
   onConnectWatch,
   onNavigate,
 }: {
+  patientId: string;
   checkinDone: boolean;
   latestCheckIn: CareCheckIn | null;
   followUpConfiguration: CareFollowUpConfiguration | null;
@@ -431,6 +435,8 @@ function Today({
           Texto guiado · salvamento durante a sessão · revisão obrigatória antes do envio
         </div>
       </article>
+
+      <PatientMacroCareSummary patientId={patientId} onOpenCare={() => onNavigate('Meu cuidado')} />
 
       <section className="mt-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         <article className="overflow-hidden rounded-3xl bg-[#17372f] text-white shadow-[0_16px_40px_rgba(23,55,47,0.16)]">

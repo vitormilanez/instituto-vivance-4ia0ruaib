@@ -20,6 +20,7 @@ import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace'
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
 import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, getDefaultEncounterId } from './demo-routes';
 import { LongitudinalDossier } from './longitudinal-dossier';
+import { DoctorMacroCareSummary } from './doctor-macro-care-summary';
 import { cn, Status } from './shared';
 
 type Tone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
@@ -486,6 +487,8 @@ function OverviewPanel({
           );
         })}
       </dl>
+
+      <DoctorMacroCareSummary patientId={patient.id} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-5">
         <section className="vivanse-panel rounded-2xl p-5 sm:p-6">
