@@ -25,6 +25,14 @@ import { PatientCarePlan } from './patient-care-plan';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
 import { PatientMacroCareSummary } from './patient-macro-care-summary';
 import {
+  PatientQuickActions,
+  PatientQuickCaptureDialog,
+  patientQuickRecordLabels,
+  type PatientExamShareInput,
+  type PatientQuickCaptureMode,
+  type PatientQuickRecordInput,
+} from './patient-quick-capture';
+import {
   getPatientPreConsultationHref,
   getPatientPrimaryView,
   getPatientSectionHref,
@@ -65,6 +73,13 @@ const conversationContextLabel: Record<CareConversationContext, string> = {
   'diary': 'Diário',
   'general': 'Outro assunto',
 };
+
+function formatPatientInputDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return 'data não informada';
+  const monthLabel = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][month - 1];
+  return monthLabel ? `${day} ${monthLabel} ${year}` : 'data não informada';
+}
 
 const patientNavigationIcons = {
   Hoje: House,
@@ -170,6 +185,7 @@ export default function PatientWorkspace({
     confirmCarePlanAction,
   } = useCareDemo(patientId, encounterId);
   const [checkinOpen, setCheckinOpen] = useState(false);
+  const [quickCaptureMode, setQuickCaptureMode] = useState<PatientQuickCaptureMode | null>(null);
   const [demoUi, setDemoUi, demoUiHydrated] = useSessionDemoState(
     `instituto-vivans-demo-ui-v1:patient:${patientId}`,
     initialPatientDemoUiState,
@@ -178,6 +194,9 @@ export default function PatientWorkspace({
   const [toast, setToast] = useState('');
   const { mealAnalyzed, mealRatings, watchConnected } = demoUi;
   const latestDiaryEntry = diaryEntries.at(-1) ?? null;
+  const examShared = conversationMessages.some(
+    (message) => message.sender === 'patient' && message.body.startsWith('Exame demonstrativo compartilhado · Painel laboratorial · agosto'),
+  );
   const preVisitDone = Boolean(latestSubmission);
   const checkinDone = Boolean(latestCheckIn);
   const visiblePublishedActions = latestPublishedCarePlan?.actions.filter((action) => action.active) ?? [];
@@ -224,6 +243,8 @@ export default function PatientWorkspace({
             totalActionCount={visiblePublishedActions.length}
             nextPlanAction={nextPlanAction}
             onCheckin={() => setCheckinOpen(true)}
+            examShared={examShared}
+            onQuickCapture={setQuickCaptureMode}
             onPreVisit={openPreVisit}
             onConnectWatch={() => {
               setDemoUi((current) => ({ ...current, watchConnected: true }));
@@ -325,6 +346,29 @@ export default function PatientWorkspace({
           }}
         />
       )}
+      {quickCaptureMode ? (
+        <PatientQuickCaptureDialog
+          mode={quickCaptureMode}
+          onClose={() => setQuickCaptureMode(null)}
+          onShareExam={(input: PatientExamShareInput) => {
+            const note = input.note ? `\nObservação: ${input.note}` : '';
+            sendConversationMessage('patient', {
+              context: 'general',
+              body: `Exame demonstrativo compartilhado · Painel laboratorial · agosto · ${formatPatientInputDate(input.examDate)}${note}`,
+            });
+            setQuickCaptureMode(null);
+            notify('Exame demonstrativo compartilhado para revisão.');
+          }}
+          onSaveRecord={(input: PatientQuickRecordInput) => {
+            sendConversationMessage('patient', {
+              context: 'general',
+              body: `${patientQuickRecordLabels[input.kind]} · ${formatPatientInputDate(input.occurredOn)}\n${input.body}`,
+            });
+            setQuickCaptureMode(null);
+            notify('Registro compartilhado com a equipe nesta sessão.');
+          }}
+        />
+      ) : null}
       {preVisitRouteOpen && (
         <PreVisitInterview
           initialDraft={preConsultationDraft}
@@ -354,6 +398,8 @@ function Today({
   totalActionCount,
   nextPlanAction,
   onCheckin,
+  examShared,
+  onQuickCapture,
   onPreVisit,
   onConnectWatch,
   onNavigate,
@@ -368,6 +414,8 @@ function Today({
   totalActionCount: number;
   nextPlanAction: CarePlanVersion['actions'][number] | null;
   onCheckin: () => void;
+  examShared: boolean;
+  onQuickCapture: (mode: PatientQuickCaptureMode) => void;
   onPreVisit: () => void;
   onConnectWatch: () => void;
   onNavigate: (view: PatientView) => void;
@@ -409,6 +457,8 @@ function Today({
           {cadenceLabel ? <p className="mt-2 text-xs text-[#698078]">Combinado atual: {cadenceLabel} · sem alerta automático</p> : null}
         </div>
       </section>
+
+      <PatientQuickActions examShared={examShared} onOpen={onQuickCapture} />
 
       <article className="mt-7 overflow-hidden rounded-3xl border border-[#9fc9bd] bg-white shadow-[0_12px_34px_rgba(28,55,47,0.07)]">
         <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[auto_1fr_auto] lg:items-center">
