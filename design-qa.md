@@ -86,13 +86,16 @@ final result: passed
 - Pré-consulta final no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-consultation-blue-desktop-2026-09-02.png`
 - Pré-consulta final no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-consultation-mobile-2026-09-02.png`
 - Painel final no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-doctor-dashboard-mobile-2026-09-02.png`
+- Troca Médico ↔ Paciente no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-role-switch-mobile-2026-09-02.png`
+- Troca Médico ↔ Paciente em `320` px: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-role-switch-mobile-320-2026-09-02.png`
+- Retorno pela área da paciente no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-role-switch-patient-mobile-2026-09-02.png`
 - Antes e depois da pré-consulta: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-consultation-before-after-2026-09-02.png`
 
 ## Medidas e estado
 
 - Painel: área CSS de `1440 x 900` px, página no topo, dados demonstrativos e Marina Costa como próxima consulta.
 - Pré-consulta: referência original em `3018 x 1762` px, equivalente a `1509 x 881` px em densidade 2x; implementação conferida em largura CSS de `1509` px.
-- Celular: painel e pré-consulta conferidos em área CSS de `375 x 812` px, sem rolagem horizontal estrutural.
+- Celular: painel e pré-consulta conferidos em áreas CSS de `320 x 700` e `375 x 812` px, sem rolagem horizontal estrutural.
 
 ## Findings e correções
 
@@ -113,6 +116,9 @@ final result: passed
 ## Ações testadas
 
 - O resumo da carteira abre `/medico/pacientes`.
+- A troca Médico → “Marina demo” abre `/paciente/pac-demo-001`; a volta Paciente → Médico abre `/medico`. O nome evita sugerir que o atalho acompanha qualquer prontuário aberto. Os dois sentidos foram testados no computador e no celular.
+- Em `320`, `375` e `1440` px, o controle permanece acessível sem criar rolagem horizontal estrutural.
+- Abaixo de `640` px, notificações e identificação do médico continuam disponíveis dentro do menu principal.
 - “Preparar consulta” abre `/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`.
 - “Atender agora” abre a teleconsulta e mantém a etapa Consulta selecionada.
 - A pré-consulta foi aberta e conferida também em `375 x 812` px; as etapas permanecem roláveis e o conteúdo se mantém dentro da tela.
