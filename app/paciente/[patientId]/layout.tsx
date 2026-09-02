@@ -11,7 +11,7 @@ export default async function PatientLayout({
   params: Promise<{ patientId: string }>;
 }) {
   const { patientId } = await params;
-  if (patientId !== DEFAULT_PATIENT_ID) notFound();
+  if (patientId !== DEFAULT_PATIENT_ID && patientId !== 'pac-demo-006') notFound();
 
   return <WorkspaceShell role="patient" patientId={patientId}>{children}</WorkspaceShell>;
 }

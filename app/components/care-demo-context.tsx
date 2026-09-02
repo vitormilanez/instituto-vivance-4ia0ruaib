@@ -407,6 +407,17 @@ function isCareCheckInSleepQuality(value: unknown): value is CareCheckInSleepQua
   return value === 'poor' || value === 'regular' || value === 'good';
 }
 
+function isCareCheckInInputMode(value: unknown): value is CareCheckIn['inputMode'] {
+  return value === 'voice' || value === 'text';
+}
+
+function isCareCheckInPlanExperience(value: unknown): value is CareCheckIn['planExperience'] {
+  return value === 'easy'
+    || value === 'partial'
+    || value === 'difficult'
+    || value === 'not-applicable';
+}
+
 function normalizeCheckIn(value: unknown): CareCheckIn | null {
   if (!isRecord(value)) return null;
   const energy = typeof value.energy === 'number' && Number.isInteger(value.energy) && value.energy >= 1 && value.energy <= 5
@@ -434,6 +445,23 @@ function normalizeCheckIn(value: unknown): CareCheckIn | null {
     energy,
     sleepQuality: value.sleepQuality,
     newSymptom: value.newSymptom,
+    inputMode: isCareCheckInInputMode(value.inputMode) ? value.inputMode : 'text',
+    originalText: typeof value.originalText === 'string' ? value.originalText : '',
+    aiSummary: Array.isArray(value.aiSummary)
+      ? value.aiSummary.filter((item): item is string => typeof item === 'string')
+      : [],
+    aiAssistanceAllowed: typeof value.aiAssistanceAllowed === 'boolean'
+      ? value.aiAssistanceAllowed
+      : false,
+    planExperience: isCareCheckInPlanExperience(value.planExperience)
+      ? value.planExperience
+      : 'not-applicable',
+    audioRef: typeof value.audioRef === 'string' ? value.audioRef : null,
+    audioDurationSeconds: typeof value.audioDurationSeconds === 'number'
+      && Number.isFinite(value.audioDurationSeconds)
+      && value.audioDurationSeconds >= 0
+      ? value.audioDurationSeconds
+      : null,
     submittedAt: value.submittedAt,
     submittedAtIso: typeof value.submittedAtIso === 'string'
       ? value.submittedAtIso
@@ -500,7 +528,7 @@ function normalizeCheckInReview(value: unknown): CareCheckInReview | null {
 }
 
 function isFollowUpCadence(value: unknown): value is CareFollowUpCadence {
-  return value === 'daily' || value === 'three-times-week' || value === 'weekly';
+  return value === 'daily' || value === 'every-three-days' || value === 'three-times-week' || value === 'weekly';
 }
 
 function normalizeFollowUpConfiguration(value: unknown): CareFollowUpConfiguration | null {
@@ -1696,6 +1724,25 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           energy: input.energy,
           sleepQuality: input.sleepQuality,
           newSymptom: input.newSymptom,
+          inputMode: input.inputMode === 'voice' ? 'voice' : 'text',
+          originalText: input.originalText?.trim() ?? '',
+          aiSummary: input.aiAssistanceAllowed === false
+            ? []
+            : (input.aiSummary ?? []).map((item) => item.trim()).filter(Boolean),
+          aiAssistanceAllowed: input.aiAssistanceAllowed !== false,
+          planExperience: input.planExperience === 'easy'
+            || input.planExperience === 'partial'
+            || input.planExperience === 'difficult'
+            ? input.planExperience
+            : 'not-applicable',
+          audioRef: input.inputMode === 'voice' && typeof input.audioRef === 'string'
+            ? input.audioRef
+            : null,
+          audioDurationSeconds: input.inputMode === 'voice'
+            && typeof input.audioDurationSeconds === 'number'
+            && Number.isFinite(input.audioDurationSeconds)
+            ? Math.max(0, input.audioDurationSeconds)
+            : null,
           submittedAt: formatSubmissionTime(now),
           submittedAtIso: now.toISOString(),
         };
@@ -1708,7 +1755,7 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           occurredAtIso: created.submittedAtIso,
           relatedId: created.id,
           relatedVersion: created.version,
-          summary: 'Check-in de acompanhamento registrado.',
+          summary: `Check-in de acompanhamento registrado por ${created.inputMode === 'voice' ? 'voz simulada' : 'texto'}.`,
         });
 
         setState((current) => ({

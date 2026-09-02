@@ -1,14 +1,21 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { DEFAULT_PATIENT_ID } from './demo-routes';
+import type { AnchorHTMLAttributes, ReactNode } from 'react';
+import { DEFAULT_PATIENT_ID, getDemoPatient } from './demo-routes';
 
 export type Role = 'doctor' | 'patient';
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
+}
+
+/**
+ * The local Vinext runtime currently fails while intercepting Next Link clicks.
+ * A standard anchor keeps every demo route reachable through a full navigation.
+ */
+export function NavigationLink({ children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return <a {...props}>{children}</a>;
 }
 
 export function RoleSwitcher({
@@ -21,14 +28,14 @@ export function RoleSwitcher({
   className?: string;
 }) {
   const linkClass = 'flex min-h-10 items-center justify-center rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 sm:px-3.5 sm:text-sm';
-  const patientLabel = role === 'doctor' ? 'Marina demo' : 'Paciente';
+  const patientName = getDemoPatient(patientId)?.name ?? 'Paciente demo';
 
   return (
     <nav
       aria-label="Alternar entre área médica e área do paciente"
       className={cn('rounded-xl border border-[#dbe4f0] bg-[#edf3fb]/82 p-1 backdrop-blur', className)}
     >
-      <Link
+      <NavigationLink
         href="/medico"
         aria-current={role === 'doctor' ? 'page' : undefined}
         className={cn(
@@ -39,10 +46,10 @@ export function RoleSwitcher({
         )}
       >
         Médico
-      </Link>
-      <Link
+      </NavigationLink>
+      <NavigationLink
         href={`/paciente/${patientId}`}
-        aria-label={role === 'doctor' ? 'Abrir demonstração da paciente Marina Costa' : undefined}
+        aria-label={role === 'doctor' ? `Abrir demonstração de ${patientName}` : undefined}
         aria-current={role === 'patient' ? 'page' : undefined}
         className={cn(
           linkClass,
@@ -51,19 +58,27 @@ export function RoleSwitcher({
             : 'text-[#405675] hover:bg-white/75 hover:text-[#071a3a]',
         )}
       >
-        {patientLabel}
-      </Link>
+        Paciente
+      </NavigationLink>
     </nav>
   );
 }
 
 export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Role; patientId?: string }) {
+  const patient = getDemoPatient(patientId);
+  const patientInitials = patient?.name
+    .split(' ')
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() ?? 'PA';
+
   return (
     <header className="sticky top-0 z-40 border-b border-[#dfe8e3] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] max-w-[1540px] items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Image src="/brand/vivanse-mark.png" alt="" width={40} height={40} className="size-10 shrink-0 rounded-xl" />
-          <div className="min-w-0">
+          <div className="hidden min-w-0 min-[360px]:block">
             <p className="truncate text-[17px] font-bold tracking-[0.12em]">VIVANSE</p>
             <p className="hidden text-xs font-medium text-[#698078] sm:block">Cuidado contínuo</p>
           </div>
@@ -71,7 +86,7 @@ export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Rol
         <div className="flex items-center gap-2 sm:gap-3">
           <RoleSwitcher role={role} patientId={patientId} className="flex items-center" />
           <div className="hidden size-10 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b] sm:grid">
-            {role === 'doctor' ? 'GM' : 'MC'}
+            {role === 'doctor' ? 'GM' : patientInitials}
           </div>
         </div>
       </div>
@@ -124,7 +139,7 @@ export function Toast({ text, patient = false }: { text: string; patient?: boole
     <div
       className={cn(
         'pointer-events-none fixed left-1/2 z-[80] -translate-x-1/2',
-        patient ? 'bottom-24 lg:bottom-5' : 'bottom-5'
+        patient ? 'bottom-auto top-20 sm:bottom-24 sm:top-auto lg:bottom-5' : 'bottom-5'
       )}
       aria-live="polite"
     >

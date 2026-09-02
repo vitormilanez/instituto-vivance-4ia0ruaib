@@ -1,6 +1,6 @@
 export type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
 export type PatientPrimaryView = 'Hoje' | 'Meu cuidado' | 'Conversas' | 'Evolução';
-export type PatientView = PatientPrimaryView | 'Plano' | 'Diário' | 'Mensagens' | 'Consultas';
+export type PatientView = PatientPrimaryView | 'Plano' | 'Medicamentos' | 'Diário' | 'Mensagens' | 'Consultas';
 export type ClinicalRouteMode = 'workspace' | 'pre-consultation' | 'consultation';
 
 export const DEFAULT_PATIENT_ID = 'pac-demo-001';
@@ -30,6 +30,7 @@ export const patientNavigation: Array<{ label: PatientPrimaryView; section: stri
 const patientRoutes: Array<{ label: PatientView; section: string }> = [
   ...patientNavigation,
   { label: 'Plano', section: 'plano' },
+  { label: 'Medicamentos', section: 'medicamentos' },
   { label: 'Diário', section: 'diario' },
   { label: 'Mensagens', section: 'mensagens' },
   { label: 'Consultas', section: 'consultas' },
@@ -41,6 +42,11 @@ export const demoPatients = [
   { id: 'pac-demo-003', name: 'Paulo Mendes', defaultEncounterId: 'enc-demo-005' },
   { id: 'pac-demo-004', name: 'Rafael Lima', defaultEncounterId: 'enc-demo-003' },
   { id: 'pac-demo-005', name: 'Lúcia Barbosa', defaultEncounterId: 'enc-demo-001' },
+  { id: 'pac-demo-006', name: 'Lucas Almeida', defaultEncounterId: 'enc-demo-006' },
+  { id: 'pac-demo-007', name: 'Fernanda Alves', defaultEncounterId: 'enc-demo-007' },
+  { id: 'pac-demo-008', name: 'Diego Nunes', defaultEncounterId: 'enc-demo-008' },
+  { id: 'pac-demo-009', name: 'Camila Torres', defaultEncounterId: 'enc-demo-009' },
+  { id: 'pac-demo-010', name: 'Bruno Azevedo', defaultEncounterId: 'enc-demo-010' },
 ] as const;
 
 export function getDemoPatient(patientId: string) {
@@ -73,7 +79,7 @@ export function getPatientSectionHref(patientId: string, view: PatientView) {
 }
 
 export function getPatientPrimaryView(view: PatientView): PatientPrimaryView {
-  if (view === 'Plano' || view === 'Diário' || view === 'Consultas') return 'Meu cuidado';
+  if (view === 'Plano' || view === 'Medicamentos' || view === 'Diário' || view === 'Consultas') return 'Meu cuidado';
   if (view === 'Mensagens') return 'Conversas';
   return view;
 }
@@ -84,6 +90,10 @@ export function getPatientDossierHref(patientId: string) {
 
 export function getPatientMessagesHref(patientId: string) {
   return `/medico/pacientes/${patientId}/mensagens`;
+}
+
+export function getPatientResultsSummaryHref(patientId: string) {
+  return `/medico/pacientes/${patientId}/resumo`;
 }
 
 export function getPreConsultationHref(patientId: string, encounterId: string) {

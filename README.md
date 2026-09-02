@@ -9,13 +9,15 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 ### Paciente — mobile-first
 
 - visão diária alimentada pelo plano publicado e check-in guiado;
+- dois cenários de validação: acompanhamento preenchido e preparação ainda pendente;
 - navegação principal reduzida a Hoje, Meu cuidado, Conversas e Evolução;
-- hub Meu cuidado para acessar plano, diário e consultas sem fragmentar a jornada;
-- plano de cuidado em ações simples, com confirmação opcional da paciente;
-- diário alimentar com análise demonstrativa e contexto guiado compartilhado com a equipe;
-- evolução que separa registros reais da sessão de gráficos históricos fictícios;
-- conversa vinculada a plano, check-in, diário ou outro assunto;
-- pré-consulta guiada por texto, com ciência, assistência de IA opcional e revisão antes do envio;
+- hub Meu cuidado para acessar plano alimentar, medicamentos, receitas, retorno e histórico de check-ins;
+- plano de cuidado publicado pelo médico em ações simples, com confirmação opcional de leitura;
+- evolução com medidas autorrelatadas, origem e data preservadas, além de fotos simuladas no protocolo combinado;
+- conversa direta com a equipe no mock, sem resposta clínica automática;
+- check-in a cada três dias por voz simulada ou texto, com revisão antes do envio;
+- relato original e rascunho organizado pela IA exibidos e armazenados separadamente;
+- medidas, plano alimentar, medicamentos, receitas, fotos condicionais e retorno em uma jornada única;
 
 ### Médico — desktop-first
 
@@ -37,7 +39,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, leituras humanas, cadências, contatos manuais, diário, mensagens, confirmações de ações e auditoria de transições permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com as fontes e transições criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, entrega real de mensagens, integrações externas ou dados clínicos reais.
 
-As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio e transcrição ficam fora do primeiro ciclo do MVP.
+As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio, transcrição e envio de fotos são simulados no mock; não há captura, upload ou armazenamento real desses arquivos.
 
 ## IA e segurança clínica
 
@@ -53,7 +55,7 @@ As integrações de Google Meet, relógios, prescrições e análise de refeiç�
 - Check-ins e confirmações de ações são autorrelatos para organizar a próxima conversa; não são triagem, alerta de urgência, diagnóstico ou confirmação de resultado clínico.
 - A cadência e a ausência de registros geram somente estados operacionais demonstrativos; qualquer contato continua humano e nenhuma notificação real é enviada.
 - Mensagens são vinculadas ao contexto e ficam apenas na sessão; o canal não é monitorado continuamente e não substitui urgência.
-- Áudio e transcrição exigirão autorização específica antes de uma implementação futura.
+- Uma implementação real de áudio e transcrição exigirá autorização específica, política de retenção e controles de acesso.
 - Relatos do paciente devem permanecer separados de inferências ou sínteses da IA.
 - O aplicativo não substitui atendimento de urgência.
 - Antes de usar dados reais, serão necessários controles de acesso, auditoria, consentimento, retenção de dados e adequação à LGPD.
@@ -77,6 +79,7 @@ Rotas principais do protótipo:
 - `http://localhost:3000/medico/pacientes/pac-demo-001/pre-consulta/enc-demo-002`
 - `http://localhost:3000/medico/pacientes/pac-demo-001/consultas/enc-demo-002`
 - `http://localhost:3000/paciente/pac-demo-001`
+- `http://localhost:3000/paciente/pac-demo-006`
 - `http://localhost:3000/paciente/pac-demo-001/cuidado`
 - `http://localhost:3000/paciente/pac-demo-001/conversas`
 - `http://localhost:3000/paciente/pac-demo-001/plano`

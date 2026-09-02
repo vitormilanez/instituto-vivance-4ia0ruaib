@@ -11,22 +11,18 @@ import {
   House,
   List,
   Users,
-  VideoCamera,
 } from '@phosphor-icons/react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type FocusEvent, useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_PATIENT_ID,
   doctorDemoCohortSummary,
   doctorNavigation,
-  getConsultationHref,
-  getDefaultEncounterId,
   getDemoPatient,
   getDoctorViewFromPathname,
 } from './demo-routes';
-import { cn, RoleSwitcher } from './shared';
+import { cn, NavigationLink as Link, RoleSwitcher } from './shared';
 
 const navigationIcons = {
   'Visão geral': House,
@@ -43,6 +39,9 @@ function getPatientContext(pathname: string) {
   const patient = getDemoPatient(match[1]);
   if (!patient) return null;
 
+  if (pathname.endsWith('/resumo')) {
+    return { title: `Resumo de ${patient.name}`, context: 'Visão cruzada para revisão médica', backHref: `/medico/pacientes/${patient.id}` };
+  }
   if (pathname.includes('/pre-consulta/')) {
     return { title: `Pré-consulta de ${patient.name}`, context: 'Contexto para revisar antes do atendimento', backHref: `/medico/pacientes/${patient.id}` };
   }
@@ -156,7 +155,10 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
   const pathname = usePathname();
   const activeView = getDoctorViewFromPathname(pathname);
   const routeContext = getRouteContext(pathname);
-  const consultationHref = getConsultationHref(DEFAULT_PATIENT_ID, getDefaultEncounterId(DEFAULT_PATIENT_ID));
+  const routePatientId = pathname.match(/^\/medico\/pacientes\/([^/]+)/)?.[1];
+  const activePatientId = routePatientId && getDemoPatient(routePatientId) ? routePatientId : patientId;
+  const activePatient = getDemoPatient(activePatientId);
+  const activePatientFirstName = activePatient?.name.split(' ')[0] ?? 'paciente';
   const { collapsed, onFocusCapture, onBlurCapture, onMenuToggle } = useCollapsibleChrome();
 
   return (
@@ -170,15 +172,11 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
 
       <div className="doctor-chrome-top grid lg:grid-cols-[252px_minmax(0,1fr)]">
         <Link href="/medico" aria-label="VIVANSE — início" className="doctor-chrome-brand pointer-events-auto hidden items-center px-5 lg:flex">
-          <Image src="/brand/vivanse-mark.png" alt="" width={38} height={38} className="size-[38px] shrink-0 rounded-xl" priority />
-          <Image
-            src="/brand/vivanse-horizontal-transparent.png"
-            alt="VIVANSE"
-            width={142}
-            height={48}
-            priority
-            className="doctor-chrome-expanded-only ml-3 h-auto w-[142px]"
-          />
+          <Image src="/brand/vivanse-mark.png" alt="" width={42} height={42} className="size-[42px] shrink-0 rounded-2xl ring-1 ring-white/10" priority />
+          <span className="doctor-chrome-expanded-only ml-3 min-w-0">
+            <strong className="block text-[15px] font-bold tracking-[0.16em] text-white">VIVANSE</strong>
+            <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.1em] text-[#a9c8ee]">Cuidado contínuo</span>
+          </span>
         </Link>
 
         <div className="relative flex min-w-0 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -225,20 +223,10 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
               Agenda
             </Link>
 
+            <RoleSwitcher role="doctor" patientId={activePatientId} className="doctor-chrome-expanded-only pointer-events-auto hidden items-center md:flex" />
             <Link
-              href={consultationHref}
-              aria-label="Atender Marina Costa agora"
-              className="vivanse-primary-action pointer-events-auto inline-flex size-11 items-center justify-center gap-2 rounded-xl px-0 text-sm font-bold text-white sm:w-auto sm:px-4"
-            >
-              <VideoCamera aria-hidden="true" size={19} />
-              <span className="hidden sm:inline">Atender</span>
-              <span className="hidden xl:inline"> Marina</span>
-            </Link>
-
-            <RoleSwitcher role="doctor" patientId={patientId} className="doctor-chrome-expanded-only pointer-events-auto hidden items-center md:flex" />
-            <Link
-              href={`/paciente/${patientId}`}
-              aria-label="Abrir demonstração da paciente Marina Costa"
+              href={`/paciente/${activePatientId}`}
+              aria-label={`Abrir demonstração de ${activePatient?.name ?? 'paciente'}`}
               className="doctor-chrome-compact-only pointer-events-auto hidden size-11 items-center justify-center rounded-xl border border-[#cbd9ea] text-[#124da0] md:flex"
             >
               <ArrowsLeftRight aria-hidden="true" size={18} weight="bold" />
@@ -271,9 +259,9 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 <List aria-hidden="true" size={21} weight="bold" />
               </summary>
               <div className="vivanse-glass-menu absolute right-0 top-12 z-50 w-64 rounded-xl p-2 shadow-[0_20px_48px_rgba(3,19,45,0.3)]">
-                <Link href={`/paciente/${patientId}`} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
+                <Link href={`/paciente/${activePatientId}`} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
                   <ArrowsLeftRight aria-hidden="true" size={18} />
-                  Abrir área da Marina
+                  Abrir área de {activePatientFirstName}
                 </Link>
                 <Link href="/medico/mensagens" className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
                   <Bell aria-hidden="true" size={18} />
@@ -300,7 +288,7 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'pointer-events-auto flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:flex-row md:gap-2 md:px-3 md:text-xs',
+                  'pointer-events-auto flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:flex-row md:gap-2 md:px-3 md:text-xs',
                   active ? 'bg-[#061b3e]/92 text-white shadow-[0_7px_18px_rgba(3,19,45,0.18)]' : 'text-[#405675] hover:bg-white/70 hover:text-[#071a3a]',
                 )}
               >

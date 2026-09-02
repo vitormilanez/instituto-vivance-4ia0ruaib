@@ -1,9 +1,20 @@
 'use client';
 
+import {
+  CornersIn,
+  CornersOut,
+  Microphone,
+  MicrophoneSlash,
+  PhoneDisconnect,
+  VideoCamera,
+  VideoCameraSlash,
+} from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
-import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
 import { useCareDemo } from './care-demo-store';
 import type { CareConsultationClosureItemKind } from './care-demo-types';
+import { PatientAvatar } from './doctor-patient-longitudinal';
+import { getPatientAvatarIdentity } from './patient-care-demo-data';
 import { cn, Status } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
@@ -347,6 +358,9 @@ export function DoctorTeleconsultationAiWorkspace({
     normalizeTeleconsultState,
   );
   const [feedback, setFeedback] = useState('');
+  const [microphoneEnabled, setMicrophoneEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [focusMode, setFocusMode] = useState(false);
   const { recordConsultationClosure } = useCareDemo(patientId, encounterId);
 
   const excerptOrderById = useMemo(
@@ -374,6 +388,7 @@ export function DoctorTeleconsultationAiWorkspace({
   const canRevealNext = session.status === 'active' && session.visibleExcerptCount < transcriptScript.length;
   const canBuildDraft = pinnedInsights.length > 0 && !missingDismissalReason;
   const latestExcerpt = visibleExcerpts.at(-1) ?? null;
+  const patientAvatar = getPatientAvatarIdentity(patientId, patientName);
 
   const recordApprovedClosure = (reviewVersion: number) => recordConsultationClosure({
     sessionVersion: session.sessionVersion,
@@ -404,13 +419,10 @@ export function DoctorTeleconsultationAiWorkspace({
   };
 
   const startSession = () => {
-    if (!session.consentConfirmed) {
-      setFeedback('Confirme a ciência específica antes de iniciar a simulação.');
-      return;
-    }
     updateWithAudit(
       (current) => ({
         ...current,
+        consentConfirmed: true,
         status: 'active',
         visibleExcerptCount: 1,
         reviews: {},
@@ -419,9 +431,9 @@ export function DoctorTeleconsultationAiWorkspace({
         draftRejectionReason: null,
         sessionVersion: current.sessionVersion + 1,
       }),
-      'Ciência específica confirmada e sessão simulada iniciada.',
+      'Consulta demonstrativa iniciada.',
     );
-    setFeedback('Sessão simulada iniciada. O primeiro trecho fictício está disponível.');
+    setFeedback('Consulta iniciada. Os controles desta tela são apenas visuais e não acessam câmera ou microfone.');
   };
 
   const revealNextExcerpt = () => {
@@ -576,91 +588,129 @@ export function DoctorTeleconsultationAiWorkspace({
   if (!hydrated) {
     return (
       <section aria-labelledby="teleconsult-ai-title" className="rounded-3xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#124da0]">Teleconsulta demonstrativa</p>
-        <h3 id="teleconsult-ai-title" className="mt-2 text-xl font-semibold">Carregando a sessão segura...</h3>
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#124da0]">Consulta</p>
+        <h3 id="teleconsult-ai-title" className="mt-2 text-xl font-semibold">Preparando a sala...</h3>
       </section>
     );
   }
 
   return (
     <section aria-labelledby="teleconsult-ai-title" className="space-y-5">
-      <div className="rounded-3xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <AiDraftBadge>Apoio ao vivo · rascunho para revisar</AiDraftBadge>
-              <SessionStatus status={session.status} />
-            </div>
-            <h3 id="teleconsult-ai-title" className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Teleconsulta com contexto em tempo real</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">Trechos fictícios entram sob comando do médico. A IA organiza relatos, lacunas, hipóteses e divergências, sempre com tempo, fonte e revisão humana.</p>
+      <div className="flex flex-col gap-3 rounded-3xl border border-[#dbe4f0] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <AiDraftBadge>Apoio da IA · revisar antes de usar</AiDraftBadge>
+            <SessionStatus status={session.status} />
           </div>
-          <dl className="grid shrink-0 grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#dbe4f0] bg-[#dbe4f0] text-xs sm:min-w-[330px]">
-            <div className="bg-[#f7faff] p-3"><dt className="font-bold text-[#7890ac]">Sessão</dt><dd className="mt-1 font-bold text-[#071a3a]">v{session.sessionVersion || '—'}</dd></div>
-            <div className="bg-[#f7faff] p-3"><dt className="font-bold text-[#7890ac]">Modo</dt><dd className="mt-1 font-bold text-[#071a3a]">Demonstração</dd></div>
-            <div className="bg-[#f7faff] p-3"><dt className="font-bold text-[#7890ac]">Trechos</dt><dd className="mt-1 font-bold text-[#071a3a]">{session.visibleExcerptCount}/{transcriptScript.length}</dd></div>
-            <div className="bg-[#f7faff] p-3"><dt className="font-bold text-[#7890ac]">Pendentes</dt><dd className="mt-1 font-bold text-[#071a3a]">{pendingCount}</dd></div>
-          </dl>
+          <h3 id="teleconsult-ai-title" className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Consulta com {patientName}</h3>
+          <p className="mt-1 text-sm leading-6 text-[#61718a]">Conduza a conversa. A IA apenas organiza os registros para a sua revisão.</p>
         </div>
+        <p className="rounded-xl bg-[#f7faff] px-3 py-2 text-xs font-semibold leading-5 text-[#526681]">{pendingCount} ponto{pendingCount === 1 ? '' : 's'} para revisar</p>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(330px,0.85fr)]">
-        <section aria-labelledby="teleconsult-room-title" className="overflow-hidden rounded-3xl border border-[#dbe4f0] bg-white">
-          <div className="bg-[#03132d] p-5 text-white sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+        <section
+          aria-labelledby="teleconsult-room-title"
+          className={cn(
+            'overflow-hidden rounded-3xl border border-[#dbe4f0] bg-white',
+            focusMode && 'fixed inset-3 z-[90] min-h-[calc(100dvh-1.5rem)] overflow-y-auto shadow-[0_28px_90px_rgba(3,19,45,0.45)]',
+          )}
+        >
+          <div className="relative isolate overflow-hidden bg-[#03132d] p-4 text-white sm:p-5">
+            <div aria-hidden="true" className="absolute inset-x-[12%] top-0 h-40 rounded-full bg-[#155b97]/25 blur-3xl" />
+            <div className="relative flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#a9c8ee]">Sala e consentimento</p>
-                <h4 id="teleconsult-room-title" className="mt-2 text-xl font-semibold">Sala demonstrativa</h4>
+                <p className="text-xs font-bold uppercase tracking-[0.11em] text-[#a9c8ee]">Sala de consulta</p>
+                <h4 id="teleconsult-room-title" className="mt-1 text-lg font-semibold">{session.status === 'ended' ? 'Consulta encerrada' : 'Em conversa com a paciente'}</h4>
               </div>
-              <span className="rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#e8f0fb]">Nenhum áudio capturado</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#e8f0fb]">
+                <span className={cn('size-2 rounded-full', session.status === 'active' ? 'bg-[#71d3aa]' : 'bg-[#a9bdd8]')} />
+                {session.status === 'active' ? 'Em andamento · 08:42' : session.status === 'paused' ? 'Em pausa' : 'Pronta para iniciar'}
+              </span>
             </div>
 
-            <div className="mt-5 grid min-h-52 gap-3 sm:grid-cols-2">
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-5 text-center">
-                <span className="grid size-16 place-items-center rounded-full bg-[#e8f0fb] text-lg font-bold text-[#124da0]">MC</span>
-                <p className="mt-3 font-bold">{patientName}</p>
-                <p className="mt-1 text-xs text-[#b7c9df]">Participante fictícia</p>
+            <div className="relative mt-4 flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_50%_20%,#1c3c69_0%,#0a1d3d_54%,#03132d_100%)] p-5 sm:min-h-[420px]">
+              <div className="flex flex-col items-center text-center">
+                <PatientAvatar patient={patientAvatar} size="lg" className="!size-28 ring-[4px] ring-white/45 ring-offset-[#16355d] sm:!size-32" />
+                <p className="mt-5 text-xl font-semibold tracking-[-0.025em]">{patientName}</p>
+                <p className="mt-1 text-sm text-[#bfd0e6]">Paciente</p>
               </div>
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-white/10 p-5 text-center">
-                <span className="grid size-16 place-items-center rounded-full bg-white text-lg font-bold text-[#071a3a]">GM</span>
-                <p className="mt-3 font-bold">Dr. Guilherme</p>
-                <p className="mt-1 text-xs text-[#b7c9df]">Médico responsável</p>
-              </div>
-            </div>
 
-            {session.status === 'idle' ? (
-              <div className="mt-5 rounded-2xl bg-white p-4 text-[#071a3a]">
-                <label className="flex cursor-pointer items-start gap-3 text-sm leading-6">
-                  <input
-                    type="checkbox"
-                    checked={session.consentConfirmed}
-                    onChange={(event) => setSession((current) => ({ ...current, consentConfirmed: event.target.checked }))}
-                    className="mt-1 size-5 shrink-0 accent-[#124da0]"
-                  />
-                  <span><strong>Confirmo a ciência específica nesta simulação.</strong><span className="mt-1 block text-xs text-[#61718a]">Versão teleconsulta-transcricao-v1 · separada da pré-consulta e da gravação real.</span></span>
-                </label>
+              <div className="absolute right-3 top-3 w-[132px] rounded-2xl border border-white/15 bg-[#173158] p-3 shadow-[0_12px_28px_rgba(0,0,0,0.25)] sm:right-5 sm:top-5 sm:w-[166px] sm:p-4">
+                <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-[#dfeaf7]">
+                  <span role="img" aria-label="Avatar do Dr. Guilherme Martins" className="relative grid size-16 overflow-hidden rounded-full bg-[#d8e7f3] sm:size-[76px]">
+                    <span aria-hidden="true" className="absolute -bottom-[18%] left-1/2 h-[52%] w-[86%] -translate-x-1/2 rounded-t-[52%] bg-[#285786]" />
+                    <span aria-hidden="true" className="absolute left-1/2 top-[23%] h-[48%] w-[48%] -translate-x-1/2 rounded-full bg-[#c98765]" />
+                    <span aria-hidden="true" className="absolute left-1/2 top-[13%] h-[29%] w-[57%] -translate-x-1/2 rounded-t-[52%] bg-[#30313a]" />
+                    <span aria-hidden="true" className="absolute left-[37%] top-[50%] size-[5%] rounded-full bg-[#302927]" />
+                    <span aria-hidden="true" className="absolute right-[37%] top-[50%] size-[5%] rounded-full bg-[#302927]" />
+                  </span>
+                </div>
+                <p className="mt-2 truncate text-xs font-bold text-white">Dr. Guilherme</p>
+                <p className="mt-0.5 text-[11px] text-[#bcd0e9]">Você</p>
+              </div>
+
+              {session.status === 'idle' ? (
                 <button
                   type="button"
                   onClick={startSession}
-                  disabled={!session.consentConfirmed}
-                  className="mt-4 min-h-12 w-full cursor-pointer rounded-xl bg-[#124da0] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0f3f83] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                  className="absolute bottom-5 inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-[#071a3a] shadow-[0_10px_24px_rgba(0,0,0,0.22)] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]"
                 >
-                  Iniciar teleconsulta simulada
+                  <VideoCamera aria-hidden="true" size={19} />
+                  Iniciar atendimento
                 </button>
-              </div>
-            ) : (
-              <div className="mt-5 flex flex-wrap gap-2">
-                {session.status === 'active' ? (
-                  <button type="button" onClick={() => setSessionStatus('paused')} className="min-h-11 cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Pausar assistência</button>
-                ) : session.status === 'paused' ? (
-                  <button type="button" onClick={() => setSessionStatus('active')} className="min-h-11 cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Retomar assistência</button>
-                ) : null}
-                {session.status !== 'ended' ? (
-                  <button type="button" onClick={() => setSessionStatus('ended')} className="min-h-11 cursor-pointer rounded-xl border border-white/25 px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Encerrar sessão</button>
-                ) : (
-                  <button type="button" onClick={resetSession} className="min-h-11 cursor-pointer rounded-xl bg-white px-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Preparar nova simulação</button>
-                )}
-              </div>
-            )}
+              ) : session.status === 'paused' ? (
+                <button type="button" onClick={() => setSessionStatus('active')} className="absolute bottom-5 inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-[#071a3a] shadow-[0_10px_24px_rgba(0,0,0,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Retomar atendimento</button>
+              ) : null}
+            </div>
+
+            <div className="relative mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                aria-label={microphoneEnabled ? 'Desativar microfone visual' : 'Ativar microfone visual'}
+                aria-pressed={microphoneEnabled}
+                onClick={() => {
+                  setMicrophoneEnabled((current) => !current);
+                  setFeedback(microphoneEnabled ? 'Microfone visual desativado.' : 'Microfone visual ativado.');
+                }}
+                className={cn('grid min-h-11 min-w-11 cursor-pointer place-items-center rounded-xl px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]', microphoneEnabled ? 'bg-white/12 text-white hover:bg-white/20' : 'bg-[#a2494a] text-white hover:bg-[#bc5b5d]')}
+              >
+                {microphoneEnabled ? <Microphone aria-hidden="true" size={20} /> : <MicrophoneSlash aria-hidden="true" size={20} />}
+              </button>
+              <button
+                type="button"
+                aria-label={cameraEnabled ? 'Desativar câmera visual' : 'Ativar câmera visual'}
+                aria-pressed={cameraEnabled}
+                onClick={() => {
+                  setCameraEnabled((current) => !current);
+                  setFeedback(cameraEnabled ? 'Câmera visual desativada.' : 'Câmera visual ativada.');
+                }}
+                className={cn('grid min-h-11 min-w-11 cursor-pointer place-items-center rounded-xl px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]', cameraEnabled ? 'bg-white/12 text-white hover:bg-white/20' : 'bg-[#a2494a] text-white hover:bg-[#bc5b5d]')}
+              >
+                {cameraEnabled ? <VideoCamera aria-hidden="true" size={20} /> : <VideoCameraSlash aria-hidden="true" size={20} />}
+              </button>
+              <button
+                type="button"
+                aria-label={focusMode ? 'Sair da tela cheia' : 'Abrir tela cheia'}
+                aria-pressed={focusMode}
+                onClick={() => {
+                  setFocusMode((current) => !current);
+                  setFeedback(focusMode ? 'Tela cheia fechada.' : 'Tela cheia aberta.');
+                }}
+                className="grid min-h-11 min-w-11 cursor-pointer place-items-center rounded-xl bg-white/12 px-3 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]"
+              >
+                {focusMode ? <CornersIn aria-hidden="true" size={20} /> : <CornersOut aria-hidden="true" size={20} />}
+              </button>
+              {session.status === 'active' ? (
+                <button type="button" onClick={() => setSessionStatus('paused')} className="min-h-11 cursor-pointer rounded-xl bg-white/12 px-4 text-xs font-bold text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Pausar</button>
+              ) : null}
+              {session.status !== 'ended' ? (
+                <button type="button" onClick={() => setSessionStatus('ended')} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-[#b74e50] px-4 text-xs font-bold text-white transition-colors hover:bg-[#ca6062] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]"><PhoneDisconnect aria-hidden="true" size={18} />Encerrar</button>
+              ) : (
+                <button type="button" onClick={resetSession} className="min-h-11 cursor-pointer rounded-xl bg-white px-4 text-xs font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]">Nova consulta</button>
+              )}
+            </div>
+            <p className="relative mt-3 text-center text-[11px] leading-5 text-[#b7c9df]">Câmera e microfone são controles visuais neste ambiente; nenhum dispositivo é acessado.</p>
           </div>
 
           <div className="p-5 sm:p-6">
@@ -673,7 +723,7 @@ export function DoctorTeleconsultationAiWorkspace({
             </div>
 
             {visibleExcerpts.length > 0 ? (
-              <ol className="mt-4 max-h-[420px] space-y-3 overflow-y-auto pr-1" aria-label="Transcrição demonstrativa da teleconsulta">
+              <ol className="mt-4 max-h-[420px] space-y-3 overflow-y-auto pr-1" aria-label="Transcrição da consulta">
                 {visibleExcerpts.map((excerpt) => (
                   <li key={excerpt.id} className={cn('rounded-2xl border p-4', excerpt.speaker === 'Paciente' ? 'border-[#c9d8ec] bg-[#f7faff]' : 'border-[#dbe4f0] bg-[#f7faff]')}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -685,7 +735,7 @@ export function DoctorTeleconsultationAiWorkspace({
                 ))}
               </ol>
             ) : (
-              <p className="mt-4 rounded-2xl border border-dashed border-[#cbd8e9] bg-[#f7faff] p-5 text-sm leading-6 text-[#61718a]">A transcrição permanece vazia até a ciência específica e o início explícito da simulação.</p>
+              <p className="mt-4 rounded-2xl border border-dashed border-[#cbd8e9] bg-[#f7faff] p-5 text-sm leading-6 text-[#61718a]">Os trechos aparecem quando você inicia o atendimento.</p>
             )}
 
             <button
@@ -776,7 +826,7 @@ export function DoctorTeleconsultationAiWorkspace({
               })}
             </div>
           ) : (
-            <p className="mt-4 rounded-2xl border border-dashed border-[#c9d8ec] bg-white p-5 text-sm leading-6 text-[#61718a]">Os insights aparecem somente quando um trecho fictício contém informação organizável.</p>
+            <p className="mt-4 rounded-2xl border border-dashed border-[#c9d8ec] bg-white p-5 text-sm leading-6 text-[#61718a]">Os pontos para revisar aparecem quando há um registro organizável na conversa.</p>
           )}
         </aside>
       </div>
@@ -874,7 +924,7 @@ export function DoctorTeleconsultationAiWorkspace({
         {feedback || 'Aguardando uma ação. Nenhuma orientação será enviada automaticamente.'}
       </p>
 
-      <SimulationDisclaimer>Teleconsulta, transcrição e insights são inteiramente simulados. Em uma versão real, áudio/vídeo, consentimento, retenção, criptografia, disponibilidade, fornecedores, base legal e resposta a incidentes precisam de validação clínica, jurídica, técnica e de segurança.</SimulationDisclaimer>
+      <p className="rounded-2xl border border-[#dbe4f0] bg-white px-4 py-3 text-xs leading-5 text-[#61718a]">A IA organiza relatos e lacunas com referência à fonte. Diagnóstico, conduta, prescrição e qualquer mensagem à paciente seguem sob revisão e aprovação médica.</p>
     </section>
   );
 }

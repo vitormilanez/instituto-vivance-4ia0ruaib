@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useCareDemo } from './care-demo-store';
 import { getPatientMessagesHref } from './demo-routes';
-import { Status } from './shared';
+import { NavigationLink as Link, Status } from './shared';
 
 const cadenceLabel = {
   daily: 'diária',
+  'every-three-days': 'a cada 3 dias',
   'three-times-week': '3 vezes por semana',
   weekly: 'semanal',
 } as const;

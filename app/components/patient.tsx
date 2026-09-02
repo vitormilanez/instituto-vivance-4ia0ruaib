@@ -429,6 +429,7 @@ function Today({
   const cadenceLabel = followUpConfiguration
     ? {
         daily: 'diário',
+        'every-three-days': 'a cada 3 dias',
         'three-times-week': '3 vezes por semana',
         weekly: 'semanal',
       }[followUpConfiguration.cadence]
@@ -558,6 +559,7 @@ function MyCare({
   const cadenceLabel = followUpConfiguration
     ? {
         daily: 'Todos os dias',
+        'every-three-days': 'A cada 3 dias',
         'three-times-week': '3 vezes por semana',
         weekly: 'Uma vez por semana',
       }[followUpConfiguration.cadence]
@@ -825,7 +827,7 @@ function Evolution({
     ? { poor: 'ruim', regular: 'regular', good: 'bom' }[latestCheckIn.sleepQuality]
     : null;
   const currentCadenceLabel = followUpConfiguration
-    ? { daily: 'Diária', 'three-times-week': '3x por semana', weekly: 'Semanal' }[followUpConfiguration.cadence]
+    ? { daily: 'Diária', 'every-three-days': 'A cada 3 dias', 'three-times-week': '3x por semana', weekly: 'Semanal' }[followUpConfiguration.cadence]
     : 'Ainda não configurada';
 
   return (

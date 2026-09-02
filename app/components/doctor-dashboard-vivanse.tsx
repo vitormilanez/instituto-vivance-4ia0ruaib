@@ -6,10 +6,14 @@ import {
   CaretRight,
   Clock,
   FileText,
+  Sparkle,
   VideoCamera,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
-import { cn } from './shared';
+import { DoctorNextConsultationActions } from './doctor-next-consultation-actions';
+import { getPatientAvatarIdentity } from './patient-care-demo-data';
+import { PatientAvatar } from './doctor-patient-longitudinal';
+import { getPatientResultsSummaryHref } from './demo-routes';
+import { cn, NavigationLink as Link } from './shared';
 
 export type DashboardAppointment = {
   patientId: string;
@@ -43,16 +47,20 @@ export function VivanseDoctorDashboard({
   appointments,
   attentionItems,
   hasPreConsultation,
+  examReminderSent,
   onStartConsultation,
   onOpenPreparation,
   onOpenAttention,
+  onSendExamReminder,
 }: {
   appointments: DashboardAppointment[];
   attentionItems: DashboardAttention[];
   hasPreConsultation: boolean;
+  examReminderSent: boolean;
   onStartConsultation: (patientId: string, encounterId: string) => void;
   onOpenPreparation: (patientId: string, encounterId: string) => void;
   onOpenAttention: (patient: string) => void;
+  onSendExamReminder: () => void;
 }) {
   const nextAppointment = appointments.find((appointment) => appointment.status === 'Próxima') ?? appointments[0];
   const preConsultationLabel = hasPreConsultation ? 'Pré-consulta recebida' : 'Pré-consulta pendente';
@@ -66,12 +74,13 @@ export function VivanseDoctorDashboard({
               Próxima consulta
             </h2>
 
-            <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="mt-6">
               <div className="min-w-0">
                 <div className="flex items-center gap-3.5">
-                  <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#e8f0fb] text-sm font-bold text-[#0b2854]">
-                    {nextAppointment.initials}
-                  </span>
+                  <PatientAvatar
+                    patient={getPatientAvatarIdentity(nextAppointment.patientId, nextAppointment.patient)}
+                    size="md"
+                  />
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h3 className="text-xl font-semibold tracking-[-0.025em] text-[#071a3a]">{nextAppointment.patient}</h3>
@@ -96,11 +105,29 @@ export function VivanseDoctorDashboard({
                   <span>O atendimento manual continua disponível</span>
                 </div>
               </div>
+            </div>
 
+            <DoctorNextConsultationActions
+              patientId={nextAppointment.patientId}
+              encounterId={nextAppointment.encounterId}
+              patientName={nextAppointment.patient}
+              examReminderSent={examReminderSent}
+              onSendExamReminder={onSendExamReminder}
+            />
+
+            <div className="mt-5 flex flex-col gap-3 border-t border-[#dce5f1] pt-5 sm:flex-row sm:items-center sm:justify-end">
+              <Link
+                href={getPatientResultsSummaryHref(nextAppointment.patientId)}
+                className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-[#b9cbe2] bg-[#f6f9fd] px-5 text-sm font-bold text-[#124da0] transition-colors hover:border-[#8eabd0] hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2"
+              >
+                <Sparkle aria-hidden="true" size={19} weight="duotone" />
+                Resumir resultados
+                <ArrowRight aria-hidden="true" size={17} />
+              </Link>
               <button
                 type="button"
                 onClick={() => onStartConsultation(nextAppointment.patientId, nextAppointment.encounterId)}
-                className="vivanse-primary-action inline-flex min-h-14 shrink-0 cursor-pointer items-center justify-center gap-3 rounded-xl px-6 text-sm font-bold text-white transition-colors sm:text-base"
+                className="vivanse-primary-action inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 rounded-xl px-6 text-sm font-bold text-white transition-colors sm:min-w-[220px]"
               >
                 <VideoCamera aria-hidden="true" size={21} />
                 Atender agora
@@ -153,10 +180,11 @@ export function VivanseDoctorDashboard({
                     <span role="cell" className={cn('text-sm font-semibold tabular-nums', isNext ? 'text-[#124da0]' : 'text-[#203a5f]')}>
                       {appointment.time}
                     </span>
-                    <span role="cell" className="flex min-w-0 items-center gap-2.5">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e8f0fb] text-[11px] font-bold text-[#183b6a]">
-                        {appointment.initials}
-                      </span>
+                      <span role="cell" className="flex min-w-0 items-center gap-2.5">
+                      <PatientAvatar
+                        patient={getPatientAvatarIdentity(appointment.patientId, appointment.patient)}
+                        size="sm"
+                      />
                       <span className="truncate text-sm font-semibold text-[#071a3a]">{appointment.patient}</span>
                     </span>
                     <span role="cell" className="hidden text-sm text-[#405675] sm:block">{shortAppointmentType(appointment.type)}</span>

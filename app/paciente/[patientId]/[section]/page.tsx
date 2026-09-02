@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import PatientWorkspace from '../../../components/patient';
+import PatientWorkspace from '../../../components/patient-mvp';
 import { getDefaultEncounterId, getPatientView } from '../../../components/demo-routes';
 
 export default async function PatientSectionPage({
@@ -16,7 +16,6 @@ export default async function PatientSectionPage({
       patientId={patientId}
       encounterId={getDefaultEncounterId(patientId)}
       initialView={view}
-      preVisitRouteOpen={false}
     />
   );
 }

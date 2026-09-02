@@ -256,7 +256,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
       occurredAtIso: configuration.configuredAtIso,
       kind: 'recorded-data',
       title: `Cadência de acompanhamento · versão ${configuration.version}`,
-      summary: `Frequência operacional definida como ${configuration.cadence === 'daily' ? 'diária' : configuration.cadence === 'three-times-week' ? 'três vezes por semana' : 'semanal'}.`,
+      summary: `Frequência operacional definida como ${configuration.cadence === 'daily' ? 'diária' : configuration.cadence === 'every-three-days' ? 'a cada três dias' : configuration.cadence === 'three-times-week' ? 'três vezes por semana' : 'semanal'}.`,
       source: `Plano publicado · versão ${configuration.planVersion}`,
       sourceId: configuration.id,
       sourceVersion: configuration.version,

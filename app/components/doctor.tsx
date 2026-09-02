@@ -4,12 +4,15 @@ import {
   ArrowRight,
   Broadcast as PhosphorBroadcast,
   CalendarBlank,
+  ChatCircle,
   Clock,
+  FileText,
+  House,
   SignOut,
   Sparkle,
+  Users,
   VideoCamera,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useCareDemo } from './care-demo-store';
@@ -18,6 +21,7 @@ import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinic
 import {
   DEFAULT_ENCOUNTER_ID,
   DEFAULT_PATIENT_ID,
+  doctorNavigation,
   getConsultationHref,
   getDefaultEncounterId,
   getPatientDossierHref,
@@ -31,11 +35,12 @@ import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
 import { VivanseDoctorDashboard } from './doctor-dashboard-vivanse';
 import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
 import {
+  PatientAvatar,
   PatientCohort,
   PatientLongitudinalWorkspace,
   type PatientWorkspaceProfile,
 } from './doctor-patient-longitudinal';
-import { cn, Heading, Status, Toast } from './shared';
+import { cn, Heading, NavigationLink as Link, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
 type AppointmentTone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
@@ -65,14 +70,24 @@ const CalendarIcon = CalendarBlank;
 const BroadcastIcon = PhosphorBroadcast;
 const ArrowRightIcon = ArrowRight;
 
+const sidebarNavigationIcons = {
+  'Visão geral': House,
+  Agenda: CalendarBlank,
+  Pacientes: Users,
+  Mensagens: ChatCircle,
+  Relatórios: FileText,
+} as const;
+
 interface DoctorDemoUiState {
   reportApproved: boolean;
   overdueReminderSent: boolean;
+  examReminderSent: boolean;
 }
 
 const initialDoctorDemoUiState: DoctorDemoUiState = {
   reportApproved: false,
   overdueReminderSent: false,
+  examReminderSent: false,
 };
 
 const doctorConversationContexts: Array<{ value: CareConversationContext; label: string }> = [
@@ -94,6 +109,7 @@ function normalizeDoctorDemoUiState(value: unknown): DoctorDemoUiState {
   return {
     reportApproved: typeof stored.reportApproved === 'boolean' ? stored.reportApproved : false,
     overdueReminderSent: typeof stored.overdueReminderSent === 'boolean' ? stored.overdueReminderSent : false,
+    examReminderSent: typeof stored.examReminderSent === 'boolean' ? stored.examReminderSent : false,
   };
 }
 
@@ -223,12 +239,16 @@ const patients: PatientWorkspaceProfile[] = [
   {
     id: DEFAULT_PATIENT_ID,
     nextEncounterId: DEFAULT_ENCOUNTER_ID,
+    age: 39,
     initials: 'MC',
     name: 'Marina Costa',
     focus: 'Emagrecimento · sono',
     progress: '−1,8 kg',
     attention: 'Sono',
     tone: 'amber' as const,
+    programSignal: 'monitor' as const,
+    avatarSeed: 'marina',
+    lastContactOrder: 1,
     reportCount: '2',
     prescriptionCount: '1 ativa',
     cycle: 'Dia 29 de 90',
@@ -269,6 +289,9 @@ const patients: PatientWorkspaceProfile[] = [
     progress: '+8% adesão',
     attention: 'Relatório',
     tone: 'blue' as const,
+    programSignal: 'expected' as const,
+    avatarSeed: 'ana',
+    lastContactOrder: 5,
     reportCount: '3',
     prescriptionCount: 'Nenhuma',
     cycle: 'Dia 61 de 90',
@@ -309,6 +332,9 @@ const patients: PatientWorkspaceProfile[] = [
     progress: '72% plano',
     attention: 'Sintoma',
     tone: 'rose' as const,
+    programSignal: 'review' as const,
+    avatarSeed: 'paulo',
+    lastContactOrder: 2,
     reportCount: '1',
     prescriptionCount: '1 ativa',
     cycle: 'Dia 18 de 60',
@@ -349,6 +375,9 @@ const patients: PatientWorkspaceProfile[] = [
     progress: 'Novo',
     attention: 'Anamnese',
     tone: 'gray' as const,
+    programSignal: 'monitor' as const,
+    avatarSeed: 'rafael',
+    lastContactOrder: 7,
     reportCount: '0',
     prescriptionCount: 'Nenhuma',
     cycle: 'Pré-cuidado',
@@ -380,6 +409,270 @@ const patients: PatientWorkspaceProfile[] = [
     ],
     nextSteps: ['Concluir anamnese', 'Revisar exames anexados', 'Realizar avaliação inicial'],
   },
+  {
+    id: 'pac-demo-006',
+    nextEncounterId: 'enc-demo-006',
+    age: 42,
+    initials: 'LA',
+    name: 'Lucas Almeida',
+    focus: 'Emagrecimento · preparação inicial',
+    progress: '1 de 5 etapas',
+    attention: 'Dados pendentes',
+    tone: 'amber' as const,
+    programSignal: 'monitor' as const,
+    avatarSeed: 'lucas',
+    lastContactOrder: 3,
+    reportCount: '0',
+    prescriptionCount: 'Não informado',
+    cycle: 'Preparação inicial',
+    lastContact: 'Hoje · convite aceito',
+    nextConsultation: 'Após completar o preparo',
+    adherence: 'Ainda não avaliada',
+    report: {
+      title: 'Preparação inicial incompleta',
+      period: 'Ponto de partida',
+      status: 'Aguardando informações',
+      summary: 'Os dados básicos foram confirmados. Objetivo, medidas, medicamentos e fotos solicitadas ainda não foram informados.',
+      metrics: [['Etapas', '1 de 5'], ['Medidas', 'Não informadas'], ['Check-in', 'Pendente']],
+    },
+    prescription: {
+      title: 'Uso atual não informado',
+      status: 'Aguardando resposta',
+      detail: 'Lucas ainda precisa informar medicamentos atuais ou selecionar que não usa nenhum.',
+      note: 'Ausência de informação não significa ausência de uso.',
+    },
+    insight: {
+      title: 'Dados insuficientes para síntese',
+      detail: 'A IA não completa lacunas nem cria interpretações antes do envio do paciente.',
+      basis: 'Somente dados básicos fictícios foram recebidos.',
+    },
+    activity: [
+      ['Hoje · 08:40', 'Convite demonstrativo aceito'],
+      ['Hoje · 08:44', 'Dados básicos confirmados'],
+      ['Hoje · 08:45', 'Preparação salva para continuar depois'],
+    ],
+    nextSteps: ['Aguardar relato inicial', 'Aguardar peso e cintura', 'Confirmar medicamentos ou não uso'],
+  },
+  {
+    id: 'pac-demo-005',
+    nextEncounterId: 'enc-demo-001',
+    age: 53,
+    initials: 'LB',
+    name: 'Lúcia Barbosa',
+    focus: 'Longevidade · energia',
+    progress: '+1 ponto energia',
+    attention: 'Em dia',
+    tone: 'green' as const,
+    programSignal: 'expected' as const,
+    avatarSeed: 'lucia',
+    lastContactOrder: 8,
+    reportCount: '1',
+    prescriptionCount: 'Nenhuma',
+    cycle: 'Dia 45 de 90',
+    lastContact: 'Ontem · 17:24',
+    nextConsultation: 'Hoje · 09:00',
+    adherence: '86%',
+    report: {
+      title: 'Relatório de acompanhamento',
+      period: '10–24 de agosto',
+      status: 'Revisado em 25 ago',
+      summary: 'Mais constância nas caminhadas e energia autorrelatada estável ao longo do ciclo.',
+      metrics: [['Adesão', '86%'], ['Energia', '4 de 5'], ['Passos', '6.820']],
+    },
+    prescription: {
+      title: 'Nenhuma receita ativa',
+      status: 'Sem pendências',
+      detail: 'Não há documentos de prescrição vigentes neste ciclo demonstrativo.',
+      note: 'O histórico permanece disponível para revisão médica.',
+    },
+    insight: {
+      title: 'Manter o ritmo registrado',
+      detail: 'A paciente relata mais energia nas semanas com caminhadas regulares.',
+      basis: 'Registros demonstrativos do período; não estabelece relação causal.',
+    },
+    activity: [
+      ['Ontem · 17:24', 'Caminhada e energia registradas'],
+      ['24 ago · 08:10', 'Check-in concluído'],
+      ['20 ago · 15:42', 'Relatório revisado'],
+    ],
+    nextSteps: ['Confirmar percepção de energia', 'Revisar rotina de caminhadas', 'Definir próximo acompanhamento'],
+  },
+  {
+    id: 'pac-demo-007',
+    nextEncounterId: 'enc-demo-007',
+    age: 35,
+    initials: 'FA',
+    name: 'Fernanda Alves',
+    focus: 'Emagrecimento · rotina',
+    progress: '−1,2 kg',
+    attention: 'Em dia',
+    tone: 'green' as const,
+    programSignal: 'expected' as const,
+    avatarSeed: 'fernanda',
+    lastContactOrder: 6,
+    reportCount: '2',
+    prescriptionCount: '1 ativa',
+    cycle: 'Dia 42 de 90',
+    lastContact: 'Ontem · 12:36',
+    nextConsultation: '5 set · 15:30',
+    adherence: '91%',
+    report: {
+      title: 'Relatório quinzenal',
+      period: '12–26 de agosto',
+      status: 'Pronto para revisão',
+      summary: 'Registros de refeições e medidas foram mantidos com frequência no período demonstrativo.',
+      metrics: [['Peso', '−1,2 kg'], ['Adesão', '91%'], ['Check-ins', '6 de 7']],
+    },
+    prescription: {
+      title: 'Receita digital #RX-1060',
+      status: 'Ativa',
+      detail: 'Documento publicado pela equipe · validade até 4 de outubro.',
+      note: 'Qualquer atualização requer revisão e publicação médica.',
+    },
+    insight: {
+      title: 'Registros consistentes no período',
+      detail: 'A frequência de respostas se manteve nas últimas duas semanas.',
+      basis: 'Dados demonstrativos autorrelatados; não equivale a avaliação clínica.',
+    },
+    activity: [
+      ['Ontem · 12:36', 'Check-in por texto concluído'],
+      ['25 ago · 19:04', 'Medidas atualizadas'],
+      ['23 ago · 07:42', 'Plano alimentar visualizado'],
+    ],
+    nextSteps: ['Revisar medidas autorrelatadas', 'Confirmar rotina sustentável', 'Manter canal para dúvidas'],
+  },
+  {
+    id: 'pac-demo-008',
+    nextEncounterId: 'enc-demo-008',
+    age: 48,
+    initials: 'DN',
+    name: 'Diego Nunes',
+    focus: 'Emagrecimento · adesão',
+    progress: '4 de 9 registros',
+    attention: 'Check-ins',
+    tone: 'rose' as const,
+    programSignal: 'review' as const,
+    avatarSeed: 'diego',
+    lastContactOrder: 4,
+    reportCount: '1',
+    prescriptionCount: '1 ativa',
+    cycle: 'Dia 37 de 90',
+    lastContact: 'Hoje · 08:44',
+    nextConsultation: '6 set · 10:00',
+    adherence: '44%',
+    report: {
+      title: 'Resumo de acompanhamento',
+      period: '18–26 de agosto',
+      status: 'Aguardando revisão',
+      summary: 'Houve redução na frequência de check-ins e no registro de refeições durante o período demonstrativo.',
+      metrics: [['Adesão', '44%'], ['Check-ins', '4 de 9'], ['Registros', '3 ausentes']],
+    },
+    prescription: {
+      title: 'Receita digital #RX-1063',
+      status: 'Ativa',
+      detail: '1 item prescrito · documento acessível à paciente.',
+      note: 'O sinal de acompanhamento não altera a orientação publicada.',
+    },
+    insight: {
+      title: 'Retomar contexto antes de qualquer ajuste',
+      detail: 'A queda de registros pede conversa humana para entender barreiras relatadas.',
+      basis: 'Sinal operacional demonstrativo; não é diagnóstico nem decisão de conduta.',
+    },
+    activity: [
+      ['Hoje · 08:44', 'Check-in breve enviado'],
+      ['23 ago · 21:10', 'Registro não concluído'],
+      ['20 ago · 18:22', 'Mensagem recebida'],
+    ],
+    nextSteps: ['Ler o relato mais recente', 'Confirmar barreiras da rotina', 'Decidir próximo passo na consulta'],
+  },
+  {
+    id: 'pac-demo-009',
+    nextEncounterId: 'enc-demo-009',
+    age: 41,
+    initials: 'CT',
+    name: 'Camila Torres',
+    focus: 'Saúde metabólica · movimento',
+    progress: '+1.600 passos',
+    attention: 'Em dia',
+    tone: 'green' as const,
+    programSignal: 'expected' as const,
+    avatarSeed: 'camila',
+    lastContactOrder: 9,
+    reportCount: '2',
+    prescriptionCount: 'Nenhuma',
+    cycle: 'Dia 58 de 90',
+    lastContact: 'Anteontem · 18:05',
+    nextConsultation: '9 set · 11:30',
+    adherence: '84%',
+    report: {
+      title: 'Relatório mensal',
+      period: '27 jul–26 ago',
+      status: 'Revisado em 27 ago',
+      summary: 'A frequência de movimento registrada aumentou no ciclo demonstrativo, sem alteração automática do plano.',
+      metrics: [['Passos', '+1.600'], ['Adesão', '84%'], ['Check-ins', '8 de 9']],
+    },
+    prescription: {
+      title: 'Nenhuma receita ativa',
+      status: 'Sem pendências',
+      detail: 'Não há documentos de prescrição vigentes no acompanhamento demonstrativo.',
+      note: 'O histórico de orientações permanece acessível para a equipe.',
+    },
+    insight: {
+      title: 'Movimento mais frequente registrado',
+      detail: 'Os registros de passos foram mais recorrentes no fim do ciclo.',
+      basis: 'Fonte demonstrativa de dispositivo; precisa de conferência humana.',
+    },
+    activity: [
+      ['Anteontem · 18:05', 'Atividade sincronizada'],
+      ['25 ago · 07:18', 'Check-in concluído'],
+      ['21 ago · 13:50', 'Relatório publicado'],
+    ],
+    nextSteps: ['Confirmar como a rotina está sendo vivida', 'Revisar dados do dispositivo', 'Planejar nova conversa'],
+  },
+  {
+    id: 'pac-demo-010',
+    nextEncounterId: 'enc-demo-010',
+    age: 58,
+    initials: 'BA',
+    name: 'Bruno Azevedo',
+    focus: 'Longevidade · sono',
+    progress: '6h18 sono',
+    attention: 'Sono',
+    tone: 'amber' as const,
+    programSignal: 'monitor' as const,
+    avatarSeed: 'bruno',
+    lastContactOrder: 10,
+    reportCount: '1',
+    prescriptionCount: '1 ativa',
+    cycle: 'Dia 66 de 90',
+    lastContact: '26 ago · 20:10',
+    nextConsultation: '10 set · 09:30',
+    adherence: '76%',
+    report: {
+      title: 'Relatório de sono',
+      period: '12–26 de agosto',
+      status: 'Pronto para revisão',
+      summary: 'O paciente registrou variação de sono em parte das noites; o dado segue disponível para conversa e revisão médica.',
+      metrics: [['Sono médio', '6h18'], ['Adesão', '76%'], ['Check-ins', '5 de 7']],
+    },
+    prescription: {
+      title: 'Receita digital #RX-1068',
+      status: 'Ativa',
+      detail: '1 item prescrito · validade até 12 de outubro.',
+      note: 'A observação de sono não altera automaticamente a receita.',
+    },
+    insight: {
+      title: 'Revisar regularidade do sono',
+      detail: 'O paciente relatou horários irregulares em alguns dias do ciclo demonstrativo.',
+      basis: 'Autorrelato e dados demonstrativos; não define causa ou diagnóstico.',
+    },
+    activity: [
+      ['26 ago · 20:10', 'Relato de sono enviado'],
+      ['24 ago · 07:05', 'Check-in concluído'],
+      ['19 ago · 16:18', 'Receita visualizada'],
+    ],
+    nextSteps: ['Confirmar horário de sono', 'Revisar relato original', 'Decidir o foco do retorno'],
+  },
 ];
 
 export default function DoctorWorkspace({
@@ -398,7 +691,7 @@ export default function DoctorWorkspace({
   const router = useRouter();
   const view = initialView;
   const nextSidebarAppointment = appointments.find((appointment) => appointment.status === 'Próxima') ?? appointments[0];
-  const { hydrated, latestSubmission } = useCareDemo(patientId, encounterId ?? getDefaultEncounterId(patientId));
+  const { hydrated, latestSubmission, latestCheckIn } = useCareDemo(patientId, encounterId ?? getDefaultEncounterId(patientId));
   const { latestSubmission: nextSidebarSubmission } = useCareDemo(
     nextSidebarAppointment.patientId,
     nextSidebarAppointment.encounterId,
@@ -440,32 +733,67 @@ export default function DoctorWorkspace({
     <>
       <div id="doctor-workspace-content" className="grid min-h-[calc(100dvh-var(--doctor-chrome-expanded-height))] lg:grid-cols-[252px_minmax(0,1fr)]">
         <aside className="doctor-sticky-offset vivanse-sidebar-surface sticky top-[var(--doctor-chrome-current-height)] hidden h-[calc(100dvh-var(--doctor-chrome-current-height))] flex-col self-start overflow-y-auto px-4 py-5 text-white lg:flex">
-          <section className="vivanse-glass-menu rounded-xl p-4" aria-label="Próxima consulta na agenda">
-              <div className="flex items-start gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a9c8ee]">
-                  <Clock aria-hidden="true" size={20} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#a9bdd8]">Próxima consulta</p>
-                  <p className="mt-1 text-sm font-bold tabular-nums text-white">{nextSidebarAppointment.time}</p>
-                  <p className="mt-0.5 truncate text-xs font-medium text-[#dfe9f7]">{nextSidebarAppointment.patient}</p>
-                </div>
+          <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4" aria-label="Perfil profissional demonstrativo">
+            <div className="flex items-center gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#c4d8f4] text-xs font-extrabold text-[#03132d] ring-2 ring-white/20">GM</span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-white">Dr. Guilherme Martins</p>
+                <p className="mt-0.5 text-xs text-[#b9cce5]">Médico · perfil demonstrativo</p>
               </div>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-3">
-                <span className={cn(
-                  'rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                  nextSidebarSubmission ? 'bg-[#dce9f8] text-[#124da0]' : 'bg-[#fff0ca] text-[#77500a]',
-                )}>
-                  {nextSidebarSubmission ? 'Pré-consulta recebida' : 'Pré-consulta pendente'}
-                </span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-3 text-xs">
+              <div><p className="text-[#9fb8d8]">CRM/SP</p><p className="mt-1 font-semibold text-white">184.920</p></div>
+              <div><p className="text-[#9fb8d8]">Hoje</p><p className="mt-1 font-semibold text-white">5 consultas</p></div>
+            </div>
+          </section>
+
+          <nav aria-label="Navegação lateral do médico" className="mt-5 space-y-1">
+            {doctorNavigation.map((item) => {
+              const Icon = sidebarNavigationIcons[item.label];
+              const active = item.label === view;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]',
+                    active ? 'bg-white/14 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]' : 'text-[#cad9eb] hover:bg-white/8 hover:text-white',
+                  )}
+                >
+                  <Icon aria-hidden="true" size={19} weight={active ? 'fill' : 'regular'} />
+                  {item.label === 'Visão geral' ? 'Hoje' : item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <section className="vivanse-glass-menu mt-5 rounded-2xl p-4" aria-label="Próxima consulta na agenda">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a9c8ee]">
+                <Clock aria-hidden="true" size={20} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[#a9bdd8]">Próxima consulta</p>
+                <p className="mt-1 text-sm font-bold tabular-nums text-white">{nextSidebarAppointment.time}</p>
+                <p className="mt-0.5 truncate text-xs font-medium text-[#dfe9f7]">{nextSidebarAppointment.patient}</p>
               </div>
-              <Link
-                href={getPreConsultationHref(nextSidebarAppointment.patientId, nextSidebarAppointment.encounterId)}
-                className="mt-3 flex min-h-11 items-center justify-between rounded-xl bg-white px-3.5 text-xs font-bold text-[#03132d] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]"
-              >
-                Preparar consulta
-                <ArrowRight aria-hidden="true" size={16} />
-              </Link>
+            </div>
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <span className={cn(
+                'inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                nextSidebarSubmission ? 'bg-[#dce9f8] text-[#124da0]' : 'bg-[#fff0ca] text-[#77500a]',
+              )}>
+                {nextSidebarSubmission ? 'Pré-consulta recebida' : 'Pré-consulta pendente'}
+              </span>
+            </div>
+            <Link
+              href={getPreConsultationHref(nextSidebarAppointment.patientId, nextSidebarAppointment.encounterId)}
+              className="mt-3 flex min-h-11 items-center justify-between rounded-xl bg-white px-3.5 text-xs font-bold text-[#03132d] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df] focus-visible:ring-offset-2 focus-visible:ring-offset-[#03132d]"
+            >
+              Preparar consulta
+              <ArrowRight aria-hidden="true" size={16} />
+            </Link>
           </section>
 
           <button
@@ -484,11 +812,16 @@ export default function DoctorWorkspace({
               appointments={appointments}
               attentionItems={alerts}
               hasPreConsultation={Boolean(latestSubmission)}
+              examReminderSent={demoUi.examReminderSent}
               onStartConsultation={(selectedPatientId, selectedEncounterId) => router.push(getConsultationHref(selectedPatientId, selectedEncounterId))}
               onOpenPreparation={(selectedPatientId, selectedEncounterId) => router.push(getPreConsultationHref(selectedPatientId, selectedEncounterId))}
               onOpenAttention={(patient) => {
                 const item = alerts.find((alert) => alert.patient === patient);
                 if (item) setSelectedAlert(item);
+              }}
+              onSendExamReminder={() => {
+                setDemoUi((current) => ({ ...current, examReminderSent: true }));
+                notify('Lembrete demonstrativo enviado para o envio dos exames já solicitados.');
               }}
             />
           )}
@@ -497,6 +830,7 @@ export default function DoctorWorkspace({
             <Patients
               patientId={patientId}
               patientDetail={patientDetail}
+              hasLiveCheckIn={Boolean(latestCheckIn)}
               onSelectPatient={(selectedPatientId) => router.push(getPatientDossierHref(selectedPatientId))}
               onStartConsultation={(selectedPatientId, selectedEncounterId) => router.push(getConsultationHref(selectedPatientId, selectedEncounterId))}
               onOpenPreparation={(selectedPatientId, selectedEncounterId) => router.push(getPreConsultationHref(selectedPatientId, selectedEncounterId))}
@@ -854,6 +1188,7 @@ function Agenda({ onOpenAppointment, onNotify }: { onOpenAppointment: (appointme
 function Patients({
   patientId,
   patientDetail,
+  hasLiveCheckIn,
   onSelectPatient,
   onStartConsultation,
   onOpenPreparation,
@@ -862,6 +1197,7 @@ function Patients({
 }: {
   patientId: string;
   patientDetail: boolean;
+  hasLiveCheckIn: boolean;
   onSelectPatient: (patientId: string) => void;
   onStartConsultation: (patientId: string, encounterId: string) => void;
   onOpenPreparation: (patientId: string, encounterId: string) => void;
@@ -891,6 +1227,7 @@ function Patients({
     <PatientLongitudinalWorkspace
       patient={selected}
       patients={patients}
+      hasLiveCheckIn={hasLiveCheckIn}
       onSelectPatient={onSelectPatient}
       onStartConsultation={onStartConsultation}
       onOpenPreparation={onOpenPreparation}
@@ -900,55 +1237,42 @@ function Patients({
   );
 }
 
-const messageThreads = [
-  {
-    patientId: DEFAULT_PATIENT_ID,
-    initials: 'MC',
-    name: 'Marina Costa',
-    preview: 'Consegui registrar o jantar.',
-    time: '09:18',
-    context: 'Plano iniciado há 29 dias',
-    incoming: 'Consegui registrar o jantar. Também dormi melhor esta noite.',
-    outgoing: 'Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.',
-  },
-  {
-    patientId: 'pac-demo-003',
-    initials: 'PM',
-    name: 'Paulo Mendes',
-    preview: 'Estou sentindo enjoo hoje.',
-    time: '08:12',
-    context: 'Acompanhamento · dia 18',
-    incoming: 'Estou sentindo enjoo hoje e preferi registrar antes de seguir com a rotina.',
-    outgoing: 'Obrigado por avisar, Paulo. Vou revisar seu relato antes de qualquer orientação.',
-  },
-  {
-    patientId: 'pac-demo-002',
-    initials: 'AR',
-    name: 'Ana Ribeiro',
-    preview: 'Obrigada, doutor.',
-    time: 'Ontem',
-    context: 'Ciclo de força · dia 61',
-    incoming: 'Obrigada, doutor. A rotina pela manhã ficou mais fácil de manter.',
-    outgoing: 'Ótimo, Ana. Vamos revisar essa evolução na próxima consulta.',
-  },
-  {
-    patientId: 'pac-demo-004',
-    initials: 'RL',
-    name: 'Rafael Lima',
-    preview: 'Vou concluir a anamnese.',
-    time: 'Ontem',
-    context: 'Avaliação inicial',
-    incoming: 'Vou concluir a anamnese e conferir os exames antes da consulta.',
-    outgoing: 'Perfeito, Rafael. Se algum campo gerar dúvida, deixe registrado para conversarmos.',
-  },
-] as const;
+type MessageThread = {
+  patient: PatientWorkspaceProfile;
+  preview: string;
+  time: string;
+  context: string;
+  incoming: string;
+  outgoing: string;
+};
+
+const messageThreadCopy: Record<string, Omit<MessageThread, 'patient'>> = {
+  'pac-demo-001': { preview: 'Consegui registrar o jantar.', time: '09:18', context: 'Plano iniciado há 29 dias', incoming: 'Consegui registrar o jantar. Também dormi melhor esta noite.', outgoing: 'Ótimo, Marina. Vou revisar seus registros antes da nossa consulta.' },
+  'pac-demo-002': { preview: 'Obrigada, doutor.', time: 'Ontem', context: 'Ciclo de força · dia 61', incoming: 'A rotina pela manhã ficou mais fácil de manter nesta semana demonstrativa.', outgoing: 'Obrigado por registrar, Ana. Vamos revisar esse relato na próxima consulta.' },
+  'pac-demo-003': { preview: 'Estou sentindo enjoo hoje.', time: '08:12', context: 'Acompanhamento · dia 18', incoming: 'Estou sentindo enjoo hoje e preferi registrar antes de seguir com a rotina.', outgoing: 'Obrigado por avisar, Paulo. Vou revisar seu relato antes de qualquer orientação.' },
+  'pac-demo-004': { preview: 'Vou concluir a anamnese.', time: 'Ontem', context: 'Avaliação inicial', incoming: 'Vou concluir a anamnese e conferir os exames antes da consulta.', outgoing: 'Perfeito, Rafael. Se algum campo gerar dúvida, deixe registrado para conversarmos.' },
+  'pac-demo-005': { preview: 'Registrei as caminhadas.', time: 'Ontem', context: 'Energia e movimento · dia 45', incoming: 'Registrei quatro caminhadas no período demonstrativo e minha energia pareceu estável.', outgoing: 'Obrigada por registrar, Lúcia. Vamos usar seu relato como contexto na próxima conversa.' },
+  'pac-demo-006': { preview: 'Ainda vou completar os dados.', time: 'Hoje', context: 'Preparação inicial', incoming: 'Ainda vou completar os dados de medidas e medicamentos solicitados no mock.', outgoing: 'Sem problema, Lucas. Registre apenas o que conseguir; a equipe confere na consulta.' },
+  'pac-demo-007': { preview: 'Atualizei minhas medidas.', time: 'Ontem', context: 'Rotina · dia 42', incoming: 'Atualizei as medidas e mantive os registros de refeições nesta semana demonstrativa.', outgoing: 'Recebi, Fernanda. A equipe revisa as fontes originais antes de qualquer ajuste.' },
+  'pac-demo-008': { preview: 'Tive dificuldade nos check-ins.', time: 'Hoje', context: 'Adesão · dia 37', incoming: 'Tive dificuldade para responder todos os check-ins no período demonstrativo.', outgoing: 'Obrigado por contar, Diego. Vamos entender o contexto antes de decidir qualquer próximo passo.' },
+  'pac-demo-009': { preview: 'Os passos ficaram mais frequentes.', time: 'Anteontem', context: 'Movimento · dia 58', incoming: 'Os passos ficaram mais frequentes no fim da semana demonstrativa.', outgoing: 'Recebi, Camila. Vamos revisar os registros e conversar sobre a rotina no retorno.' },
+  'pac-demo-010': { preview: 'Meu horário de sono variou.', time: '26 ago', context: 'Sono · dia 66', incoming: 'Meu horário de sono variou em alguns dias do período demonstrativo.', outgoing: 'Obrigado por registrar, Bruno. O relato ficará disponível para revisão humana na consulta.' },
+};
+
+const messageThreads: MessageThread[] = patients.map((patient) => ({
+  patient,
+  ...messageThreadCopy[patient.id],
+}));
 
 function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text: string) => void }) {
   const [value, setValue] = useState('');
   const [context, setContext] = useState<CareConversationContext>('care-plan');
+  const [query, setQuery] = useState('');
   const encounterId = getDefaultEncounterId(patientId);
   const { conversationMessages, sendConversationMessage } = useCareDemo(patientId, encounterId);
-  const selected = messageThreads.find((thread) => thread.patientId === patientId) ?? null;
+  const selected = messageThreads.find((thread) => thread.patient.id === patientId) ?? null;
+  const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+  const visibleThreads = messageThreads.filter((thread) => `${thread.patient.name} ${thread.context} ${thread.preview}`.toLocaleLowerCase('pt-BR').includes(normalizedQuery));
   const trimmedValue = value.trim();
   const canSend = trimmedValue.length >= 2;
 
@@ -957,7 +1281,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
     if (!selected || !canSend) return;
     sendConversationMessage('doctor', { body: trimmedValue, context });
     setValue('');
-    onNotify(`Mensagem sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')} adicionada à conversa de ${selected.name}.`);
+    onNotify(`Mensagem sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')} adicionada à conversa de ${selected.patient.name}.`);
   };
 
   return (
@@ -965,12 +1289,12 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
       <Heading eyebrow="Comunicação segura" title="Mensagens" description="Cada conversa fica vinculada ao contexto do cuidado, sem transformar uma mensagem em decisão clínica." />
       <section className="mt-7 grid min-h-[590px] overflow-hidden rounded-3xl border border-[#dfe8e3] bg-white lg:grid-cols-[290px_1fr]">
         <div className="border-b border-[#e7eeea] lg:border-b-0 lg:border-r">
-          <div className="p-4"><input aria-label="Buscar conversa" placeholder="Buscar conversa" className="min-h-11 w-full rounded-xl bg-[#f4f7f5] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></div>
-          {messageThreads.map((item) => (
-            <Link href={getPatientMessagesHref(item.patientId)} key={item.patientId} aria-current={selected?.patientId === item.patientId ? 'page' : undefined} className={cn('flex min-h-20 w-full gap-3 border-t border-[#edf2ef] p-4 text-left', selected?.patientId === item.patientId ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{item.initials}</span>
+          <div className="p-4"><label className="sr-only" htmlFor="doctor-message-search">Buscar conversa</label><input id="doctor-message-search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Buscar conversa" placeholder="Buscar por paciente ou contexto" className="min-h-11 w-full rounded-xl bg-[#f4f7f5] px-4 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" /></div>
+          {visibleThreads.length === 0 ? <p className="border-t border-[#edf2ef] px-4 py-6 text-sm leading-6 text-[#526a62]">Nenhuma conversa demonstrativa encontrada.</p> : visibleThreads.map((item) => (
+            <Link href={getPatientMessagesHref(item.patient.id)} key={item.patient.id} aria-current={selected?.patient.id === item.patient.id ? 'page' : undefined} className={cn('flex min-h-20 w-full gap-3 border-t border-[#edf2ef] p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0b7b68]', selected?.patient.id === item.patient.id ? 'bg-[#edf7f4]' : 'hover:bg-[#f8faf9]')}>
+              <PatientAvatar patient={item.patient} size="sm" className="ring-offset-white" />
               <span className="min-w-0 flex-1">
-                <span className="flex justify-between gap-3"><strong className="text-sm">{item.name}</strong><small className="text-[#526a62]">{item.time}</small></span>
+                <span className="flex justify-between gap-3"><strong className="text-sm">{item.patient.name}</strong><small className="text-[#526a62]">{item.time}</small></span>
                 <span className="mt-1 block truncate text-xs text-[#526a62]">{item.preview}</span>
               </span>
             </Link>
@@ -979,8 +1303,8 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
         {selected ? (
           <div className="flex min-h-[470px] flex-col">
             <div className="flex items-center gap-3 border-b border-[#e7eeea] p-4 sm:px-6">
-              <span className="grid size-10 place-items-center rounded-full bg-[#d9eee8] text-xs font-bold text-[#0b6a5b]">{selected.initials}</span>
-              <div><p className="text-sm font-bold">{selected.name}</p><p className="text-xs text-[#526a62]">{selected.context}</p></div>
+              <PatientAvatar patient={selected.patient} size="sm" className="ring-offset-white" />
+              <div><p className="text-sm font-bold">{selected.patient.name}</p><p className="text-xs text-[#526a62]">{selected.context}</p></div>
             </div>
             <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6" aria-live="polite">
               <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm sm:max-w-[78%]">
@@ -1011,7 +1335,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
                   </span>
                   <p className="whitespace-pre-wrap break-words">{message.body}</p>
                   <p className={cn('mt-2 text-[11px]', message.sender === 'doctor' ? 'text-[#b8d3cb]' : 'text-[#526a62]')}>
-                    {message.sentAt} · {message.sender === 'doctor' ? 'Dr. Guilherme' : selected.name}
+                    {message.sentAt} · {message.sender === 'doctor' ? 'Dr. Guilherme' : selected.patient.name}
                   </p>
                 </div>
               ))}
@@ -1038,7 +1362,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
                   ))}
                 </div>
               </fieldset>
-              <label className="mt-3 block text-sm font-bold text-[#17372f]" htmlFor="doctor-message">Mensagem para {selected.name}</label>
+              <label className="mt-3 block text-sm font-bold text-[#17372f]" htmlFor="doctor-message">Mensagem para {selected.patient.name}</label>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
                 <textarea id="doctor-message" value={value} maxLength={600} rows={2} onChange={(event) => setValue(event.target.value)} className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder={`Escreva sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`} />
                 <button type="submit" disabled={!canSend} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">Enviar</button>

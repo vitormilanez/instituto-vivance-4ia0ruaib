@@ -1,4 +1,4 @@
-import PatientWorkspace from '../../components/patient';
+import PatientWorkspace from '../../components/patient-mvp';
 import { getDefaultEncounterId } from '../../components/demo-routes';
 
 export default async function PatientHomePage({ params }: { params: Promise<{ patientId: string }> }) {
@@ -8,7 +8,6 @@ export default async function PatientHomePage({ params }: { params: Promise<{ pa
       patientId={patientId}
       encounterId={getDefaultEncounterId(patientId)}
       initialView="Hoje"
-      preVisitRouteOpen={false}
     />
   );
 }
