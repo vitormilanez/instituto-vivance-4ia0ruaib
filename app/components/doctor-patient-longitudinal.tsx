@@ -303,7 +303,7 @@ export function PatientLongitudinalWorkspace({
 
   return (
     <div id="patient-longitudinal-workspace" className="min-w-0">
-      <section className="-mx-4 border-b border-[#dbe4f0] bg-[#f6f9fe]/92 px-4 pb-4 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:-mx-9 lg:px-9 xl:sticky xl:top-[76px] xl:z-30">
+      <section className="doctor-sticky-offset -mx-4 border-b border-[#dbe4f0] bg-[#f6f9fe]/92 px-4 pb-4 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:-mx-9 lg:px-9 xl:sticky xl:top-[var(--doctor-chrome-current-height)] xl:z-30">
         <div className="mx-auto max-w-[1240px] pt-2">
           <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
             <Link href="/medico/pacientes" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[#50627f] transition-colors hover:bg-white hover:text-[#071a3a] focus-visible:outline-none">

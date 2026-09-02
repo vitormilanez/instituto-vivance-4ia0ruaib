@@ -77,6 +77,35 @@ final result: passed
 
 ---
 
+# Conferência visual — cabeçalho recolhível e navegação persistente
+
+## Evidências
+
+- Cabeçalho completo e menu em cinco colunas no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-collapsible-header-mobile-2026-09-02.png`
+- Cabeçalho compacto e navegação persistente no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-collapsible-header-desktop-compact-2026-09-02.png`
+
+## Comportamento validado
+
+- No topo, o cabeçalho mostra título, contexto da rota, próxima ação, troca de área, notificações e perfil conforme o espaço disponível.
+- Após `32 px` acumulados de rolagem para baixo e além de `96 px` da página, contexto, carteira, perfil e ações secundárias saem; título, “Atender” e a navegação permanecem.
+- Com `16 px` acumulados para cima ou retorno ao topo, o cabeçalho expande novamente.
+- O contêiner preserva a altura de `136 px`; o modo compacto usa recorte, movimento e transparência para chegar a `112 px` visuais sem alterar o fluxo do documento.
+- O menu fica em uma faixa própria abaixo do cabeçalho. Em `320 px`, os cinco itens medem cerca de `62 px`, usam ícones de `15 px`, rótulos de `10 px` e ocupam exatamente a largura disponível: `nav.scrollWidth === nav.clientWidth === 320`.
+- O menu móvel mantém “Abrir área da Marina”, notificações e identificação do médico; aberto em `320 px`, permanece entre `x=48` e `x=304`.
+- Nas rotas internas, o título e o botão voltar acompanham o contexto. `/medico/pacientes/pac-demo-001/mensagens` mantém “Mensagens” como item ativo.
+- O menu lateral e os demais blocos presos acompanham suavemente a altura visível do cabeçalho, sem sobreposição: `136 px` expandido e `112 px` compacto.
+
+## Medidas
+
+- Sem rolagem lateral estrutural em `320`, `375`, `768`, `1024` e `1440` px.
+- Celular: a altura do documento permaneceu em `1678 px` durante a troca de estado.
+- Computador: a altura do documento permaneceu em `1424 px`; o menu ficou em `top=56 px`. Em `1440 px`, o bloco preso ficou em `top=136 px` expandido, `top=112 px` compacto e voltou a `top=136 px` ao rolar para cima.
+- A transição usa `requestAnimationFrame`, listener passivo e `180ms`; com movimento reduzido, não há transição.
+
+final result: passed
+
+---
+
 # Conferência visual — painel e pré-consulta do médico
 
 ## Evidências

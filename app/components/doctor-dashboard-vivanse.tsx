@@ -6,7 +6,6 @@ import {
   CaretRight,
   Clock,
   FileText,
-  Info,
   VideoCamera,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -60,19 +59,6 @@ export function VivanseDoctorDashboard({
 
   return (
     <div className="mx-auto w-full max-w-[1240px]">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-[2rem] font-semibold leading-tight tracking-[-0.03em] text-[#071a3a] sm:text-[2.2rem]">
-            Bom dia, Dr. Guilherme
-          </h1>
-          <p className="mt-1.5 text-sm text-[#5b6d88] sm:text-base">Terça-feira, 1 de setembro de 2026</p>
-        </div>
-        <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-xl bg-white/65 px-3 text-xs font-medium text-[#526681] backdrop-blur">
-          Dados de exemplo
-          <Info aria-hidden="true" size={17} />
-        </span>
-      </div>
-
       <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
           <article className="vivanse-panel rounded-2xl p-5 sm:p-6" aria-labelledby="next-consultation-title">

@@ -4,13 +4,9 @@ import {
   ArrowRight,
   Broadcast as PhosphorBroadcast,
   CalendarBlank,
-  ChatCircle,
   Clock,
-  FileText,
-  House,
   SignOut,
   Sparkle,
-  Users,
   VideoCamera,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -22,7 +18,6 @@ import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinic
 import {
   DEFAULT_ENCOUNTER_ID,
   DEFAULT_PATIENT_ID,
-  doctorNavigation,
   getConsultationHref,
   getDefaultEncounterId,
   getPatientDossierHref,
@@ -443,36 +438,9 @@ export default function DoctorWorkspace({
 
   return (
     <>
-      <div id="doctor-workspace-content" className="grid min-h-[calc(100vh-76px)] lg:grid-cols-[252px_minmax(0,1fr)]">
-        <aside className="vivanse-sidebar-surface hidden min-h-[calc(100vh-76px)] flex-col px-4 py-5 text-white lg:flex">
-          <nav aria-label="Navegação do médico" className="space-y-2">
-            {doctorNavigation.map((item) => {
-              const Icon = item.label === 'Visão geral'
-                ? House
-                : item.label === 'Agenda'
-                  ? CalendarBlank
-                  : item.label === 'Pacientes'
-                    ? Users
-                    : item.label === 'Mensagens'
-                      ? ChatCircle
-                      : FileText;
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  aria-current={view === item.label ? 'page' : undefined}
-                  className={cn(
-                    'vivanse-glass-menu flex min-h-[54px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-left text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white',
-                    view === item.label && 'vivanse-glass-menu-active text-white'
-                  )}
-                >
-                  <Icon aria-hidden="true" size={21} weight={view === item.label ? 'fill' : 'regular'} />
-                  {item.label === 'Visão geral' ? 'Hoje' : item.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <section className="vivanse-glass-menu mt-5 rounded-xl p-4" aria-label="Próxima consulta na agenda">
+      <div id="doctor-workspace-content" className="grid min-h-[calc(100dvh-var(--doctor-chrome-expanded-height))] lg:grid-cols-[252px_minmax(0,1fr)]">
+        <aside className="doctor-sticky-offset vivanse-sidebar-surface sticky top-[var(--doctor-chrome-current-height)] hidden h-[calc(100dvh-var(--doctor-chrome-current-height))] flex-col self-start overflow-y-auto px-4 py-5 text-white lg:flex">
+          <section className="vivanse-glass-menu rounded-xl p-4" aria-label="Próxima consulta na agenda">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a9c8ee]">
                   <Clock aria-hidden="true" size={20} />
@@ -511,22 +479,6 @@ export default function DoctorWorkspace({
         </aside>
 
         <main id="main-content" className="min-w-0 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8 xl:px-9">
-          {!patientDetail && <div className="mb-6 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Navegação do médico">
-            {doctorNavigation.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                aria-current={view === item.label ? 'page' : undefined}
-                className={cn(
-                  'flex min-h-11 shrink-0 items-center rounded-xl px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1c5ba8] focus-visible:ring-offset-2',
-                  view === item.label ? 'bg-[#061b3e] text-white' : 'border border-[#cddaea] bg-white/80 text-[#50627f] backdrop-blur'
-                )}
-              >
-                {item.label === 'Visão geral' ? 'Hoje' : item.label}
-              </Link>
-            ))}
-          </div>}
-
           {view === 'Visão geral' && (
             <VivanseDoctorDashboard
               appointments={appointments}

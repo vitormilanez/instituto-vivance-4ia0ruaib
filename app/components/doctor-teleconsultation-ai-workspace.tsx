@@ -699,7 +699,7 @@ export function DoctorTeleconsultationAiWorkspace({
           </div>
         </section>
 
-        <aside aria-labelledby="live-insights-title" className="h-fit rounded-3xl border border-[#c9d8ec] bg-[#f7faff] p-5 sm:p-6 xl:sticky xl:top-24">
+        <aside aria-labelledby="live-insights-title" className="doctor-sticky-offset h-fit rounded-3xl border border-[#c9d8ec] bg-[#f7faff] p-5 sm:p-6 xl:sticky xl:top-[calc(var(--doctor-chrome-current-height)+1rem)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.1em] text-[#456b9c]">Apoio em tempo real</p>

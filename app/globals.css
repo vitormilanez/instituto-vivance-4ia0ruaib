@@ -8,6 +8,12 @@
   --vivanse-blue: #124da0;
   --vivanse-blue-soft: #edf3fb;
   --vivanse-border: #dbe4f0;
+  --doctor-topbar-expanded-height: 80px;
+  --doctor-topbar-compact-height: 56px;
+  --doctor-nav-height: 56px;
+  --doctor-chrome-expanded-height: 136px;
+  --doctor-chrome-compact-height: 112px;
+  --doctor-chrome-current-height: var(--doctor-chrome-expanded-height);
 }
 
 @theme inline {
@@ -46,6 +52,10 @@ body {
   background: #f6f9fe;
 }
 
+.vivanse-app-shell:has(.doctor-chrome[data-collapsed='true']) {
+  --doctor-chrome-current-height: var(--doctor-chrome-compact-height);
+}
+
 .vivanse-sidebar-surface {
   background: #03132d;
 }
@@ -56,6 +66,122 @@ body {
   box-shadow: 0 12px 32px color-mix(in srgb, #03132d 5%, transparent);
   backdrop-filter: blur(18px) saturate(120%);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+
+.doctor-chrome {
+  height: var(--doctor-chrome-expanded-height);
+  isolation: isolate;
+}
+
+.doctor-chrome-surface {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-bottom: 1px solid var(--vivanse-border);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--vivanse-navy) 5%, transparent);
+  clip-path: inset(0 0 0 0);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  transition: clip-path 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doctor-chrome-top {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--doctor-topbar-expanded-height);
+}
+
+.doctor-chrome-brand,
+.doctor-chrome-nav-rail {
+  background: var(--vivanse-navy);
+}
+
+.doctor-chrome-title-block,
+.doctor-chrome-actions,
+.doctor-chrome-navigation,
+.doctor-chrome-context,
+.doctor-chrome-mobile-mark,
+.doctor-chrome-expanded-only,
+.doctor-chrome-compact-only {
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doctor-chrome-title-block,
+.doctor-chrome-actions,
+.doctor-chrome-navigation,
+.doctor-chrome-mobile-mark {
+  transition-property: transform, opacity;
+}
+
+.doctor-chrome-context,
+.doctor-chrome-expanded-only,
+.doctor-chrome-compact-only {
+  transition-property: transform, opacity, visibility;
+}
+
+.doctor-chrome-navigation {
+  position: absolute;
+  inset: var(--doctor-topbar-expanded-height) 0 auto;
+  height: var(--doctor-nav-height);
+  border-top: 1px solid color-mix(in srgb, var(--vivanse-border) 82%, transparent);
+}
+
+.doctor-chrome-navigation nav {
+  scrollbar-width: none;
+}
+
+.doctor-chrome-navigation nav::-webkit-scrollbar {
+  display: none;
+}
+
+.doctor-chrome-compact-only {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-surface {
+  clip-path: inset(0 0 calc(var(--doctor-topbar-expanded-height) - var(--doctor-topbar-compact-height)) 0);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-title-block {
+  transform: translateY(-12px) scale(0.91);
+  transform-origin: left center;
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-actions {
+  transform: translateY(-12px);
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-navigation {
+  transform: translateY(calc(var(--doctor-topbar-compact-height) - var(--doctor-topbar-expanded-height)));
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-context,
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-mobile-mark,
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-expanded-only {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.doctor-chrome[data-collapsed='true'] .doctor-chrome-compact-only {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.doctor-sticky-offset {
+  transition-property: top, height;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#main-content {
+  scroll-margin-top: calc(var(--doctor-chrome-current-height) + 16px);
 }
 
 .vivanse-glass-menu {
@@ -114,6 +240,18 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .doctor-chrome-surface,
+  .doctor-chrome-title-block,
+  .doctor-chrome-actions,
+  .doctor-chrome-navigation,
+  .doctor-chrome-context,
+  .doctor-chrome-mobile-mark,
+  .doctor-chrome-expanded-only,
+  .doctor-chrome-compact-only,
+  .doctor-sticky-offset {
+    transition: none !important;
+  }
+
   *,
   *::before,
   *::after {

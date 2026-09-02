@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { DEFAULT_PATIENT_ID } from './demo-routes';
+import { DoctorChrome } from './doctor-chrome';
 import { RoleHeader, type Role } from './shared';
 
 export function WorkspaceShell({
@@ -19,7 +20,7 @@ export function WorkspaceShell({
       >
         Ir para o conteúdo
       </a>
-      <RoleHeader role={role} patientId={patientId} />
+      {role === 'doctor' ? <DoctorChrome patientId={patientId} /> : <RoleHeader role={role} patientId={patientId} />}
       {children}
     </div>
   );

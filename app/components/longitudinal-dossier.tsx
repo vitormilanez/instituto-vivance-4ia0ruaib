@@ -649,7 +649,7 @@ export function LongitudinalDossier({ patientId, patientName }: { patientId: str
           )}
         </div>
 
-        <aside className="h-fit space-y-4 xl:sticky xl:top-24">
+        <aside className="doctor-sticky-offset h-fit space-y-4 xl:sticky xl:top-[calc(var(--doctor-chrome-current-height)+1rem)]">
           <section aria-labelledby="dossier-reading-title" className="rounded-2xl bg-[#071a3a] p-5 text-white">
             <h4 id="dossier-reading-title" className="text-lg font-semibold">Cada camada tem um significado diferente.</h4>
             <ul className="mt-4 space-y-3">
