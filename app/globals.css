@@ -8,6 +8,20 @@
   --vivanse-blue: #124da0;
   --vivanse-blue-soft: #edf3fb;
   --vivanse-border: #dbe4f0;
+  /* Patient palette: same navy/blue foundation as the professional area,
+     with teal reserved for progress and amber for attention. */
+  --patient-ink: #071a3a;
+  --patient-muted: #405675;
+  --patient-subtle: #61718a;
+  --patient-action: #124da0;
+  --patient-action-hover: #0f3f83;
+  --patient-action-soft: #eaf2ff;
+  --patient-progress-track: #c9dbf6;
+  --patient-positive: #0b7b68;
+  --patient-positive-soft: #e7f4ef;
+  --patient-attention: #8b5a06;
+  --patient-attention-soft: #fff5df;
+  --patient-attention-dot: #c9821c;
   --doctor-topbar-expanded-height: 80px;
   --doctor-topbar-compact-height: 56px;
   --doctor-nav-height: 60px;

@@ -6,13 +6,14 @@ import {
   CalendarBlank,
   ChartLineUp,
   Check,
-  Clock,
+  Camera,
+  ChatCircle,
   FileText,
+  ForkKnife,
   Pill,
   Ruler,
   X,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import {
   type ComponentType,
   type FormEvent,
@@ -21,43 +22,41 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { CareCheckIn } from './care-demo-types';
 import { getPatientSectionHref } from './demo-routes';
 import {
-  isPatientCheckInDue,
   type FilledPatientMvpData,
   type PatientMvpAppointmentChoice,
   type PatientMvpSessionState,
 } from './patient-mvp-data';
-import { cn, Status } from './shared';
+import { cn, NavigationLink, Status } from './shared';
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--patient-action)] focus-visible:ring-offset-2';
 const primaryButton = cn(
-  'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0b7b68] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(11,123,104,0.2)] transition-colors hover:bg-[#096b5b] disabled:cursor-not-allowed disabled:bg-[#829c95] disabled:shadow-none',
+  'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--patient-action)] px-4 text-sm font-bold text-white shadow-[0_10px_24px_rgba(18,77,160,0.22)] transition-colors hover:bg-[var(--patient-action-hover)] disabled:cursor-not-allowed disabled:bg-[#8a9aaf] disabled:shadow-none',
   focusRing,
 );
 const secondaryButton = cn(
-  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#b9d2ca] bg-white px-4 text-sm font-bold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4]',
+  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#b8cde8] bg-white px-4 text-sm font-bold text-[var(--patient-action)] transition-colors hover:bg-[var(--patient-action-soft)]',
   focusRing,
 );
 
 type QuickActionId = 'orientation' | 'treatment' | 'evolution' | 'measures' | 'appointment';
 
 type QuickActionCard = {
-  id: QuickActionId | 'checkin';
+  id: QuickActionId | 'message';
   label: string;
   detail: string;
   status: string;
   tone: 'navy' | 'amber' | 'green' | 'blue' | 'rose';
   Icon: ComponentType<{ size?: number; weight?: 'regular' | 'fill' | 'duotone' }>;
+  href?: string;
+  notificationCount?: number;
 };
 
 export function PatientQuickActions({
   data,
   session,
-  latestCheckIn,
-  onOpenCheckIn,
   onMarkMedicationRead,
   onAskMedicationQuestion,
   onChooseAppointment,
@@ -65,15 +64,12 @@ export function PatientQuickActions({
 }: {
   data: FilledPatientMvpData;
   session: PatientMvpSessionState;
-  latestCheckIn: CareCheckIn | null;
-  onOpenCheckIn: () => void;
   onMarkMedicationRead: () => void;
   onAskMedicationQuestion: () => void;
   onChooseAppointment: (choice: PatientMvpAppointmentChoice) => void;
   onSaveMeasures: (weight: string, waist: string) => void;
 }) {
   const [openAction, setOpenAction] = useState<QuickActionId | null>(null);
-  const checkInDue = isPatientCheckInDue(latestCheckIn);
   const unreadOrientation = !session.medicationRead;
   const appointmentConfirmed = session.appointmentChoice === 'confirmed';
   const appointmentAlternative = session.appointmentChoice === 'alternative';
@@ -86,31 +82,33 @@ export function PatientQuickActions({
   const cards: QuickActionCard[] = [
     {
       id: 'orientation',
-      label: 'Nova orientação',
-      detail: unreadOrientation ? 'Aguardando sua leitura' : 'Leitura registrada',
-      status: unreadOrientation ? 'Não visualizada' : 'Lida',
+      label: 'Orientações médicas',
+      detail: unreadOrientation ? 'Há uma atualização para ler' : 'Última orientação lida',
+      status: unreadOrientation ? '1 nova' : 'Lida',
       tone: unreadOrientation ? 'amber' : 'green',
       Icon: BellRinging,
+      notificationCount: unreadOrientation ? 1 : undefined,
     },
     {
-      id: 'checkin',
-      label: 'Check-in',
-      detail: checkInDue ? 'Conte como está, sem pressa' : 'Próximo em até 3 dias',
-      status: checkInDue ? 'Atrasado' : 'Em dia',
-      tone: checkInDue ? 'rose' : 'green',
-      Icon: Clock,
+      id: 'message',
+      label: 'Mensagem para o médico',
+      detail: 'Escreva para a equipe',
+      status: 'Abrir conversa',
+      tone: 'navy',
+      Icon: ChatCircle,
+      href: getPatientSectionHref(data.patientId, 'Mensagens'),
     },
     {
       id: 'treatment',
       label: 'Tratamento',
       detail: 'Medicamentos, receita e plano',
-      status: unreadOrientation ? '1 atualização' : 'Atualizado',
-      tone: unreadOrientation ? 'amber' : 'navy',
+      status: 'Ver tratamento',
+      tone: 'navy',
       Icon: Pill,
     },
     {
       id: 'evolution',
-      label: 'Evolução',
+      label: 'Minha evolução',
       detail: 'Relatório do último retorno',
       status: '1 relatório',
       tone: 'blue',
@@ -134,57 +132,12 @@ export function PatientQuickActions({
     },
   ];
 
-  const attention = unreadOrientation
-    ? {
-      title: 'Há uma orientação médica nova para você',
-      detail: 'Ela ainda não foi visualizada. Abra para entender o que foi publicado pelo médico.',
-      action: 'Ver orientação',
-      onClick: () => setOpenAction('orientation'),
-    }
-    : checkInDue
-      ? {
-        title: 'Seu check-in passou do prazo de 3 dias',
-        detail: 'Conte como você está quando puder. É um relato para a equipe, não um atendimento em tempo real.',
-        action: 'Fazer check-in',
-        onClick: onOpenCheckIn,
-      }
-      : null;
-
   return (
     <>
-      {attention ? (
-        <button
-          type="button"
-          onClick={attention.onClick}
-          className={cn(
-            'mt-6 flex w-full items-start gap-3 rounded-2xl border border-[#ead9a7] bg-[#fffaf0] p-4 text-left transition-colors hover:bg-[#fff6df] sm:items-center',
-            focusRing,
-          )}
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#fff0ca] text-[#8b5a06]">
-            <BellRinging aria-hidden="true" size={21} weight="duotone" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-[#5d430d]">{attention.title}</span>
-            <span className="mt-1 block text-xs leading-5 text-[#785d1b]">{attention.detail}</span>
-          </span>
-          <span className="hidden shrink-0 items-center gap-1 text-xs font-bold text-[#77500a] sm:inline-flex">
-            {attention.action}
-            <ArrowRight aria-hidden="true" size={15} weight="bold" />
-          </span>
-        </button>
-      ) : null}
-
-      <section aria-labelledby="patient-quick-actions-title" className="mt-6">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Hoje</p>
-            <h2 id="patient-quick-actions-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#17372f]">
-              Acessos rápidos
-            </h2>
-          </div>
-          <p className="text-xs leading-5 text-[#60766f]">Tudo que você pode resolver agora.</p>
-        </div>
+      <section aria-labelledby="patient-quick-actions-title" className="mt-7">
+        <h2 id="patient-quick-actions-title" className="text-xl font-semibold tracking-[-0.02em] text-[var(--patient-ink)]">
+          Ações rápidas
+        </h2>
 
         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {cards.map((card) => (
@@ -192,11 +145,7 @@ export function PatientQuickActions({
               key={card.id}
               card={card}
               onClick={() => {
-                if (card.id === 'checkin') {
-                  onOpenCheckIn();
-                  return;
-                }
-                setOpenAction(card.id);
+                if (card.id !== 'message') setOpenAction(card.id);
               }}
             />
           ))}
@@ -221,47 +170,66 @@ export function PatientQuickActions({
 
 function QuickActionButton({ card, onClick }: { card: QuickActionCard; onClick: () => void }) {
   const cardTones = {
-    navy: 'border-[#dce6f3] bg-[#f8fbff] hover:border-[#b8cce8] hover:bg-[#f2f7fd]',
-    amber: 'border-[#ead9a7] bg-[#fffaf0] hover:border-[#d9bf70] hover:bg-[#fff6df]',
-    green: 'border-[#cce3da] bg-[#f7fbf9] hover:border-[#9fc9bd] hover:bg-[#eff8f4]',
-    blue: 'border-[#d7e4f4] bg-[#f7faff] hover:border-[#abc6e7] hover:bg-[#f1f6fd]',
+    navy: 'border-[#d7e4f4] bg-[#f8fbff] hover:border-[#9bb8db] hover:bg-[#edf3fb]',
+    amber: 'border-[#efcf8e] bg-[#fff9ed] hover:border-[#d8ad5f] hover:bg-[#fff4dd]',
+    green: 'border-[#c7e3da] bg-[#f7fbf9] hover:border-[#8fc7b7] hover:bg-[#edf8f3]',
+    blue: 'border-[#c9dbf6] bg-[#eef5ff] hover:border-[#8fb5e7] hover:bg-[#e3efff]',
     rose: 'border-[#efc9c5] bg-[#fff8f7] hover:border-[#dfaaa3] hover:bg-[#fff1ef]',
   };
   const iconTones = {
-    navy: 'bg-[#e9f0f9] text-[#274b7d]',
-    amber: 'bg-[#fff0ca] text-[#8b5a06]',
+    navy: 'bg-[#e8f0fb] text-[#124da0]',
+    amber: 'bg-[#fff0ca] text-[var(--patient-attention)]',
     green: 'bg-[#e7f4ef] text-[#0b6a5b]',
-    blue: 'bg-[#edf3fb] text-[#124da0]',
+    blue: 'bg-[#dceafe] text-[#0d4fba]',
     rose: 'bg-[#fdecea] text-[#9c453f]',
   };
   const statusTones = {
-    navy: 'text-[#274b7d]',
-    amber: 'text-[#77500a]',
+    navy: 'text-[var(--patient-action)]',
+    amber: 'text-[var(--patient-attention)]',
     green: 'text-[#17624e]',
-    blue: 'text-[#124da0]',
+    blue: 'text-[#0d4fba]',
     rose: 'text-[#9c453f]',
   };
   const Icon = card.Icon;
+  const className = cn(
+    'group relative flex min-h-36 flex-col items-start rounded-2xl border p-4 text-left transition-[transform,background-color,border-color,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(7,26,58,0.08)] active:translate-y-0',
+    cardTones[card.tone],
+    focusRing,
+  );
+  const content = (
+    <>
+      <span className={cn('grid size-10 place-items-center rounded-xl', iconTones[card.tone])}>
+        <Icon aria-hidden="true" size={21} weight="duotone" />
+      </span>
+      {card.notificationCount ? (
+        <span aria-label={`${card.notificationCount} nova notificação`} className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-[#b46d11] text-[11px] font-bold text-white shadow-[0_2px_8px_rgba(139,90,6,0.26)]">
+          {card.notificationCount}
+        </span>
+      ) : null}
+      <span className="mt-4 text-sm font-bold leading-5 text-[var(--patient-ink)]">{card.label}</span>
+      <span className="mt-1 text-xs leading-5 text-[var(--patient-subtle)]">{card.detail}</span>
+      <span className={cn('mt-auto pt-3 text-[11px] font-bold', statusTones[card.tone])}>
+        {card.status}
+      </span>
+      <ArrowRight aria-hidden="true" size={15} weight="bold" className="absolute bottom-4 right-4 text-[#8da5c3] transition-transform group-hover:translate-x-0.5" />
+    </>
+  );
+
+  if (card.href) {
+    return (
+      <NavigationLink href={card.href} className={className}>
+        {content}
+      </NavigationLink>
+    );
+  }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        'group relative flex min-h-36 flex-col items-start rounded-2xl border p-4 text-left transition-[transform,background-color,border-color,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(23,55,47,0.08)] active:translate-y-0',
-        cardTones[card.tone],
-        focusRing,
-      )}
+      className={className}
     >
-      <span className={cn('grid size-10 place-items-center rounded-xl', iconTones[card.tone])}>
-        <Icon aria-hidden="true" size={21} weight="duotone" />
-      </span>
-      <span className="mt-4 text-sm font-bold leading-5 text-[#17372f]">{card.label}</span>
-      <span className="mt-1 text-xs leading-5 text-[#60766f]">{card.detail}</span>
-      <span className={cn('mt-auto pt-3 text-[11px] font-bold', statusTones[card.tone])}>
-        {card.status}
-      </span>
-      <ArrowRight aria-hidden="true" size={15} weight="bold" className="absolute bottom-4 right-4 text-[#91a6a0] transition-transform group-hover:translate-x-0.5" />
+      {content}
     </button>
   );
 }
@@ -285,7 +253,6 @@ function QuickActionSheet({
   onChooseAppointment: (choice: PatientMvpAppointmentChoice) => void;
   onSaveMeasures: (weight: string, waist: string) => void;
 }) {
-  const panelRef = useRef<HTMLElement>(null);
   const label = {
     orientation: 'Nova orientação médica',
     treatment: 'Tratamento',
@@ -293,6 +260,64 @@ function QuickActionSheet({
     measures: 'Atualizar medidas',
     appointment: 'Próximo retorno',
   }[action];
+
+  return (
+    <PatientActionDialog label={label} onClose={onClose}>
+      {action === 'orientation' ? (
+        <OrientationPanel
+          data={data}
+          read={session.medicationRead}
+          onRead={() => {
+            onMarkMedicationRead();
+            onClose();
+          }}
+          onQuestion={() => {
+            onAskMedicationQuestion();
+            onClose();
+          }}
+        />
+      ) : null}
+      {action === 'treatment' ? <TreatmentPanel data={data} /> : null}
+      {action === 'evolution' ? <EvolutionPanel data={data} /> : null}
+      {action === 'measures' ? <MeasuresPanel data={data} session={session} onClose={onClose} onSave={onSaveMeasures} /> : null}
+      {action === 'appointment' ? (
+        <AppointmentPanel
+          data={data}
+          choice={session.appointmentChoice}
+          onChoose={(choice) => {
+            onChooseAppointment(choice);
+            onClose();
+          }}
+        />
+      ) : null}
+    </PatientActionDialog>
+  );
+}
+
+export function PatientMealAnalysisDialog({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (description: string, attachmentName: string | null) => void;
+}) {
+  return (
+    <PatientActionDialog label="Analisar refeição" onClose={onClose}>
+      <MealAnalysisPanel onClose={onClose} onSave={onSave} />
+    </PatientActionDialog>
+  );
+}
+
+function PatientActionDialog({
+  label,
+  onClose,
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -318,44 +343,13 @@ function QuickActionSheet({
         className="relative z-10 max-h-[min(780px,calc(100vh-24px))] w-full max-w-2xl overflow-y-auto rounded-[26px] border border-white/70 bg-white shadow-[0_28px_76px_rgba(3,19,45,0.3)]"
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#e4ece8] bg-white/95 px-5 py-4 backdrop-blur sm:px-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#0b7b68]">Acesso rápido</p>
-            <h2 id="patient-quick-action-title" className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[#17372f]">{label}</h2>
-          </div>
+          <h2 id="patient-quick-action-title" className="text-xl font-semibold tracking-[-0.02em] text-[#17372f]">{label}</h2>
           <button type="button" onClick={onClose} className={cn('grid size-11 place-items-center rounded-xl text-[#526a62] hover:bg-[#edf7f4]', focusRing)} aria-label="Fechar">
             <X aria-hidden="true" size={21} />
           </button>
         </div>
 
-        <div className="p-5 sm:p-6">
-          {action === 'orientation' ? (
-            <OrientationPanel
-              data={data}
-              read={session.medicationRead}
-              onRead={() => {
-                onMarkMedicationRead();
-                onClose();
-              }}
-              onQuestion={() => {
-                onAskMedicationQuestion();
-                onClose();
-              }}
-            />
-          ) : null}
-          {action === 'treatment' ? <TreatmentPanel data={data} /> : null}
-          {action === 'evolution' ? <EvolutionPanel data={data} /> : null}
-          {action === 'measures' ? <MeasuresPanel data={data} session={session} onClose={onClose} onSave={onSaveMeasures} /> : null}
-          {action === 'appointment' ? (
-            <AppointmentPanel
-              data={data}
-              choice={session.appointmentChoice}
-              onChoose={(choice) => {
-                onChooseAppointment(choice);
-                onClose();
-              }}
-            />
-          ) : null}
-        </div>
+        <div className="p-5 sm:p-6">{children}</div>
       </section>
     </div>
   );
@@ -375,7 +369,7 @@ function OrientationPanel({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm leading-6 text-[#526a62]">Publicada por {data.doctorName}. Esta é uma demonstração com dados fictícios.</p>
+        <p className="text-sm leading-6 text-[#526a62]">Publicada por {data.doctorName}.</p>
         <Status tone={read ? 'green' : 'amber'}>{read ? 'Leitura registrada' : 'Não visualizada'}</Status>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -395,10 +389,76 @@ function OrientationPanel({
   );
 }
 
+function MealAnalysisPanel({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (description: string, attachmentName: string | null) => void;
+}) {
+  const [description, setDescription] = useState('');
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const canSubmit = Boolean(description.trim() || attachmentName);
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSubmit) return;
+    onSave(description, attachmentName);
+    onClose();
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <div className="rounded-2xl border border-[#cce3da] bg-[#f7fbf9] p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#e7f4ef] text-[#0b6a5b]">
+            <ForkKnife aria-hidden="true" size={21} weight="duotone" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-[#17372f]">Registre do seu jeito</h3>
+            <p className="mt-1 text-sm leading-6 text-[#526a62]">Envie uma foto ou descreva a refeição. A IA pode organizar o registro para revisão; ela não cria orientação alimentar.</p>
+          </div>
+        </div>
+      </div>
+
+      <label className="mt-5 block">
+        <span className="text-xs font-bold text-[#405d54]">Foto da refeição <span className="font-medium text-[#60766f]">(opcional)</span></span>
+        <span className="mt-2 flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-[#9fc9bd] bg-white px-4 text-sm font-semibold text-[#0b6a5b] transition-colors hover:bg-[#edf7f4]">
+          <Camera aria-hidden="true" size={18} weight="duotone" />
+          {attachmentName ?? 'Escolher foto'}
+          <input
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => setAttachmentName(event.target.files?.[0]?.name ?? null)}
+          />
+        </span>
+      </label>
+
+      <label className="mt-4 block">
+        <span className="text-xs font-bold text-[#405d54]">Descrição <span className="font-medium text-[#60766f]">(opcional)</span></span>
+        <textarea
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="Ex.: almoço às 13h, arroz, feijão e frango."
+          rows={4}
+          className={cn('mt-2 w-full resize-y rounded-xl border border-[#c9d6d1] bg-white px-4 py-3 text-sm leading-6 text-[#17372f] placeholder:text-[#91a6a0]', focusRing)}
+        />
+      </label>
+
+      <button type="submit" disabled={!canSubmit} className={cn(primaryButton, 'mt-5')}>
+        Enviar registro
+        <ArrowRight aria-hidden="true" size={17} weight="bold" />
+      </button>
+      <p className="mt-4 text-xs leading-5 text-[#60766f]">O texto e a foto permanecem como registro original. O médico decide se algo precisa virar orientação.</p>
+    </form>
+  );
+}
+
 function TreatmentPanel({ data }: { data: FilledPatientMvpData }) {
   return (
     <div>
-      <p className="text-sm leading-6 text-[#526a62]">Informações fictícias publicadas pela equipe. Para qualquer dúvida, use Conversas.</p>
+      <p className="text-sm leading-6 text-[#526a62]">Informações publicadas pela equipe. Para qualquer dúvida, use Conversas.</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <InfoCard label="Medicamento atual" tone="navy">
           <strong className="block text-sm text-[#17372f]">{data.medication.name}</strong>
@@ -411,7 +471,7 @@ function TreatmentPanel({ data }: { data: FilledPatientMvpData }) {
         </InfoCard>
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <InfoCard label="Receita fictícia" tone="amber">
+        <InfoCard label="Receita" tone="amber">
           Vence em {data.medication.prescriptionExpiresIn}. O aviso também fica visível para o médico; não há renovação automática neste mock.
         </InfoCard>
         <InfoCard label="Medicamento anterior" tone="muted">{data.medication.history}</InfoCard>
@@ -440,10 +500,10 @@ function EvolutionPanel({ data }: { data: FilledPatientMvpData }) {
         <InfoCard label="Cintura registrada" tone="muted">{formatNumber(first.waist)} cm → {formatNumber(latest.waist)} cm</InfoCard>
       </dl>
       <p className="mt-4 text-xs leading-5 text-[#60766f]">Os dados mostram registros com data e origem. Eles não definem diagnóstico, sucesso ou falha isoladamente.</p>
-      <Link href={getPatientSectionHref(data.patientId, 'Evolução')} className={cn(secondaryButton, 'mt-5')}>
+      <NavigationLink href={getPatientSectionHref(data.patientId, 'Evolução')} className={cn(secondaryButton, 'mt-5')}>
         Abrir evolução completa
         <ArrowRight aria-hidden="true" size={17} weight="bold" />
-      </Link>
+      </NavigationLink>
     </div>
   );
 }
