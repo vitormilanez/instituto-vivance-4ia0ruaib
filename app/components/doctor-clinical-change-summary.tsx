@@ -1,0 +1,323 @@
+'use client';
+
+import {
+  Calculator,
+  CheckCircle,
+  FileText,
+  Info,
+  ShieldCheck,
+  WarningCircle,
+} from '@phosphor-icons/react';
+import { useMemo, useState } from 'react';
+import {
+  getClinicalChangeDemo,
+  type ClinicalChangeSource,
+  type ClinicalOutputType,
+} from './clinical-change-demo-data';
+import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
+import { cn, Status } from './shared';
+
+const outputTypePresentation: Record<ClinicalOutputType, { label: string; className: string }> = {
+  FACT: { label: 'Dado original', className: 'border-[#b9d8cf] bg-[#edf7f4] text-[#0b6a5b]' },
+  CALCULATION: { label: 'Cálculo reproduzível', className: 'border-[#c9d8ec] bg-[#edf3fb] text-[#355f95]' },
+  REFERENCE_FLAG: { label: 'Flag do laudo', className: 'border-[#ead3a6] bg-[#fff8e9] text-[#825b0b]' },
+  AI_SUMMARY: { label: 'Resumo da IA', className: 'border-[#c9d8ec] bg-[#edf3fb] text-[#456b9c]' },
+  DATA_GAP: { label: 'Dado ausente', className: 'border-[#d6dce5] bg-[#f4f6f9] text-[#526681]' },
+  SOURCE_CONFLICT: { label: 'Fontes conflitantes', className: 'border-[#efc7c3] bg-[#fdf0ef] text-[#8d3f39]' },
+};
+
+function OutputTypeBadge({ type }: { type: ClinicalOutputType }) {
+  const presentation = outputTypePresentation[type];
+  return (
+    <span className={cn('inline-flex min-h-7 items-center rounded-full border px-3 py-1 text-[11px] font-bold', presentation.className)}>
+      {presentation.label}
+    </span>
+  );
+}
+
+function SourceReferences({
+  sourceIds,
+  sourceMap,
+}: {
+  sourceIds: string[];
+  sourceMap: Map<string, ClinicalChangeSource>;
+}) {
+  return (
+    <ul className="mt-3 divide-y divide-[#e7edf5] border-y border-[#e7edf5]">
+      {sourceIds.map((sourceId) => {
+        const source = sourceMap.get(sourceId);
+        if (!source) return null;
+        return (
+          <li key={source.id} className="py-3 text-xs leading-5 text-[#61718a]">
+            <strong className="block text-[#405675]">{source.label}</strong>
+            <span>{source.date} · {source.origin} · {source.reviewState}</span>
+            {source.limitation ? <span className="mt-1 block text-[#825b0b]">Limite: {source.limitation}</span> : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function DoctorClinicalChangeSummary({
+  patientId,
+  onNotify,
+}: {
+  patientId: string;
+  onNotify?: (message: string) => void;
+}) {
+  const summary = getClinicalChangeDemo(patientId);
+  const [draftText, setDraftText] = useState(summary?.draft.text ?? '');
+  const [selectedPointIds, setSelectedPointIds] = useState<string[]>(
+    summary?.draft.points.map((point) => point.id) ?? [],
+  );
+  const [revisionNumber, setRevisionNumber] = useState(0);
+  const [isReviewSaved, setIsReviewSaved] = useState(false);
+  const sourceMap = useMemo(
+    () => new Map(summary?.sources.map((source) => [source.id, source]) ?? []),
+    [summary],
+  );
+
+  if (!summary) return null;
+
+  const markChanged = () => setIsReviewSaved(false);
+  const togglePoint = (pointId: string) => {
+    setSelectedPointIds((current) => (
+      current.includes(pointId)
+        ? current.filter((id) => id !== pointId)
+        : [...current, pointId]
+    ));
+    markChanged();
+  };
+  const canSave = draftText.trim().length > 0 && selectedPointIds.length > 0;
+
+  const saveReview = () => {
+    if (!canSave) return;
+    const nextVersion = revisionNumber + 1;
+    setRevisionNumber(nextVersion);
+    setIsReviewSaved(true);
+    onNotify?.(`Resumo longitudinal revisado e salvo como versão ${nextVersion} nesta sessão demonstrativa.`);
+  };
+
+  return (
+    <section aria-labelledby="clinical-change-summary-title" className="vivance-panel overflow-hidden rounded-2xl">
+      <header className="border-b border-[#dbe4f0] bg-white p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <h2 id="clinical-change-summary-title" className="text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Desde a última consulta</h2>
+            <p className="mt-2 text-sm leading-6 text-[#61718a]">
+              Mudanças objetivas entre {summary.period.from} e {summary.period.to}, com dado original, fórmula e limite disponíveis para conferência.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Status tone="gray">Dados fictícios</Status>
+            <Status tone={isReviewSaved ? 'green' : 'amber'}>{isReviewSaved ? `Revisado · v${revisionNumber}` : 'Revisão médica necessária'}</Status>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 border-t border-[#e7edf5] pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-[#50627f]">
+            <span>{summary.sources.length} fontes registradas</span>
+            <span>{summary.reviewItems.filter((item) => item.type === 'DATA_GAP').length} lacuna de dado</span>
+            <span>{summary.reviewItems.filter((item) => item.type === 'SOURCE_CONFLICT').length} conflito de fonte</span>
+          </div>
+          <span className="text-xs text-[#61718a]">Consulta anterior: {summary.period.previousConsultation}</span>
+        </div>
+      </header>
+
+      <div className="grid divide-y divide-[#e7edf5] bg-white sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        {summary.metrics.map((metric, index) => (
+          <div key={metric.id} className={cn('p-4 sm:p-5', index === 2 && 'sm:border-t sm:border-[#e7edf5] xl:border-t-0')}>
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#61718a]">
+              <Calculator aria-hidden="true" size={17} className="text-[#124da0]" />
+              <span>{metric.label}</span>
+            </div>
+            <p className="mt-3 text-xl font-semibold tabular-nums tracking-[-0.025em] text-[#071a3a]">{metric.value}</p>
+            <p className="mt-1 text-sm font-bold tabular-nums text-[#124da0]">{metric.change}</p>
+            <details className="mt-3 border-t border-[#e7edf5] pt-1">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center text-xs font-bold text-[#124da0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Por que estou vendo isso?</summary>
+              <div className="pb-2 text-xs leading-5 text-[#61718a]">
+                <OutputTypeBadge type={metric.type} />
+                <p className="mt-3"><strong className="text-[#405675]">Fórmula:</strong> {metric.formula}</p>
+                <p className="mt-2"><strong className="text-[#405675]">Limite:</strong> {metric.limitation}</p>
+                <SourceReferences sourceIds={metric.sourceIds} sourceMap={sourceMap} />
+              </div>
+            </details>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid border-t border-[#dbe4f0] bg-white xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+        <section aria-labelledby="lab-comparison-title" className="min-w-0 p-5 sm:p-6 xl:border-r xl:border-[#dbe4f0]">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#edf3fb] text-[#124da0]">
+              <FileText aria-hidden="true" size={21} />
+            </span>
+            <div>
+              <h3 id="lab-comparison-title" className="text-lg font-semibold text-[#071a3a]">Comparação objetiva dos exames</h3>
+              <p className="mt-1 text-sm leading-6 text-[#61718a]">O sistema compara valores e calcula métricas aprovadas; não cria uma faixa ideal nem define meta terapêutica.</p>
+            </div>
+          </div>
+
+          <div className="mt-5 divide-y divide-[#e7edf5] border-y border-[#dbe4f0] md:hidden">
+            {summary.labComparisons.map((comparison) => (
+              <article key={comparison.id} className="py-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <h4 className="font-semibold text-[#071a3a]">{comparison.label}</h4>
+                  <OutputTypeBadge type={comparison.type} />
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-[#dbe4f0]">
+                  <div className="bg-white p-3">
+                    <dt className="text-xs font-semibold text-[#61718a]">18 jul</dt>
+                    <dd className="mt-1 text-sm tabular-nums text-[#405675]">{comparison.previous}</dd>
+                  </div>
+                  <div className="bg-[#f7faff] p-3">
+                    <dt className="text-xs font-semibold text-[#61718a]">14 ago</dt>
+                    <dd className="mt-1 text-sm font-bold tabular-nums text-[#071a3a]">{comparison.current}</dd>
+                  </div>
+                </dl>
+                <p className="mt-3 text-xs leading-5 text-[#61718a]">{comparison.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[680px] border-collapse text-left text-sm">
+              <caption className="sr-only">Comparação fictícia dos exames de julho e agosto de 2026</caption>
+              <thead>
+                <tr className="border-y border-[#dbe4f0] text-xs text-[#61718a]">
+                  <th className="py-3 pr-4 font-semibold">Métrica</th>
+                  <th className="px-4 py-3 font-semibold">18 jul</th>
+                  <th className="px-4 py-3 font-semibold">14 ago</th>
+                  <th className="pl-4 py-3 font-semibold">Natureza</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.labComparisons.map((comparison) => (
+                  <tr key={comparison.id} className="border-b border-[#e7edf5] align-top last:border-b-0">
+                    <th className="py-4 pr-4 font-semibold text-[#071a3a]">
+                      {comparison.label}
+                      <span className="mt-1 block max-w-[36ch] text-xs font-normal leading-5 text-[#61718a]">{comparison.detail}</span>
+                    </th>
+                    <td className="px-4 py-4 tabular-nums text-[#405675]">{comparison.previous}</td>
+                    <td className="px-4 py-4 tabular-nums font-bold text-[#071a3a]">{comparison.current}</td>
+                    <td className="pl-4 py-4"><OutputTypeBadge type={comparison.type} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <details className="mt-3 border-t border-[#e7edf5] pt-1">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-bold text-[#124da0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">
+              <Info aria-hidden="true" size={18} />
+              Conferir fontes dos exames
+            </summary>
+            <SourceReferences sourceIds={['src-lab-jul-001', 'src-lab-aug-001']} sourceMap={sourceMap} />
+          </details>
+        </section>
+
+        <aside aria-labelledby="review-items-title" className="bg-[#fbfcfe] p-5 sm:p-6">
+          <h3 id="review-items-title" className="text-lg font-semibold text-[#071a3a]">Precisa de conferência humana</h3>
+          <p className="mt-2 text-sm leading-6 text-[#61718a]">O sistema bloqueia inferências quando falta informação ou quando duas fontes não podem ser reconciliadas.</p>
+          <div className="mt-5 divide-y divide-[#dbe4f0] border-y border-[#dbe4f0]">
+            {summary.reviewItems.map((item) => (
+              <article key={item.id} className="py-4">
+                <div className="flex items-start gap-3">
+                  <WarningCircle aria-hidden="true" size={20} weight="fill" className={cn('mt-0.5 shrink-0', item.type === 'SOURCE_CONFLICT' ? 'text-[#9c453f]' : 'text-[#825b0b]')} />
+                  <div>
+                    <OutputTypeBadge type={item.type} />
+                    <h4 className="mt-2 text-sm font-bold text-[#071a3a]">{item.title}</h4>
+                    <p className="mt-1 text-xs leading-5 text-[#61718a]">{item.detail}</p>
+                    <p className="mt-2 text-xs font-semibold leading-5 text-[#405675]">Próximo passo: {item.nextStep}</p>
+                  </div>
+                </div>
+                <details className="mt-2 pl-8">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center text-xs font-bold text-[#124da0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Ver fontes relacionadas</summary>
+                  <SourceReferences sourceIds={item.sourceIds} sourceMap={sourceMap} />
+                </details>
+              </article>
+            ))}
+          </div>
+        </aside>
+      </div>
+
+      <section aria-labelledby="assisted-draft-title" className="border-t border-[#dbe4f0] bg-[#f7faff] p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2">
+              {isReviewSaved ? <ClinicalLayerBadge layer="decisao_medica" /> : <AiDraftBadge />}
+              <OutputTypeBadge type="AI_SUMMARY" />
+            </div>
+            <h3 id="assisted-draft-title" className="mt-4 text-xl font-semibold text-[#071a3a]">Rascunho para a próxima conversa</h3>
+            <p className="mt-2 text-sm leading-6 text-[#61718a]">Edite o texto, escolha os pontos que entram na pauta e salve uma versão. Salvar não publica nada para a paciente.</p>
+          </div>
+          <div className="self-start">
+            <Status tone={isReviewSaved ? 'green' : 'blue'}>{isReviewSaved ? `Salvo nesta sessão · v${revisionNumber}` : 'Não publicado'}</Status>
+          </div>
+        </div>
+
+        <label htmlFor="clinical-change-draft" className="mt-5 block text-sm font-bold text-[#071a3a]">Resumo assistido editável</label>
+        <textarea
+          id="clinical-change-draft"
+          value={draftText}
+          onChange={(event) => {
+            setDraftText(event.target.value);
+            markChanged();
+          }}
+          rows={6}
+          className="mt-2 w-full resize-y rounded-xl border border-[#b9cae0] bg-white px-4 py-3 text-sm leading-6 text-[#405675] outline-none transition-shadow focus:border-[#124da0] focus:ring-2 focus:ring-[#124da0]/20"
+        />
+        <p className="mt-2 text-right text-xs tabular-nums text-[#61718a]">{draftText.length} caracteres</p>
+
+        <fieldset className="mt-5">
+          <legend className="text-sm font-bold text-[#071a3a]">Pontos sugeridos para incluir na pauta</legend>
+          <div className="mt-3 grid gap-px overflow-hidden rounded-xl border border-[#dbe4f0] bg-[#dbe4f0] lg:grid-cols-2">
+            {summary.draft.points.map((point) => {
+              const selected = selectedPointIds.includes(point.id);
+              return (
+                <label key={point.id} className="flex min-h-[76px] cursor-pointer items-start gap-3 bg-white p-4 text-sm leading-6 text-[#405675] focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#124da0]">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => togglePoint(point.id)}
+                    className="mt-1 size-5 shrink-0 accent-[#124da0]"
+                  />
+                  <span>
+                    <strong className="block text-[#071a3a]">{point.text}</strong>
+                    <span className="mt-1 block text-xs text-[#61718a]">{point.sourceIds.length} {point.sourceIds.length === 1 ? 'fonte vinculada' : 'fontes vinculadas'}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <div className="mt-5 grid gap-4 border-t border-[#dbe4f0] pt-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <p className="text-sm font-bold text-[#071a3a]">Perguntas sugeridas, não condutas</p>
+            <ul className="mt-2 space-y-1 text-sm leading-6 text-[#61718a]">
+              {summary.draft.questions.map((question) => <li key={question}>• {question}</li>)}
+            </ul>
+          </div>
+          <button
+            type="button"
+            disabled={!canSave || isReviewSaved}
+            onClick={saveReview}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#03132d] px-5 text-sm font-bold text-white transition-colors hover:bg-[#082553] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a0b5]"
+          >
+            {isReviewSaved ? <CheckCircle aria-hidden="true" size={19} weight="fill" /> : <ShieldCheck aria-hidden="true" size={19} />}
+            {isReviewSaved ? `Revisão salva · v${revisionNumber}` : 'Salvar revisão demonstrativa'}
+          </button>
+        </div>
+      </section>
+
+      <details className="border-t border-[#dbe4f0] bg-white px-5 py-2 sm:px-6">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center text-sm font-bold text-[#405675] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Ver todas as fontes desta Slice</summary>
+        <div className="pb-4">
+          <SourceReferences sourceIds={summary.sources.map((source) => source.id)} sourceMap={sourceMap} />
+        </div>
+      </details>
+    </section>
+  );
+}

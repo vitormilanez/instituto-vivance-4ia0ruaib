@@ -259,7 +259,7 @@ export function DoctorChrome() {
         </div>
       </div>
 
-      <div className="doctor-chrome-navigation pointer-events-none">
+      <div className="doctor-chrome-navigation pointer-events-none lg:hidden">
         <nav aria-label="Navegação principal do médico" className="floating-navigation-glass pointer-events-auto grid w-full max-w-[720px] grid-cols-5 items-stretch gap-1 rounded-[22px] p-1.5">
           {doctorNavigation.map((item) => {
             const Icon = navigationIcons[item.label];

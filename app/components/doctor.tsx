@@ -172,7 +172,7 @@ const appointments: Appointment[] = [
     objective: '“Quero continuar perdendo peso sem ficar cansada e voltar a dormir melhor.”',
     reported: 'Mais saciedade, sono pior nesta semana e nenhum sintoma novo.',
     aiFocus: 'Priorizar sono e energia antes de ampliar metas.',
-    metrics: [['Peso', '78,2 kg', '−1,8 kg'], ['Adesão', '82%', '+6 p.p.'], ['Sono', '5h42', 'abaixo do padrão']],
+    metrics: [['Peso', '91,6 kg', '−3,2 kg'], ['Adesão', '82%', '+6 p.p.'], ['Sono', '5h42', '23 de 29 noites']],
     attentionTitle: 'Sono fora do padrão pessoal',
     attentionDetail: 'Quatro noites abaixo de seis horas. Dados do relógio são demonstrativos e não equivalem a diagnóstico.',
     checklist: ['Validar sono', 'Confirmar tolerância', 'Decidir próximo passo'],
@@ -244,7 +244,7 @@ const patients: PatientWorkspaceProfile[] = [
     initials: 'MC',
     name: 'Marina Costa',
     focus: 'Emagrecimento · sono',
-    progress: '−1,8 kg',
+    progress: '−3,2 kg',
     attention: 'Sono',
     tone: 'amber' as const,
     programSignal: 'monitor' as const,
@@ -260,8 +260,8 @@ const patients: PatientWorkspaceProfile[] = [
       title: 'Relatório quinzenal',
       period: '11–25 de agosto',
       status: 'Revisado em 24 ago',
-      summary: 'Evolução consistente de peso e boa adesão. O sono permaneceu abaixo do padrão pessoal em quatro noites.',
-      metrics: [['Peso', '−1,8 kg'], ['Adesão', '82%'], ['Sono médio', '6h12']],
+      summary: 'Os registros mostram redução numérica de peso; sono incompleto e medidas com origens diferentes permanecem para revisão.',
+      metrics: [['Peso', '−3,2 kg'], ['Adesão', '82%'], ['Sono médio', '5h42']],
     },
     prescription: {
       title: 'Receita digital #RX-1042',
@@ -1417,7 +1417,7 @@ function Reports({ approved, onApprove }: { approved: boolean; onApprove: () => 
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {[
-              ['Peso', '−1,8 kg'],
+              ['Peso', '−3,2 kg'],
               ['Adesão', '82%'],
               ['Sono médio', '6h12'],
             ].map((item) => <div key={item[0]} className="rounded-2xl bg-[#f4f7f5] p-4"><p className="text-xs font-semibold text-[#526a62]">{item[0]}</p><p className="mt-2 text-xl font-bold">{item[1]}</p></div>)}

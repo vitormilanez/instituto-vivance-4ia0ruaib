@@ -205,7 +205,7 @@ const seeds: Record<string, PatientCareSeed> = {
   'pac-demo-001': {
     goal: { label: 'Regularidade de sono', target: 'Registrar 5 noites por semana', progress: '4 de 5 noites no recorte', source: 'Plano v2 e autorrelatos demonstrativos' },
     overviewMetrics: [
-      { label: 'Peso registrado', value: '78,2 kg', detail: '−1,8 kg no ciclo fictício' },
+      { label: 'Peso registrado', value: '91,6 kg', detail: '−3,2 kg desde 28 jul' },
       { label: 'Sono médio', value: '5h42', detail: '23 de 29 noites registradas' },
       { label: 'Passos médios', value: '7.200', detail: 'fonte simulada de dispositivo' },
       { label: 'Check-ins', value: '11 de 14', detail: 'respostas preservadas' },
@@ -213,7 +213,7 @@ const seeds: Record<string, PatientCareSeed> = {
     domains: [['Alimentação', '9 refeições confirmadas'], ['Sintomas', '1 relato para revisar'], ['Bem-estar', '11 check-ins'], ['Adesão ao plano', '82% autorrelatada']],
     exam: { title: 'Painel laboratorial de acompanhamento', currentDate: '14 ago 2026', previousDate: '18 jul 2026', markers: [{ marker: 'Glicemia em jejum', previous: 101, current: 96, unit: 'mg/dL' }, { marker: 'Hemoglobina glicada', previous: 5.8, current: 5.5, unit: '%' }, { marker: 'Triglicerídeos', previous: 132, current: 118, unit: 'mg/dL' }] },
     metricSeeds: {
-      weight: { label: 'Peso', unit: 'kg', start: 80, end: 78.2, target: 77.5, targetLabel: 'Meta demonstrativa', source: 'Pesagens confirmadas pela paciente', completeness: '5 de 6 registros esperados' },
+      weight: { label: 'Peso', unit: 'kg', start: 94.8, end: 91.6, target: 90, targetLabel: 'Próximo marco demonstrativo', source: 'Medição inicial da clínica e pesagens autorrelatadas', completeness: '3 registros no período; origem e condições identificadas' },
       sleep: { label: 'Sono médio', unit: 'h', start: 6.4, end: 5.7, target: 7, targetLabel: 'Referência definida no plano', source: 'Check-ins e registros de sono autorrelatados', completeness: '23 de 29 noites registradas' },
       activity: { label: 'Passos médios', unit: 'passos', start: 5400, end: 7200, target: 7000, targetLabel: 'Meta demonstrativa', source: 'Dispositivo simulado e registros confirmados', completeness: '26 de 29 dias sincronizados', color: '#77500a' },
       adherence: { label: 'Adesão autorrelatada', unit: '%', start: 72, end: 82, target: 80, targetLabel: 'Meta demonstrativa', source: 'Check-ins confirmados pela paciente', completeness: '11 de 14 check-ins respondidos', color: '#77500a' },

@@ -18,9 +18,9 @@ import { useEffect, useState } from 'react';
 import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
 import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
+import { DoctorClinicalChangeSummary } from './doctor-clinical-change-summary';
 import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, getDefaultEncounterId } from './demo-routes';
 import { LongitudinalDossier } from './longitudinal-dossier';
-import { DoctorMacroCareSummary } from './doctor-macro-care-summary';
 import {
   DoctorPatientCheckInReview,
   DoctorPrescriptionNotice,
@@ -523,11 +523,6 @@ function OverviewPanel({
 
       <DoctorPrescriptionNotice patientId={patient.id} />
 
-      <DoctorPatientCheckInReview
-        patientId={patient.id}
-        encounterId={getDefaultEncounterId(patient.id)}
-      />
-
       <section aria-labelledby="review-now-title" className="vivance-panel overflow-hidden rounded-2xl">
         <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center sm:p-6">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
@@ -557,20 +552,27 @@ function OverviewPanel({
         </div>
       </section>
 
-      <dl className="vivance-panel grid overflow-hidden rounded-2xl divide-y divide-[#e7edf5] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-        {metrics.slice(0, 4).map(([label, value, detail], index) => {
-          const MetricIcon = metricIcons[index] ?? FileText;
-          return (
-            <div key={label} className={cn('bg-white/78 p-4 sm:p-5', index === 2 && 'sm:border-t sm:border-[#e7edf5] xl:border-t-0')}>
-              <dt className="flex items-center gap-2 text-xs font-semibold text-[#61718a]"><MetricIcon aria-hidden="true" size={17} className="text-[#124da0]" />{label}</dt>
-              <dd className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value}</dd>
-              <p className="mt-1 text-xs text-[#61718a]">{detail}</p>
-            </div>
-          );
-        })}
-      </dl>
+      {patient.id === DEFAULT_PATIENT_ID ? (
+        <DoctorClinicalChangeSummary patientId={patient.id} onNotify={onNotify} />
+      ) : (
+        <dl className="vivance-panel grid overflow-hidden rounded-2xl divide-y divide-[#e7edf5] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          {metrics.slice(0, 4).map(([label, value, detail], index) => {
+            const MetricIcon = metricIcons[index] ?? FileText;
+            return (
+              <div key={label} className={cn('bg-white/78 p-4 sm:p-5', index === 2 && 'sm:border-t sm:border-[#e7edf5] xl:border-t-0')}>
+                <dt className="flex items-center gap-2 text-xs font-semibold text-[#61718a]"><MetricIcon aria-hidden="true" size={17} className="text-[#124da0]" />{label}</dt>
+                <dd className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">{value}</dd>
+                <p className="mt-1 text-xs text-[#61718a]">{detail}</p>
+              </div>
+            );
+          })}
+        </dl>
+      )}
 
-      <DoctorMacroCareSummary patientId={patient.id} />
+      <DoctorPatientCheckInReview
+        patientId={patient.id}
+        encounterId={getDefaultEncounterId(patient.id)}
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-5">
         <section className="vivance-panel rounded-2xl p-5 sm:p-6">
