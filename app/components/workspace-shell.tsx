@@ -20,7 +20,7 @@ export function WorkspaceShell({
       >
         Ir para o conteúdo
       </a>
-      {role === 'doctor' ? <DoctorChrome patientId={patientId} /> : <RoleHeader role={role} patientId={patientId} />}
+      {role === 'doctor' ? <DoctorChrome /> : <RoleHeader role={role} patientId={patientId} />}
       {children}
     </div>
   );

@@ -52,6 +52,7 @@ import {
 import { PatientMealAnalysisDialog, PatientQuickActions } from './patient-quick-actions';
 import { cn, NavigationLink, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
+import { usePersistentConversation } from './use-persistent-conversation';
 
 const patientNavigationIcons = {
   Hoje: House,
@@ -157,10 +158,13 @@ export default function PatientMvpWorkspace({
     hydrated,
     latestCheckIn,
     latestCheckInReview,
-    conversationMessages,
     submitCheckIn,
-    sendConversationMessage,
   } = useCareDemo(patientId, encounterId);
+  const persistentConversation = usePersistentConversation({
+    patientId,
+    encounterId,
+    sender: 'patient',
+  });
   const [session, setSession, sessionHydrated] = useSessionDemoState(
     `vivance-patient-mvp-v1:${patientId}`,
     getInitialPatientMvpSessionState(patientId),
@@ -183,6 +187,15 @@ export default function PatientMvpWorkspace({
     setToast(message);
     if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(''), 3600);
+  };
+
+  const sendConversationMessage = (
+    _sender: 'patient',
+    input: { context: 'care-plan' | 'check-in' | 'diary' | 'general'; body: string },
+  ) => {
+    void persistentConversation.sendMessage(input).catch(() => {
+      notify('Não foi possível compartilhar esta atualização agora. Tente novamente na conversa.');
+    });
   };
 
   const addCompletedStep = (step: PatientMvpPreparationStepId) => {
@@ -363,9 +376,12 @@ export default function PatientMvpWorkspace({
         {primaryView === 'Conversas' ? (
           <ConversationScreen
             data={data}
-            messages={conversationMessages}
-            onSend={(body) => {
-              sendConversationMessage('patient', { context: 'general', body });
+            messages={persistentConversation.messages}
+            loading={persistentConversation.loading}
+            sending={persistentConversation.sending}
+            error={persistentConversation.error}
+            onSend={async (body) => {
+              await persistentConversation.sendMessage({ context: 'general', body });
               notify('Mensagem demonstrativa enviada para a equipe.');
             }}
           />
@@ -617,7 +633,6 @@ function FilledToday({
       </section>
 
       <DoctorHandoff
-        patientId={data.patientId}
         hasSubmission={Boolean(latestCheckIn)}
         aiAssistanceAllowed={latestCheckIn?.aiAssistanceAllowed ?? null}
       />
@@ -793,10 +808,10 @@ function PendingToday({
                 <ArrowRight aria-hidden="true" size={17} weight="bold" />
               </NavigationLink>
             ) : (
-              <NavigationLink href={`/medico/pacientes/${data.patientId}`} className={primaryButton}>
-                Ver o que chegou ao médico
-                <ArrowRight aria-hidden="true" size={17} weight="bold" />
-              </NavigationLink>
+              <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#e7f4ef] px-4 text-sm font-bold text-[#17624e]">
+                <CheckCircle aria-hidden="true" size={18} weight="fill" />
+                Preparação enviada
+              </span>
             )}
             <span className="text-xs leading-5 text-[#60766f]">
               {storyComplete ? 'Próxima etapa · você pode continuar depois' : `${data.remainingTime} · você pode continuar depois`}
@@ -854,7 +869,6 @@ function PendingToday({
       </section>
 
       <DoctorHandoff
-        patientId={data.patientId}
         hasSubmission={Boolean(latestCheckIn)}
         aiAssistanceAllowed={latestCheckIn?.aiAssistanceAllowed ?? null}
       />
@@ -890,11 +904,9 @@ function MetricChange({
 }
 
 function DoctorHandoff({
-  patientId,
   hasSubmission,
   aiAssistanceAllowed,
 }: {
-  patientId: string;
   hasSubmission: boolean;
   aiAssistanceAllowed: boolean | null;
 }) {
@@ -920,10 +932,10 @@ function DoctorHandoff({
             <p className="py-3 sm:px-4"><strong className="block text-[#071a3a]">{assistantTitle}</strong>{assistantDescription}</p>
             <p className="py-3 sm:pl-4"><strong className="block text-[#071a3a]">3. Revisão médica</strong>O médico confere e aprova o conteúdo clínico.</p>
           </div>
-          <NavigationLink href={`/medico/pacientes/${patientId}`} className={cn('mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#124da0]', focusRing)}>
-            Ver recebimento na área médica do mock
-            <ArrowRight aria-hidden="true" size={16} />
-          </NavigationLink>
+          <p className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#124da0]">
+            <CheckCircle aria-hidden="true" size={16} weight="fill" />
+            A revisão continua na área do profissional
+          </p>
         </div>
       </div>
     </section>

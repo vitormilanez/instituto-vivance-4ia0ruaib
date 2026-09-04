@@ -320,13 +320,31 @@ function CheckInHistory({ data, latestCheckIn, reviewed, onOpenCheckIn }: { data
   );
 }
 
-export function ConversationScreen({ data, messages, onSend }: { data: PatientMvpData; messages: CareConversationMessage[]; onSend: (body: string) => void }) {
+export function ConversationScreen({
+  data,
+  messages,
+  loading = false,
+  sending = false,
+  error = '',
+  onSend,
+}: {
+  data: PatientMvpData;
+  messages: CareConversationMessage[];
+  loading?: boolean;
+  sending?: boolean;
+  error?: string;
+  onSend: (body: string) => Promise<void>;
+}) {
   const [body, setBody] = useState('');
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!body.trim()) return;
-    onSend(body.trim());
-    setBody('');
+    if (!body.trim() || sending) return;
+    try {
+      await onSend(body.trim());
+      setBody('');
+    } catch {
+      // The shared error banner keeps the failed message visible to the user.
+    }
   };
   const allMessages = [...data.conversation, ...messages.map((message) => ({ id: message.id, sender: message.sender === 'patient' ? 'patient' as const : 'doctor' as const, body: message.body, sentAt: message.sentAt }))];
   return (
@@ -335,11 +353,13 @@ export function ConversationScreen({ data, messages, onSend }: { data: PatientMv
       <p className="mt-2 max-w-2xl text-base leading-7 text-[#60766f]">Escreva para a equipe responsável. Nenhuma resposta clínica é criada automaticamente pela IA.</p>
       <div className="mt-6 overflow-hidden rounded-2xl border border-[#d9e5e0] bg-white">
         <div className="space-y-4 p-5 sm:p-7" aria-live="polite">
+          {loading ? <p className="text-sm text-[#60766f]">Atualizando a conversa…</p> : null}
           {allMessages.map((message) => <article key={message.id} className={cn('max-w-[88%] rounded-xl p-4 text-sm leading-6', message.sender === 'patient' ? 'ml-auto bg-[#17372f] text-white' : 'bg-[#edf7f4] text-[#294940]')}><p>{message.body}</p><p className={cn('mt-2 text-[11px]', message.sender === 'patient' ? 'text-[#c9e4dd]' : 'text-[#526a62]')}>{message.sentAt} · {message.sender === 'patient' ? 'Você' : data.doctorName}</p></article>)}
         </div>
         <form onSubmit={submit} className="border-t border-[#e4ece8] p-4 sm:p-5">
           <FieldLabel htmlFor="patient-mvp-message">Sua mensagem</FieldLabel>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row"><textarea id="patient-mvp-message" value={body} onChange={(event) => setBody(event.target.value)} rows={3} placeholder="Escreva do seu jeito" className={cn('min-h-12 flex-1 resize-y rounded-xl border border-[#c9d6d1] px-4 py-3 text-base text-[#17372f] placeholder:text-[#60766f]', focusRing)} /><button type="submit" disabled={!body.trim()} className={primaryButton}><PaperPlaneTilt aria-hidden="true" size={18} />Enviar</button></div>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row"><textarea id="patient-mvp-message" value={body} maxLength={600} disabled={sending} onChange={(event) => setBody(event.target.value)} rows={3} placeholder="Escreva do seu jeito" className={cn('min-h-12 flex-1 resize-y rounded-xl border border-[#c9d6d1] px-4 py-3 text-base text-[#17372f] placeholder:text-[#60766f] disabled:bg-[#f1f5f3]', focusRing)} /><button type="submit" disabled={!body.trim() || sending} className={primaryButton}><PaperPlaneTilt aria-hidden="true" size={18} />{sending ? 'Enviando…' : 'Enviar'}</button></div>
+          {error ? <p role="alert" className="mt-3 rounded-xl border border-[#efc5c1] bg-[#fff2f1] px-3 py-2.5 text-sm font-medium text-[#8b3732]">{error}</p> : null}
           <p className="mt-3 text-xs leading-5 text-[#60766f]">Este espaço não é acompanhado em tempo real. Em uma situação urgente, procure o serviço de emergência da sua região.</p>
         </form>
       </div>

@@ -2,10 +2,8 @@
 
 import {
   ArrowLeft,
-  ArrowsLeftRight,
   Bell,
   CalendarBlank,
-  CaretDown,
   ChatCircle,
   FileText,
   House,
@@ -16,13 +14,13 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { type FocusEvent, useEffect, useRef, useState } from 'react';
 import {
-  DEFAULT_PATIENT_ID,
   doctorDemoCohortSummary,
   doctorNavigation,
   getDemoPatient,
   getDoctorViewFromPathname,
 } from './demo-routes';
-import { cn, NavigationLink as Link, RoleSwitcher } from './shared';
+import { LogoutButton } from './logout-button';
+import { cn, NavigationLink as Link } from './shared';
 
 const navigationIcons = {
   'Visão geral': House,
@@ -151,14 +149,10 @@ function useCollapsibleChrome() {
   };
 }
 
-export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: string }) {
+export function DoctorChrome() {
   const pathname = usePathname();
   const activeView = getDoctorViewFromPathname(pathname);
   const routeContext = getRouteContext(pathname);
-  const routePatientId = pathname.match(/^\/medico\/pacientes\/([^/]+)/)?.[1];
-  const activePatientId = routePatientId && getDemoPatient(routePatientId) ? routePatientId : patientId;
-  const activePatient = getDemoPatient(activePatientId);
-  const activePatientFirstName = activePatient?.name.split(' ')[0] ?? 'paciente';
   const { collapsed, onFocusCapture, onBlurCapture, onMenuToggle } = useCollapsibleChrome();
 
   return (
@@ -223,15 +217,6 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
               Agenda
             </Link>
 
-            <RoleSwitcher role="doctor" patientId={activePatientId} className="doctor-chrome-expanded-only pointer-events-auto hidden items-center md:flex" />
-            <Link
-              href={`/paciente/${activePatientId}`}
-              aria-label={`Abrir demonstração de ${activePatient?.name ?? 'paciente'}`}
-              className="doctor-chrome-compact-only pointer-events-auto hidden size-11 items-center justify-center rounded-xl border border-[#cbd9ea] text-[#124da0] md:flex"
-            >
-              <ArrowsLeftRight aria-hidden="true" size={18} weight="bold" />
-            </Link>
-
             <button
               type="button"
               aria-label="Abrir notificações"
@@ -241,15 +226,15 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
               <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-[#124da0] text-[9px] font-bold text-white">3</span>
             </button>
 
-            <button
-              type="button"
-              aria-label="Abrir perfil do Dr. Guilherme Martins"
+            <div
+              aria-label="Perfil atual: Dr. Guilherme Martins, médico"
               className="doctor-chrome-expanded-only pointer-events-auto hidden min-h-11 items-center gap-2.5 rounded-xl px-1.5 text-left transition-colors hover:bg-[#edf3fb] min-[1500px]:flex"
             >
               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#061b3e] text-[11px] font-bold text-white">GM</span>
               <span><strong className="block text-xs text-[#071a3a]">Dr. Guilherme Martins</strong><span className="block text-[11px] text-[#61718a]">Médico</span></span>
-              <CaretDown aria-hidden="true" size={14} className="text-[#50627f]" />
-            </button>
+            </div>
+
+            <LogoutButton compact className="pointer-events-auto hidden text-[#405675] hover:bg-[#edf3fb] hover:text-[#071a3a] lg:inline-flex" />
 
             <details
               className="pointer-events-auto relative lg:hidden"
@@ -259,10 +244,6 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 <List aria-hidden="true" size={21} weight="bold" />
               </summary>
               <div className="vivance-glass-menu absolute right-0 top-12 z-50 w-64 rounded-xl p-2 shadow-[0_20px_48px_rgba(3,19,45,0.3)]">
-                <Link href={`/paciente/${activePatientId}`} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
-                  <ArrowsLeftRight aria-hidden="true" size={18} />
-                  Abrir área de {activePatientFirstName}
-                </Link>
                 <Link href="/medico/mensagens" className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
                   <Bell aria-hidden="true" size={18} />
                   3 notificações
@@ -271,6 +252,7 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-[11px] font-bold text-white">GM</span>
                   <span><strong className="block text-xs text-white">Dr. Guilherme Martins</strong><span className="block text-[11px]">Médico</span></span>
                 </div>
+                <LogoutButton className="mt-1 w-full justify-start text-white/90 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]" />
               </div>
             </details>
           </div>
