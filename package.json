@@ -9,7 +9,11 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "asana:authorize": "node scripts/asana-vivance.mjs authorize",
+    "asana:complete": "node scripts/asana-vivance.mjs complete",
+    "asana:status": "node scripts/asana-vivance.mjs status",
+    "asana:backlog": "node scripts/asana-vivance.mjs seed-backlog"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

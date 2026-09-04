@@ -1,5 +1,5 @@
 ---
-name: "VIVANSE"
+name: "VIVANCE"
 description: "Uma área de cuidado clara, elegante e orientada ao que o profissional precisa fazer agora."
 colors:
   midnight: "#03132d"
@@ -82,7 +82,7 @@ spacing:
   "8": "32px"
 ---
 
-# Sistema visual VIVANSE
+# Sistema visual VIVANCE
 
 ## Direção
 
@@ -130,7 +130,7 @@ O produto não deve parecer um aplicativo de IA. A tecnologia aparece como apoio
 
 ## Estrutura do painel do médico
 
-1. Identidade VIVANSE e perfil do médico.
+1. Identidade VIVANCE e perfil do médico.
 2. Menu principal curto e previsível.
 3. Saudação compacta com data e aviso de dados de exemplo.
 4. Próxima consulta com uma única ação principal: **Atender agora**.

@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   TrendDown,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import {
   type ReactNode,
   useEffect,
@@ -33,8 +32,8 @@ import {
 import {
   getInitialPatientMvpSessionState,
   getPatientMvpData,
+  isPatientCheckInDue,
   normalizePatientMvpSessionState,
-  patientMvpScenarioLinks,
   type FilledPatientMvpData,
   type PatientMvpAppointmentChoice,
   type PatientMvpData,
@@ -50,8 +49,8 @@ import {
   EvolutionScreen,
   type CareDestination,
 } from './patient-mvp-sections';
-import { PatientQuickActions } from './patient-quick-actions';
-import { cn, Status, Toast } from './shared';
+import { PatientMealAnalysisDialog, PatientQuickActions } from './patient-quick-actions';
+import { cn, NavigationLink, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 
 const patientNavigationIcons = {
@@ -62,9 +61,9 @@ const patientNavigationIcons = {
 } as const;
 
 const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--patient-action)] focus-visible:ring-offset-2';
 const primaryButton = cn(
-  'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(11,123,104,0.2)] transition-colors hover:bg-[#096b5b] disabled:cursor-not-allowed disabled:bg-[#829c95] disabled:shadow-none',
+  'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--patient-action)] px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(18,77,160,0.22)] transition-colors hover:bg-[var(--patient-action-hover)] disabled:cursor-not-allowed disabled:bg-[#8a9aaf] disabled:shadow-none',
   focusRing,
 );
 
@@ -163,11 +162,12 @@ export default function PatientMvpWorkspace({
     sendConversationMessage,
   } = useCareDemo(patientId, encounterId);
   const [session, setSession, sessionHydrated] = useSessionDemoState(
-    `vivanse-patient-mvp-v1:${patientId}`,
+    `vivance-patient-mvp-v1:${patientId}`,
     getInitialPatientMvpSessionState(patientId),
     data.scenario === 'pending' ? normalizePendingSession : normalizeFilledSession,
   );
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [mealAnalysisOpen, setMealAnalysisOpen] = useState(false);
   const [careDestination, setCareDestination] = useState<CareDestination>(() =>
     getInitialCareDestination(initialView),
   );
@@ -241,6 +241,15 @@ export default function PatientMvpWorkspace({
       body: `Medidas iniciais fictícias informadas pelo paciente: peso ${weight} kg e cintura ${waist} cm.`,
     });
     notify('Medidas demonstrativas salvas e identificadas como autorrelato.');
+  };
+
+  const saveMealRecord = (description: string, attachmentName: string | null) => {
+    const originalDescription = description.trim() || 'Foto de refeição enviada para organização.';
+    sendConversationMessage('patient', {
+      context: 'general',
+      body: `Registro alimentar do paciente: ${originalDescription}${attachmentName ? ` Anexo informado: ${attachmentName}.` : ''}`,
+    });
+    notify('Registro enviado para a equipe. A IA apenas organiza o conteúdo para revisão.');
   };
 
   const saveMedicationReport = (choice: 'uses' | 'none', report: string) => {
@@ -318,14 +327,13 @@ export default function PatientMvpWorkspace({
         id="main-content"
         className="mx-auto min-h-[calc(100vh-72px)] max-w-5xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8"
       >
-        <ScenarioSwitcher patientId={patientId} initialView={initialView} />
-
         {primaryView === 'Hoje' ? (
           <TodayScreen
             data={data}
             session={session}
             latestCheckIn={latestCheckIn}
             onOpenCheckIn={() => setCheckInOpen(true)}
+            onOpenMealAnalysis={() => setMealAnalysisOpen(true)}
             onMarkMedicationRead={markMedicationRead}
             onAskMedicationQuestion={askMedicationQuestion}
             onChooseAppointment={chooseAppointment}
@@ -383,7 +391,7 @@ export default function PatientMvpWorkspace({
             const Icon = patientNavigationIcons[label];
             const active = primaryView === label;
             return (
-              <Link
+              <NavigationLink
                 key={label}
                 href={getPatientSectionHref(patientId, label)}
                 aria-current={active ? 'page' : undefined}
@@ -396,7 +404,7 @@ export default function PatientMvpWorkspace({
               >
                 <Icon aria-hidden="true" size={16} weight={active ? 'fill' : 'regular'} />
                 <span className="truncate">{label}</span>
-              </Link>
+              </NavigationLink>
             );
           })}
         </nav>
@@ -410,57 +418,15 @@ export default function PatientMvpWorkspace({
         />
       ) : null}
 
+      {mealAnalysisOpen ? (
+        <PatientMealAnalysisDialog
+          onClose={() => setMealAnalysisOpen(false)}
+          onSave={saveMealRecord}
+        />
+      ) : null}
+
       <Toast text={toast} patient />
     </>
-  );
-}
-
-function ScenarioSwitcher({
-  patientId,
-  initialView,
-}: {
-  patientId: string;
-  initialView: PatientView;
-}) {
-  return (
-    <section
-      aria-label="Alternar cenário demonstrativo"
-      className="mb-5 flex items-center gap-2 rounded-2xl border border-[#d9e5e0] bg-white p-2 sm:p-2.5"
-    >
-      <p className="sr-only">Cenário fictício</p>
-      <div className="grid flex-1 grid-cols-2 gap-1 rounded-xl bg-[#edf4f1] p-1">
-        {patientMvpScenarioLinks.map((scenario) => {
-          const active = patientId === scenario.patientId;
-          return (
-            <Link
-              key={scenario.patientId}
-              href={getPatientSectionHref(scenario.patientId, initialView)}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex min-h-10 items-center justify-center rounded-lg px-2 text-center text-[11px] font-bold leading-4 transition-colors sm:min-h-11 sm:text-xs',
-                focusRing,
-                active
-                  ? 'bg-white text-[#17372f] shadow-[0_4px_12px_rgba(28,55,47,0.08)]'
-                  : 'text-[#526a62] hover:bg-white/70 hover:text-[#17372f]',
-              )}
-            >
-              {scenario.label}
-            </Link>
-          );
-        })}
-      </div>
-      <Link
-        href={`/medico/pacientes/${patientId}`}
-        aria-label="Ver este cenário na área médica"
-        className={cn(
-          'grid size-11 shrink-0 place-items-center rounded-xl text-[#124da0] transition-colors hover:bg-[#edf3fb] sm:inline-flex sm:w-auto sm:gap-2 sm:px-3',
-          focusRing,
-        )}
-      >
-        <span className="hidden sm:inline">Ver no médico</span>
-        <ArrowRight aria-hidden="true" size={15} />
-      </Link>
-    </section>
   );
 }
 
@@ -468,18 +434,23 @@ function ScreenIntro({
   status,
   title,
   description,
+  action,
 }: {
   status: ReactNode;
   title: string;
   description: string;
+  action?: ReactNode;
 }) {
   return (
     <header>
       <div className="flex flex-wrap items-center gap-2">{status}</div>
-      <h1 className="mt-3 max-w-2xl text-[2rem] font-semibold leading-[1.12] tracking-[-0.03em] text-[#17372f] sm:text-4xl">
-        {title}
-      </h1>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-[#526a62]">{description}</p>
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="max-w-2xl text-[2rem] font-semibold leading-[1.12] tracking-[-0.03em] text-[var(--patient-ink)] sm:text-4xl">
+          {title}
+        </h1>
+        {action}
+      </div>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--patient-muted)]">{description}</p>
     </header>
   );
 }
@@ -489,6 +460,7 @@ function TodayScreen({
   session,
   latestCheckIn,
   onOpenCheckIn,
+  onOpenMealAnalysis,
   onMarkMedicationRead,
   onAskMedicationQuestion,
   onChooseAppointment,
@@ -498,26 +470,36 @@ function TodayScreen({
   session: PatientMvpSessionState;
   latestCheckIn: CareCheckIn | null;
   onOpenCheckIn: () => void;
+  onOpenMealAnalysis: () => void;
   onMarkMedicationRead: () => void;
   onAskMedicationQuestion: () => void;
   onChooseAppointment: (choice: PatientMvpAppointmentChoice) => void;
   onSaveMeasures: (weight: string, waist: string) => void;
 }) {
+  const checkInDue = data.scenario === 'filled' && isPatientCheckInDue(latestCheckIn);
+
   return (
     <section>
       <ScreenIntro
         status={(
           <>
             <Status tone="amber">Dados fictícios</Status>
-            <Status tone={data.scenario === 'filled' ? 'green' : 'blue'}>
+            <Status tone="blue">
               {data.scenario === 'filled' ? 'Acompanhamento ativo' : 'Preparação inicial'}
             </Status>
           </>
         )}
         title={data.scenario === 'filled' ? `Olá, ${data.firstName}.` : 'Vamos montar seu ponto de partida?'}
         description={data.scenario === 'filled'
-          ? 'Você vê primeiro o que precisa da sua atenção. O restante fica organizado para consultar quando quiser.'
-          : 'Uma etapa por vez, no seu ritmo. Você pode falar, escrever, salvar e continuar depois.'}
+          ? 'Tratamento, registros e contato com a equipe em um só lugar.'
+          : 'Fale ou escreva do seu jeito. Você pode continuar depois.'}
+        action={data.scenario === 'filled' ? (
+          <TodayHeaderActions
+            checkInDue={checkInDue}
+            onOpenCheckIn={onOpenCheckIn}
+            onOpenMealAnalysis={onOpenMealAnalysis}
+          />
+        ) : undefined}
       />
 
       {data.scenario === 'filled' ? (
@@ -525,7 +507,6 @@ function TodayScreen({
           data={data}
           session={session}
           latestCheckIn={latestCheckIn}
-          onOpenCheckIn={onOpenCheckIn}
           onMarkMedicationRead={onMarkMedicationRead}
           onAskMedicationQuestion={onAskMedicationQuestion}
           onChooseAppointment={onChooseAppointment}
@@ -543,11 +524,50 @@ function TodayScreen({
   );
 }
 
+function TodayHeaderActions({
+  checkInDue,
+  onOpenCheckIn,
+  onOpenMealAnalysis,
+}: {
+  checkInDue: boolean;
+  onOpenCheckIn: () => void;
+  onOpenMealAnalysis: () => void;
+}) {
+  return (
+    <div className="w-full shrink-0 sm:w-auto">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <button
+          type="button"
+          onClick={onOpenCheckIn}
+          className={cn(primaryButton, 'min-h-12 w-full px-3 sm:w-auto sm:px-4')}
+        >
+          <ChatCircle aria-hidden="true" size={18} weight="duotone" />
+          Check-in
+        </button>
+        <button
+          type="button"
+          onClick={onOpenMealAnalysis}
+          className={cn(
+            'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#b8cde8] bg-white px-3 text-sm font-bold text-[var(--patient-action)] transition-colors hover:bg-[var(--patient-action-soft)] sm:w-auto sm:px-4',
+            focusRing,
+          )}
+        >
+          <CookingPot aria-hidden="true" size={18} weight="duotone" />
+          <span>Analisar refeição</span>
+        </button>
+      </div>
+      <p className={cn('mt-2 flex items-center gap-1.5 text-xs font-bold', checkInDue ? 'text-[var(--patient-attention)]' : 'text-[var(--patient-subtle)]')}>
+        <span aria-hidden="true" className={cn('size-1.5 rounded-full', checkInDue ? 'bg-[var(--patient-attention-dot)]' : 'bg-[#7da99c]')} />
+        {checkInDue ? 'Check-in pendente' : 'Check-in a cada 3 dias'}
+      </p>
+    </div>
+  );
+}
+
 function FilledToday({
   data,
   session,
   latestCheckIn,
-  onOpenCheckIn,
   onMarkMedicationRead,
   onAskMedicationQuestion,
   onChooseAppointment,
@@ -556,7 +576,6 @@ function FilledToday({
   data: FilledPatientMvpData;
   session: PatientMvpSessionState;
   latestCheckIn: CareCheckIn | null;
-  onOpenCheckIn: () => void;
   onMarkMedicationRead: () => void;
   onAskMedicationQuestion: () => void;
   onChooseAppointment: (choice: PatientMvpAppointmentChoice) => void;
@@ -564,11 +583,11 @@ function FilledToday({
 }) {
   return (
     <>
+      <GoalProgressCard data={data} session={session} />
+
       <PatientQuickActions
         data={data}
         session={session}
-        latestCheckIn={latestCheckIn}
-        onOpenCheckIn={onOpenCheckIn}
         onMarkMedicationRead={onMarkMedicationRead}
         onAskMedicationQuestion={onAskMedicationQuestion}
         onChooseAppointment={onChooseAppointment}
@@ -604,6 +623,108 @@ function FilledToday({
       />
     </>
   );
+}
+
+function GoalProgressCard({
+  data,
+  session,
+}: {
+  data: FilledPatientMvpData;
+  session: PatientMvpSessionState;
+}) {
+  const firstMeasure = data.measures[0];
+  const latestMeasure = data.measures.at(-1)!;
+  const startWeight = firstMeasure.weight;
+  const currentWeight = parsePatientDecimal(session.measures?.weight, latestMeasure.weight);
+  const targetWeight = data.goal.targetWeight;
+  const totalChange = Math.max(0.1, startWeight - targetWeight);
+  const recordedChange = Math.max(0, startWeight - currentWeight);
+  const progress = Math.max(0, Math.min(100, Math.round((recordedChange / totalChange) * 100)));
+  const nextMilestoneGap = Math.max(0, currentWeight - data.goal.nextMilestoneWeight);
+  const currentLabelPosition = Math.max(14, Math.min(86, progress));
+
+  return (
+    <section aria-labelledby="patient-goal-title" className="mt-7 rounded-2xl bg-[var(--patient-action-soft)] p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 id="patient-goal-title" className="text-xl font-semibold tracking-[-0.02em] text-[var(--patient-ink)]">
+            {data.goal.title}
+          </h2>
+          <p className="mt-1 max-w-xl text-sm leading-6 text-[var(--patient-muted)]">
+            {formatPatientDecimal(recordedChange)} kg de {formatPatientDecimal(totalChange)} kg registrados nesta fase.
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xl font-bold tabular-nums text-[var(--patient-action)]">{progress}%</p>
+          <p className="mt-0.5 text-xs font-semibold text-[var(--patient-subtle)]">do objetivo</p>
+        </div>
+      </div>
+
+      <div className="mt-6" role="img" aria-label={`${progress}% do objetivo registrado: início em ${formatPatientDecimal(startWeight)} kg, atual em ${formatPatientDecimal(currentWeight)} kg e meta em ${formatPatientDecimal(targetWeight)} kg.`}>
+        <div className="relative h-16">
+          <span
+            className="absolute top-0 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums text-[var(--patient-action)]"
+            style={{ left: `${currentLabelPosition}%` }}
+          >
+            Agora · {formatPatientDecimal(currentWeight)} kg
+          </span>
+          <div className="absolute inset-x-1 top-8 h-2 rounded-full bg-[var(--patient-progress-track)]" />
+          <div
+            className="absolute left-1 top-8 h-2 rounded-full bg-[var(--patient-action)] shadow-[0_3px_8px_rgba(18,77,160,0.26)] transition-[width] duration-500 ease-out"
+            style={{ width: progress === 0 ? '0px' : `calc(${progress}% - 4px)` }}
+          />
+          <span className="absolute left-0 top-6 size-7 rounded-full border-[3px] border-white bg-[var(--patient-action)] shadow-[0_3px_8px_rgba(18,77,160,0.26)]" />
+          <span
+            className="absolute top-6 size-7 -translate-x-1/2 rounded-full border-[3px] border-white bg-[var(--patient-ink)] shadow-[0_3px_8px_rgba(7,26,58,0.22)] transition-[left] duration-500 ease-out"
+            style={{ left: `${progress}%` }}
+          />
+          <span className="absolute right-0 top-6 size-7 rounded-full border-[3px] border-[#8eb3e2] bg-white" />
+        </div>
+        <dl className="flex items-start justify-between text-xs leading-5">
+          <div>
+            <dt className="font-semibold text-[var(--patient-subtle)]">Início</dt>
+            <dd className="mt-0.5 font-bold tabular-nums text-[var(--patient-ink)]">{formatPatientDecimal(startWeight)} kg</dd>
+          </div>
+          <div className="text-right">
+            <dt className="font-semibold text-[var(--patient-subtle)]">Meta</dt>
+            <dd className="mt-0.5 font-bold tabular-nums text-[var(--patient-ink)]">{formatPatientDecimal(targetWeight)} kg</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-3 border-t border-[var(--patient-progress-track)] pt-4">
+        <div>
+          <p className="text-xs font-semibold text-[var(--patient-subtle)]">Próximo marco</p>
+          <p className="mt-1 text-sm font-bold text-[var(--patient-ink)]">
+            {formatPatientDecimal(data.goal.nextMilestoneWeight)} kg
+            <span className="ml-2 font-medium text-[var(--patient-muted)]">
+              {nextMilestoneGap > 0 ? `faltam ${formatPatientDecimal(nextMilestoneGap)} kg` : 'marco alcançado'}
+            </span>
+          </p>
+        </div>
+        <NavigationLink
+          href={getPatientSectionHref(data.patientId, 'Evolução')}
+          className={cn('inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--patient-action)] underline decoration-[#9bb8db] underline-offset-4 transition-colors hover:text-[var(--patient-action-hover)]', focusRing)}
+        >
+          Ver evolução detalhada
+          <ArrowRight aria-hidden="true" size={16} weight="bold" />
+        </NavigationLink>
+      </div>
+    </section>
+  );
+}
+
+function parsePatientDecimal(value: string | undefined, fallback: number) {
+  if (!value) return fallback;
+  const parsed = Number.parseFloat(value.replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function formatPatientDecimal(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
 function PendingToday({
@@ -667,15 +788,15 @@ function PendingToday({
                 <ArrowRight aria-hidden="true" size={17} weight="bold" />
               </button>
             ) : nextStepHref ? (
-              <Link href={nextStepHref} className={primaryButton}>
+              <NavigationLink href={nextStepHref} className={primaryButton}>
                 Continuar preparação
                 <ArrowRight aria-hidden="true" size={17} weight="bold" />
-              </Link>
+              </NavigationLink>
             ) : (
-              <Link href={`/medico/pacientes/${data.patientId}`} className={primaryButton}>
+              <NavigationLink href={`/medico/pacientes/${data.patientId}`} className={primaryButton}>
                 Ver o que chegou ao médico
                 <ArrowRight aria-hidden="true" size={17} weight="bold" />
-              </Link>
+              </NavigationLink>
             )}
             <span className="text-xs leading-5 text-[#60766f]">
               {storyComplete ? 'Próxima etapa · você pode continuar depois' : `${data.remainingTime} · você pode continuar depois`}
@@ -799,10 +920,10 @@ function DoctorHandoff({
             <p className="py-3 sm:px-4"><strong className="block text-[#071a3a]">{assistantTitle}</strong>{assistantDescription}</p>
             <p className="py-3 sm:pl-4"><strong className="block text-[#071a3a]">3. Revisão médica</strong>O médico confere e aprova o conteúdo clínico.</p>
           </div>
-          <Link href={`/medico/pacientes/${patientId}`} className={cn('mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#124da0]', focusRing)}>
+          <NavigationLink href={`/medico/pacientes/${patientId}`} className={cn('mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#124da0]', focusRing)}>
             Ver recebimento na área médica do mock
             <ArrowRight aria-hidden="true" size={16} />
-          </Link>
+          </NavigationLink>
         </div>
       </div>
     </section>

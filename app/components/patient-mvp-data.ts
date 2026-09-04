@@ -75,6 +75,11 @@ export interface FilledPatientMvpData extends PatientMvpBaseData {
     aiSummary: string[];
   };
   measures: PatientMvpMeasureRecord[];
+  goal: {
+    title: string;
+    targetWeight: number;
+    nextMilestoneWeight: number;
+  };
   foodPlan: {
     title: string;
     version: string;
@@ -146,6 +151,11 @@ export const filledPatientMvpData: FilledPatientMvpData = {
     { date: '1 ago', weight: 93.1, waist: 107, source: 'Paciente' },
     { date: '1 set', weight: 91.6, waist: 104.5, source: 'Paciente' },
   ],
+  goal: {
+    title: 'Meta da fase',
+    targetWeight: 78.8,
+    nextMilestoneWeight: 90,
+  },
   foodPlan: {
     title: 'Plano alimentar desta fase',
     version: 'Versão 2',

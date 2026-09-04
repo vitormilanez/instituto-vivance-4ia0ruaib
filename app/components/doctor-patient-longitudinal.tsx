@@ -389,14 +389,14 @@ export function PatientLongitudinalWorkspace({
               </div>
             </div>
             <div className="flex w-full gap-2 sm:w-auto">
-              <button type="button" onClick={runPrimaryAction} className="vivanse-primary-action inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-colors focus-visible:outline-none sm:flex-none">
+              <button type="button" onClick={runPrimaryAction} className="vivance-primary-action inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-colors focus-visible:outline-none sm:flex-none">
                 <PrimaryActionIcon aria-hidden="true" size={20} /> {primaryLabel}
               </button>
               <details className="relative">
                 <summary aria-label="Abrir mais ações" className="grid size-12 cursor-pointer list-none place-items-center rounded-xl border border-[#c7d5e7] bg-white text-[#082553] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">
                   <DotsThree aria-hidden="true" size={22} weight="bold" />
                 </summary>
-                <div className="vivanse-glass-menu absolute right-0 top-14 z-50 w-[min(18rem,calc(100vw-2rem))] rounded-xl p-2 text-white shadow-[0_20px_48px_rgba(3,19,45,0.32)]">
+                <div className="vivance-glass-menu absolute right-0 top-14 z-50 w-[min(18rem,calc(100vw-2rem))] rounded-xl p-2 text-white shadow-[0_20px_48px_rgba(3,19,45,0.32)]">
                   {[
                     ['Solicitar informação à paciente', () => onMessage(patient.id)],
                     ['Criar pedido de exame', () => onNotify('Novo pedido de exame aberto como rascunho demonstrativo.')],
@@ -434,7 +434,7 @@ export function PatientLongitudinalWorkspace({
           <p><strong className="text-[#071a3a]">Área de apoio ao cuidado.</strong> Não substitui o prontuário oficial.<span className="hidden sm:inline"> Originais, autoria, versões e revisão humana continuam identificados.</span></p>
         </div>
 
-        <nav aria-label="Áreas do histórico do paciente" className="vivanse-panel mt-4 overflow-x-auto rounded-2xl p-1.5">
+        <nav aria-label="Áreas do histórico do paciente" className="vivance-panel mt-4 overflow-x-auto rounded-2xl p-1.5">
           <div role="tablist" aria-label="Conteúdo do paciente" className="flex min-w-max gap-1 md:min-w-0">
             {patientTabs.map((tab) => (
               <button
@@ -528,7 +528,7 @@ function OverviewPanel({
         encounterId={getDefaultEncounterId(patient.id)}
       />
 
-      <section aria-labelledby="review-now-title" className="vivanse-panel overflow-hidden rounded-2xl">
+      <section aria-labelledby="review-now-title" className="vivance-panel overflow-hidden rounded-2xl">
         <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center sm:p-6">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
             <div className="flex items-center gap-3 sm:hidden">
@@ -557,7 +557,7 @@ function OverviewPanel({
         </div>
       </section>
 
-      <dl className="vivanse-panel grid overflow-hidden rounded-2xl divide-y divide-[#e7edf5] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+      <dl className="vivance-panel grid overflow-hidden rounded-2xl divide-y divide-[#e7edf5] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
         {metrics.slice(0, 4).map(([label, value, detail], index) => {
           const MetricIcon = metricIcons[index] ?? FileText;
           return (
@@ -573,7 +573,7 @@ function OverviewPanel({
       <DoctorMacroCareSummary patientId={patient.id} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-5">
-        <section className="vivanse-panel rounded-2xl p-5 sm:p-6">
+        <section className="vivance-panel rounded-2xl p-5 sm:p-6">
           <div className="flex items-start gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#edf3fb] text-[#124da0]"><ShieldCheck aria-hidden="true" size={20} /></span>
             <div>
@@ -592,7 +592,7 @@ function OverviewPanel({
               ].map(([label, value]) => <div key={label} className="border-t border-[#e7edf5] py-3"><dt className="text-xs font-semibold text-[#61718a]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd>{label === 'Progresso da meta' ? <p className="mt-1 text-xs leading-5 text-[#61718a]">{careDemo.goal.source}</p> : null}</div>)}
           </dl>
         </section>
-        <aside className="vivanse-panel rounded-2xl p-5">
+        <aside className="vivance-panel rounded-2xl p-5">
             <h2 className="text-lg font-semibold text-[#071a3a]">Próximas ações</h2>
             <ol className="mt-4 space-y-3">
               {nextSteps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-[#50627f]"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#edf3fb] text-xs font-bold text-[#124da0]">{index + 1}</span><span>{step}</span></li>)}
@@ -601,7 +601,7 @@ function OverviewPanel({
         </aside>
       </div>
 
-      <details className="vivanse-panel overflow-hidden rounded-2xl" onToggle={(event) => setCareDetailsOpen(event.currentTarget.open)}>
+      <details className="vivance-panel overflow-hidden rounded-2xl" onToggle={(event) => setCareDetailsOpen(event.currentTarget.open)}>
         <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none sm:px-6">
           <ChartLineDown aria-hidden="true" size={20} className="text-[#124da0]" />
           Ver resumo completo do acompanhamento
@@ -610,14 +610,14 @@ function OverviewPanel({
       </details>
 
       {scenario === 'ai-unavailable' ? (
-        <section className="vivanse-panel rounded-2xl p-6">
+        <section className="vivance-panel rounded-2xl p-6">
           <Status tone="gray">IA indisponível</Status>
           <h2 className="mt-3 text-xl font-semibold text-[#071a3a]">Fluxo manual preservado</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">O profissional continua com relatos originais, documentos e linha do tempo. Nenhum conteúdo assistido é necessário para atender ou registrar a consulta.</p>
           <button type="button" onClick={() => onNotify('Fontes originais abertas sem geração assistida.')} className="mt-5 min-h-11 rounded-xl border border-[#9bb5d4] px-4 text-sm font-bold text-[#124da0]">Abrir fontes originais</button>
         </section>
       ) : (
-        <details id="ai-support-details" className="vivanse-panel overflow-hidden rounded-2xl" onToggle={(event) => setAiDetailsOpen(event.currentTarget.open)}>
+        <details id="ai-support-details" className="vivance-panel overflow-hidden rounded-2xl" onToggle={(event) => setAiDetailsOpen(event.currentTarget.open)}>
           <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none sm:px-6">
             <FileText aria-hidden="true" size={20} className="text-[#124da0]" />
             Abrir apoio para preparar a consulta

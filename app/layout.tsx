@@ -20,10 +20,10 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://lume-saude-prototipo.vitormilanez.chatgpt.site'),
-  title: 'VIVANSE — Cuidado contínuo',
+  title: 'VIVANCE — Cuidado contínuo',
   description: 'Protótipo de cuidado contínuo para emagrecimento e envelhecimento saudável.',
   openGraph: {
-    title: 'VIVANSE',
+    title: 'VIVANCE',
     description: 'Cuidado contínuo, decisões mais claras.',
     type: 'website',
     locale: 'pt_BR',
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'VIVANSE — Cuidado contínuo, decisões mais claras.',
+        alt: 'VIVANCE — Cuidado contínuo, decisões mais claras.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'VIVANSE',
+    title: 'VIVANCE',
     description: 'Cuidado contínuo, decisões mais claras.',
     images: ['/og.png'],
   },

@@ -43,7 +43,7 @@ function attentionAction(patient: string) {
   return 'Revisar relatório';
 }
 
-export function VivanseDoctorDashboard({
+export function VivanceDoctorDashboard({
   appointments,
   attentionItems,
   hasPreConsultation,
@@ -69,7 +69,7 @@ export function VivanseDoctorDashboard({
     <div className="mx-auto w-full max-w-[1240px]">
       <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
-          <article className="vivanse-panel rounded-2xl p-5 sm:p-6" aria-labelledby="next-consultation-title">
+          <article className="vivance-panel rounded-2xl p-5 sm:p-6" aria-labelledby="next-consultation-title">
             <h2 id="next-consultation-title" className="text-sm font-bold uppercase tracking-[0.08em] text-[#334d71]">
               Próxima consulta
             </h2>
@@ -127,7 +127,7 @@ export function VivanseDoctorDashboard({
               <button
                 type="button"
                 onClick={() => onStartConsultation(nextAppointment.patientId, nextAppointment.encounterId)}
-                className="vivanse-primary-action inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 rounded-xl px-6 text-sm font-bold text-white transition-colors sm:min-w-[220px]"
+                className="vivance-primary-action inline-flex min-h-12 cursor-pointer items-center justify-center gap-3 rounded-xl px-6 text-sm font-bold text-white transition-colors sm:min-w-[220px]"
               >
                 <VideoCamera aria-hidden="true" size={21} />
                 Atender agora
@@ -136,7 +136,7 @@ export function VivanseDoctorDashboard({
             </div>
           </article>
 
-          <section className="vivanse-panel overflow-hidden rounded-2xl" aria-labelledby="today-appointments-title">
+          <section className="vivance-panel overflow-hidden rounded-2xl" aria-labelledby="today-appointments-title">
             <div className="flex flex-col gap-3 border-b border-[#dce5f1] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="flex items-center gap-2.5">
                 <h2 id="today-appointments-title" className="text-sm font-bold uppercase tracking-[0.08em] text-[#334d71]">
@@ -200,7 +200,7 @@ export function VivanseDoctorDashboard({
           </section>
         </div>
 
-        <aside className="vivanse-panel overflow-hidden rounded-2xl" aria-labelledby="attention-title">
+        <aside className="vivance-panel overflow-hidden rounded-2xl" aria-labelledby="attention-title">
           <div className="flex items-center justify-between border-b border-[#dce5f1] px-5 py-[18px]">
             <h2 id="attention-title" className="text-sm font-bold uppercase tracking-[0.08em] text-[#334d71]">
               Precisa de atenção

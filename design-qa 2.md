@@ -22,7 +22,7 @@
 - Tipografia: Geist mantém a mesma leitura limpa, peso e hierarquia da referência; títulos, rótulos e texto auxiliar não colidem nem quebram de forma ruim.
 - Espaço e estrutura: menu lateral, barra superior, próxima consulta, lista do dia e coluna de atenção preservam a ordem e as proporções principais. A implementação é um pouco mais compacta, sem mudar a leitura ou esconder ações.
 - Cores: azul-marinho mais escuro, fundo quase plano e azul-claro localizado atendem à direção aprovada. O degradê ficou discreto e restrito ao menu e à ação principal.
-- Imagens e logo: o arquivo oficial da VIVANSE é usado. A transparência foi conferida sem caixa escura, halo ou corte visível.
+- Imagens e logo: o arquivo oficial da VIVANCE é usado. A transparência foi conferida sem caixa escura, halo ou corte visível.
 - Texto: os nomes e estados mantêm os dados fictícios já usados pelo protótipo. Termos visíveis foram simplificados para “Hoje”, “Histórico” e “Acompanhamento”.
 - Ícones: todos vêm da mesma biblioteca e mantêm peso, tamanho e alinhamento consistentes.
 - Celular: marca compacta, menu rolável, próxima consulta e botão principal permanecem utilizáveis em uma coluna.
@@ -53,7 +53,7 @@
 
 ## Checklist final
 
-- [x] Marca VIVANSE oficial aplicada.
+- [x] Marca VIVANCE oficial aplicada.
 - [x] Azul mais escuro e degradê reduzido.
 - [x] Vidro limitado a menus e barras.
 - [x] Ações principais funcionando.

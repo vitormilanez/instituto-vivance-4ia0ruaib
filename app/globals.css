@@ -3,11 +3,25 @@
 :root {
   --background: #f6f9fe;
   --foreground: #071a3a;
-  --vivanse-navy: #03132d;
-  --vivanse-navy-soft: #082553;
-  --vivanse-blue: #124da0;
-  --vivanse-blue-soft: #edf3fb;
-  --vivanse-border: #dbe4f0;
+  --vivance-navy: #03132d;
+  --vivance-navy-soft: #082553;
+  --vivance-blue: #124da0;
+  --vivance-blue-soft: #edf3fb;
+  --vivance-border: #dbe4f0;
+  /* Patient palette: same navy/blue foundation as the professional area,
+     with teal reserved for progress and amber for attention. */
+  --patient-ink: #071a3a;
+  --patient-muted: #405675;
+  --patient-subtle: #61718a;
+  --patient-action: #124da0;
+  --patient-action-hover: #0f3f83;
+  --patient-action-soft: #eaf2ff;
+  --patient-progress-track: #c9dbf6;
+  --patient-positive: #0b7b68;
+  --patient-positive-soft: #e7f4ef;
+  --patient-attention: #8b5a06;
+  --patient-attention-soft: #fff5df;
+  --patient-attention-dot: #c9821c;
   --doctor-topbar-expanded-height: 80px;
   --doctor-topbar-compact-height: 56px;
   --doctor-nav-height: 60px;
@@ -48,20 +62,20 @@ body {
   color: #03132d;
 }
 
-.vivanse-app-shell {
+.vivance-app-shell {
   background: #f6f9fe;
   padding-bottom: calc(var(--doctor-nav-height) + 32px + env(safe-area-inset-bottom));
 }
 
-.vivanse-app-shell:has(.doctor-chrome[data-collapsed='true']) {
+.vivance-app-shell:has(.doctor-chrome[data-collapsed='true']) {
   --doctor-chrome-current-height: var(--doctor-chrome-compact-height);
 }
 
-.vivanse-sidebar-surface {
+.vivance-sidebar-surface {
   background: #03132d;
 }
 
-.vivanse-glass-bar {
+.vivance-glass-bar {
   border-bottom: 1px solid #dbe4f0;
   background: rgba(255, 255, 255, 0.84);
   box-shadow: 0 12px 32px color-mix(in srgb, #03132d 5%, transparent);
@@ -78,9 +92,9 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  border-bottom: 1px solid var(--vivanse-border);
+  border-bottom: 1px solid var(--vivance-border);
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 32px color-mix(in srgb, var(--vivanse-navy) 5%, transparent);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--vivance-navy) 5%, transparent);
   clip-path: inset(0 0 0 0);
   backdrop-filter: blur(18px) saturate(120%);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
@@ -94,7 +108,7 @@ body {
 }
 
 .doctor-chrome-brand {
-  background: var(--vivanse-navy);
+  background: var(--vivance-navy);
 }
 
 .doctor-chrome-title-block,
@@ -213,7 +227,7 @@ body {
   scroll-margin-top: calc(var(--doctor-chrome-current-height) + 16px);
 }
 
-.vivanse-glass-menu {
+.vivance-glass-menu {
   border: 1px solid color-mix(in srgb, #124da0 28%, transparent);
   background: rgba(3, 19, 45, 0.97);
   box-shadow: 0 18px 40px rgba(3, 19, 45, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.07);
@@ -221,24 +235,24 @@ body {
   -webkit-backdrop-filter: blur(16px);
 }
 
-.vivanse-glass-menu-active {
+.vivance-glass-menu-active {
   border-color: color-mix(in srgb, #124da0 52%, transparent);
   background: color-mix(in srgb, #082553 88%, transparent);
   box-shadow: 0 10px 24px color-mix(in srgb, #03132d 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.vivanse-panel {
+.vivance-panel {
   border: 1px solid #dbe4f0;
   background: #ffffff;
   box-shadow: 0 14px 36px color-mix(in srgb, #03132d 5.5%, transparent);
 }
 
-.vivanse-primary-action {
+.vivance-primary-action {
   background: linear-gradient(135deg, #03132d, #082553);
   box-shadow: 0 12px 24px rgba(3, 19, 45, 0.2);
 }
 
-.vivanse-primary-action:hover {
+.vivance-primary-action:hover {
   background: #082553;
 }
 
@@ -248,7 +262,7 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .vivanse-sidebar-surface {
+  .vivance-sidebar-surface {
     min-height: 76px;
   }
 }
