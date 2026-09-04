@@ -13,7 +13,7 @@ export function WorkspaceShell({
   children: ReactNode;
 }) {
   return (
-    <div className={role === 'doctor' ? 'vivanse-app-shell min-h-screen text-[#071a3a]' : 'min-h-screen bg-[#f4f7f5] text-[#17372f]'}>
+    <div className={role === 'doctor' ? 'vivance-app-shell min-h-screen text-[#071a3a]' : 'min-h-screen bg-[#f4f7f5] text-[#17372f]'}>
       <a
         href="#main-content"
         className="sr-only z-[90] rounded-lg bg-[#061b3e] px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"

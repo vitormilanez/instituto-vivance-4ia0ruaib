@@ -2,7 +2,7 @@
 
 ## Evidências
 
-- Referência visual do sistema VIVANSE: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-desktop-final3.png`
+- Referência visual do sistema VIVANCE: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-dashboard-desktop-final3.png`
 - Tela implementada no computador: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-desktop.png`
 - Tela na largura em uso: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-user-884.png`
 - Tela no celular: `/Users/vitormilanez/Desktop/Codes/Instituto Vivance/.impeccable/review/vivanse-patient-mobile.png`
@@ -20,10 +20,10 @@
 ## Findings
 
 - Nenhuma diferença P0, P1 ou P2 permanece.
-- Tipografia: Geist, pesos, tamanhos e quebras acompanham o painel VIVANSE. O nome da paciente, o ponto de atenção e os números têm hierarquia clara; os textos pequenos continuam legíveis.
+- Tipografia: Geist, pesos, tamanhos e quebras acompanham o painel VIVANCE. O nome da paciente, o ponto de atenção e os números têm hierarquia clara; os textos pequenos continuam legíveis.
 - Espaço e estrutura: menu lateral, barra superior, largura de conteúdo, cantos e ritmo vertical seguem a referência. A tela passou de uma sequência longa de blocos para um resumo curto com aprofundamento opcional.
 - Cores: azul-marinho, azul de ação, branco e azul-claro usam os mesmos valores do sistema. Âmbar aparece somente no estado que pede revisão. Não há grande área verde nem grande degradê.
-- Imagens e marca: o logo oficial da VIVANSE permanece nítido, com transparência e sem caixa ou halo. Os ícones vêm de uma única biblioteca; não há desenho improvisado em HTML ou SVG.
+- Imagens e marca: o logo oficial da VIVANCE permanece nítido, com transparência e sem caixa ou halo. Os ícones vêm de uma única biblioteca; não há desenho improvisado em HTML ou SVG.
 - Texto: a interface usa “histórico”, “acompanhamento”, “o que merece atenção” e “apoio para preparar a consulta”. A IA não ocupa o nome da tela nem é apresentada como autora clínica.
 - Responsivo: não houve rolagem lateral em `1440`, `884` ou `375` px. No celular, nome, contexto, estados e ação principal aparecem antes das abas; a aba seguinte fica parcialmente visível como indicação de rolagem.
 - Acessibilidade: abas têm papéis e estados selecionados, controles principais têm pelo menos 44 px, foco visível usa azul de ação e estados não dependem apenas de cor.

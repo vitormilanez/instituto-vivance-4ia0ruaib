@@ -162,7 +162,7 @@ export default function PatientMvpWorkspace({
     sendConversationMessage,
   } = useCareDemo(patientId, encounterId);
   const [session, setSession, sessionHydrated] = useSessionDemoState(
-    `vivanse-patient-mvp-v1:${patientId}`,
+    `vivance-patient-mvp-v1:${patientId}`,
     getInitialPatientMvpSessionState(patientId),
     data.scenario === 'pending' ? normalizePendingSession : normalizeFilledSession,
   );

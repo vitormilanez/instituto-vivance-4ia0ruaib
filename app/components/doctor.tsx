@@ -32,7 +32,7 @@ import {
 } from './demo-routes';
 import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review';
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
-import { VivanseDoctorDashboard } from './doctor-dashboard-vivanse';
+import { VivanceDoctorDashboard } from './doctor-dashboard-vivance';
 import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
 import {
   PatientAvatar,
@@ -732,7 +732,7 @@ export default function DoctorWorkspace({
   return (
     <>
       <div id="doctor-workspace-content" className="grid min-h-[calc(100dvh-var(--doctor-chrome-expanded-height))] lg:grid-cols-[252px_minmax(0,1fr)]">
-        <aside className="doctor-sticky-offset vivanse-sidebar-surface sticky top-[var(--doctor-chrome-current-height)] hidden h-[calc(100dvh-var(--doctor-chrome-current-height))] flex-col self-start overflow-y-auto px-4 py-5 text-white lg:flex">
+        <aside className="doctor-sticky-offset vivance-sidebar-surface sticky top-[var(--doctor-chrome-current-height)] hidden h-[calc(100dvh-var(--doctor-chrome-current-height))] flex-col self-start overflow-y-auto px-4 py-5 text-white lg:flex">
           <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4" aria-label="Perfil profissional demonstrativo">
             <div className="flex items-center gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#c4d8f4] text-xs font-extrabold text-[#03132d] ring-2 ring-white/20">GM</span>
@@ -768,7 +768,7 @@ export default function DoctorWorkspace({
             })}
           </nav>
 
-          <section className="vivanse-glass-menu mt-5 rounded-2xl p-4" aria-label="Próxima consulta na agenda">
+          <section className="vivance-glass-menu mt-5 rounded-2xl p-4" aria-label="Próxima consulta na agenda">
             <div className="flex items-start gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#a9c8ee]">
                 <Clock aria-hidden="true" size={20} />
@@ -799,7 +799,7 @@ export default function DoctorWorkspace({
           <button
             type="button"
             onClick={() => notify('Saída disponível apenas na versão conectada.')}
-            className="vivanse-glass-menu mt-auto flex min-h-[54px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white"
+            className="vivance-glass-menu mt-auto flex min-h-[54px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white"
           >
             <SignOut aria-hidden="true" size={21} />
             Sair
@@ -808,7 +808,7 @@ export default function DoctorWorkspace({
 
         <main id="main-content" className="min-w-0 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8 xl:px-9">
           {view === 'Visão geral' && (
-            <VivanseDoctorDashboard
+            <VivanceDoctorDashboard
               appointments={appointments}
               attentionItems={alerts}
               hasPreConsultation={Boolean(latestSubmission)}

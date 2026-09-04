@@ -171,10 +171,10 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
       <div aria-hidden="true" className="doctor-chrome-surface" />
 
       <div className="doctor-chrome-top grid lg:grid-cols-[252px_minmax(0,1fr)]">
-        <Link href="/medico" aria-label="VIVANSE — início" className="doctor-chrome-brand pointer-events-auto hidden items-center px-5 lg:flex">
-          <Image src="/brand/vivanse-mark.png" alt="" width={42} height={42} className="size-[42px] shrink-0 rounded-2xl ring-1 ring-white/10" priority />
+        <Link href="/medico" aria-label="VIVANCE — início" className="doctor-chrome-brand pointer-events-auto hidden items-center px-5 lg:flex">
+          <Image src="/brand/vivance-mark.png" alt="" width={42} height={42} className="size-[42px] shrink-0 rounded-2xl ring-1 ring-white/10" priority />
           <span className="doctor-chrome-expanded-only ml-3 min-w-0">
-            <strong className="block text-[15px] font-bold tracking-[0.16em] text-white">VIVANSE</strong>
+            <strong className="block text-[15px] font-bold tracking-[0.16em] text-white">VIVANCE</strong>
             <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.1em] text-[#a9c8ee]">Cuidado contínuo</span>
           </span>
         </Link>
@@ -190,7 +190,7 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 <ArrowLeft aria-hidden="true" size={20} />
               </Link>
             ) : (
-              <Image src="/brand/vivanse-mark.png" alt="" width={36} height={36} className="doctor-chrome-mobile-mark size-9 shrink-0 rounded-xl lg:hidden" priority />
+              <Image src="/brand/vivance-mark.png" alt="" width={36} height={36} className="doctor-chrome-mobile-mark size-9 shrink-0 rounded-xl lg:hidden" priority />
             )}
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold tracking-[-0.025em] text-[#071a3a] sm:text-xl">
@@ -258,7 +258,7 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
               <summary aria-label="Abrir opções do painel" className="grid size-11 cursor-pointer list-none place-items-center rounded-xl text-[#0b2854] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0]">
                 <List aria-hidden="true" size={21} weight="bold" />
               </summary>
-              <div className="vivanse-glass-menu absolute right-0 top-12 z-50 w-64 rounded-xl p-2 shadow-[0_20px_48px_rgba(3,19,45,0.3)]">
+              <div className="vivance-glass-menu absolute right-0 top-12 z-50 w-64 rounded-xl p-2 shadow-[0_20px_48px_rgba(3,19,45,0.3)]">
                 <Link href={`/paciente/${activePatientId}`} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79a8df]">
                   <ArrowsLeftRight aria-hidden="true" size={18} />
                   Abrir área de {activePatientFirstName}

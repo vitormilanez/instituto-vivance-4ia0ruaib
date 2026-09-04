@@ -15,7 +15,7 @@ export function DoctorMacroCareSummary({ patientId }: { patientId: string }) {
   if (!summary || !review) return null;
 
   return (
-    <section aria-labelledby="doctor-macro-summary-title" className="vivanse-panel overflow-hidden rounded-2xl">
+    <section aria-labelledby="doctor-macro-summary-title" className="vivance-panel overflow-hidden rounded-2xl">
       <div className="p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>

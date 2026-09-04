@@ -13,7 +13,7 @@ web
 
 ## Product Purpose
 
-A VIVANSE organiza o cuidado ao longo do tempo: `coleta -> resumo -> revisão médica -> orientação -> acompanhamento`. O produto deve reduzir o tempo necessário para o profissional entender o contexto de uma pessoa, revisar as fontes e preparar a próxima conversa, mantendo todas as decisões clínicas sob responsabilidade humana.
+A VIVANCE organiza o cuidado ao longo do tempo: `coleta -> resumo -> revisão médica -> orientação -> acompanhamento`. O produto deve reduzir o tempo necessário para o profissional entender o contexto de uma pessoa, revisar as fontes e preparar a próxima conversa, mantendo todas as decisões clínicas sob responsabilidade humana.
 
 O sucesso da área profissional é permitir que o médico identifique rapidamente quem está sendo acompanhado, o que mudou, o que precisa de revisão, quais fontes sustentam a informação e qual ação humana pode ser tomada em seguida.
 
@@ -40,7 +40,7 @@ O produto não tenta substituir o prontuário ou automatizar decisões médicas.
 
 ## Brand Commitments
 
-- Nome público: VIVANSE.
+- Nome público: VIVANCE.
 - Identidade: azul-marinho, branco, azul-claro em pontos de orientação e dourado restrito ao logo.
 - Menus e barras podem usar transparência semelhante a vidro quando isso ajuda a separar navegação e conteúdo; o restante permanece claro e simples.
 - A interface profissional deve parecer confiável, elegante e funcional; expressão visual não pode competir com tarefa, estado ou evidência.
