@@ -312,7 +312,7 @@ function LastConsultationPanel({ patientId }: { patientId: string }) {
         <p className="mt-3 text-sm leading-6 text-[#405675]">Para esta conversa, ficaram registrados: validar despertares noturnos, confirmar a tolerância ao plano atual e decidir o foco da próxima quinzena.</p>
       </section>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Metric label="Peso" value="−1,8 kg" detail="ciclo demonstrativo" />
+        <Metric label="Peso" value="−3,2 kg" detail="1 jul–1 set · fontes identificadas" />
         <Metric label="Adesão" value="82%" detail="registros autorrelatados" />
         <Metric label="Sono médio" value="6h12" detail="fonte registrada" />
       </div>

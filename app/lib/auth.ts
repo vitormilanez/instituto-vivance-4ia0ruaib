@@ -21,6 +21,9 @@ type UserCredentialRow = AppUser & {
   status: 'active' | 'blocked';
 };
 
+// Cloudflare Workers currently caps Web Crypto PBKDF2 at 100,000 iterations.
+const PASSWORD_ITERATIONS = 100_000;
+
 const DEMO_USERS = [
   {
     id: 'usr-dr-guilherme',
@@ -28,9 +31,9 @@ const DEMO_USERS = [
     displayName: 'Dr. Guilherme Martins',
     role: 'professional',
     patientId: null,
-    passwordHash: 'XVQu0GYN1CeQ5-Gfbl5fcyzNabLrwrIGkPOOIIj4nMI',
+    passwordHash: 'R64z-61r97-VMNoC2WBS8sfoZnOMgiujXV9mR0dhye8',
     passwordSalt: 'dTKSyLLkDi8aMc6_Xs-Rww',
-    passwordIterations: 210_000,
+    passwordIterations: PASSWORD_ITERATIONS,
   },
   {
     id: 'usr-marina',
@@ -38,16 +41,16 @@ const DEMO_USERS = [
     displayName: 'Marina Costa',
     role: 'patient',
     patientId: 'pac-demo-001',
-    passwordHash: 'lQbqLOSiarW2Rl9155hVFWIbbkKnt8eZKebKvoFrP_g',
+    passwordHash: 'F4Uo5u7NoukBzedBOpAPTFZSKlWp4XK4ASfcwTUpD9w',
     passwordSalt: 'q9ipglxgH6K0i68ib-OPgQ',
-    passwordIterations: 210_000,
+    passwordIterations: PASSWORD_ITERATIONS,
   },
 ] as const;
 
 const DUMMY_PASSWORD = {
-  hash: '4lz_dsu9G0-V9xqObSDd3SZLOkB1ykTktW5vT_qPE-U',
+  hash: 'hKMSCSnpr_HkWpb-BcLilJ5VaBjuH1WepqrRM-iyMto',
   salt: 'tN2XSIXISqNSROWpoOIuTA',
-  iterations: 210_000,
+  iterations: PASSWORD_ITERATIONS,
 };
 
 function normalizeUsername(value: string) {
@@ -115,11 +118,21 @@ export async function ensureDemoAccounts() {
     DEMO_USERS.map((user) =>
       database
         .prepare(
-          `INSERT OR IGNORE INTO users (
+          `INSERT INTO users (
             id, username, display_name, role, patient_id,
             password_hash, password_salt, password_iterations,
             status, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            username = excluded.username,
+            display_name = excluded.display_name,
+            role = excluded.role,
+            patient_id = excluded.patient_id,
+            password_hash = excluded.password_hash,
+            password_salt = excluded.password_salt,
+            password_iterations = excluded.password_iterations,
+            status = excluded.status,
+            updated_at = excluded.updated_at`,
         )
         .bind(
           user.id,

@@ -265,6 +265,10 @@ body {
   .vivance-sidebar-surface {
     min-height: 76px;
   }
+
+  .doctor-chrome-navigation {
+    display: none;
+  }
 }
 
 button,
