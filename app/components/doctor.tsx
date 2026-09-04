@@ -8,7 +8,6 @@ import {
   Clock,
   FileText,
   House,
-  SignOut,
   Sparkle,
   Users,
   VideoCamera,
@@ -42,6 +41,8 @@ import {
 } from './doctor-patient-longitudinal';
 import { cn, Heading, NavigationLink as Link, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
+import { LogoutButton } from './logout-button';
+import { usePersistentConversation } from './use-persistent-conversation';
 
 type AppointmentTone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
 type Appointment = {
@@ -796,14 +797,7 @@ export default function DoctorWorkspace({
             </Link>
           </section>
 
-          <button
-            type="button"
-            onClick={() => notify('Saída disponível apenas na versão conectada.')}
-            className="vivance-glass-menu mt-auto flex min-h-[54px] w-full cursor-pointer items-center gap-3 rounded-xl px-4 text-sm font-semibold text-[#dfe9f7] transition-colors hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white"
-          >
-            <SignOut aria-hidden="true" size={21} />
-            Sair
-          </button>
+          <LogoutButton className="vivance-glass-menu mt-auto min-h-[54px] w-full justify-start text-[#dfe9f7] hover:border-[#557fb5] hover:bg-[#0b326c] hover:text-white" />
         </aside>
 
         <main id="main-content" className="min-w-0 px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8 xl:px-9">
@@ -1269,19 +1263,37 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
   const [context, setContext] = useState<CareConversationContext>('care-plan');
   const [query, setQuery] = useState('');
   const encounterId = getDefaultEncounterId(patientId);
-  const { conversationMessages, sendConversationMessage } = useCareDemo(patientId, encounterId);
+  const sessionConversation = useCareDemo(patientId, encounterId);
+  const isSharedAccount = patientId === DEFAULT_PATIENT_ID;
+  const persistentConversation = usePersistentConversation({
+    patientId,
+    encounterId,
+    sender: 'doctor',
+    enabled: isSharedAccount,
+  });
+  const conversationMessages = isSharedAccount
+    ? persistentConversation.messages
+    : sessionConversation.conversationMessages;
   const selected = messageThreads.find((thread) => thread.patient.id === patientId) ?? null;
   const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
   const visibleThreads = messageThreads.filter((thread) => `${thread.patient.name} ${thread.context} ${thread.preview}`.toLocaleLowerCase('pt-BR').includes(normalizedQuery));
   const trimmedValue = value.trim();
   const canSend = trimmedValue.length >= 2;
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selected || !canSend) return;
-    sendConversationMessage('doctor', { body: trimmedValue, context });
-    setValue('');
-    onNotify(`Mensagem sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')} adicionada à conversa de ${selected.patient.name}.`);
+    try {
+      if (isSharedAccount) {
+        await persistentConversation.sendMessage({ body: trimmedValue, context });
+      } else {
+        sessionConversation.sendConversationMessage('doctor', { body: trimmedValue, context });
+      }
+      setValue('');
+      onNotify(`Mensagem sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')} adicionada à conversa de ${selected.patient.name}.`);
+    } catch {
+      // The conversation error banner gives the user a retry path.
+    }
   };
 
   return (
@@ -1307,6 +1319,7 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
               <div><p className="text-sm font-bold">{selected.patient.name}</p><p className="text-xs text-[#526a62]">{selected.context}</p></div>
             </div>
             <div className="flex-1 space-y-4 bg-[#f8faf9] p-4 sm:p-6" aria-live="polite">
+              {isSharedAccount && persistentConversation.loading ? <p className="text-sm text-[#526a62]">Atualizando a conversa…</p> : null}
               <div className="max-w-[86%] rounded-2xl rounded-tl-md bg-white p-4 text-sm leading-6 shadow-sm sm:max-w-[78%]">
                 <span className="mb-2 inline-flex rounded-full bg-[#edf7f4] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#0b6a5b]">Plano de cuidado</span>
                 <p>{selected.incoming}</p>
@@ -1364,10 +1377,11 @@ function Messages({ patientId, onNotify }: { patientId: string; onNotify: (text:
               </fieldset>
               <label className="mt-3 block text-sm font-bold text-[#17372f]" htmlFor="doctor-message">Mensagem para {selected.patient.name}</label>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end">
-                <textarea id="doctor-message" value={value} maxLength={600} rows={2} onChange={(event) => setValue(event.target.value)} className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9]" placeholder={`Escreva sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`} />
-                <button type="submit" disabled={!canSend} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">Enviar</button>
+                <textarea id="doctor-message" value={value} maxLength={600} rows={2} disabled={isSharedAccount && persistentConversation.sending} onChange={(event) => setValue(event.target.value)} className="min-h-20 min-w-0 flex-1 resize-y rounded-xl border border-[#d7e3df] px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8bc6b9] disabled:bg-[#f1f5f3]" placeholder={`Escreva sobre ${doctorConversationContextLabel[context].toLocaleLowerCase('pt-BR')}...`} />
+                <button type="submit" disabled={!canSend || (isSharedAccount && persistentConversation.sending)} className="min-h-12 cursor-pointer rounded-xl bg-[#0b7b68] px-5 text-sm font-bold text-white transition-colors hover:bg-[#096b5b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0b7b68] focus-visible:ring-offset-2 disabled:cursor-default disabled:bg-[#91aaa3]">{isSharedAccount && persistentConversation.sending ? 'Enviando…' : 'Enviar'}</button>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#526a62]"><p>Sessão demonstrativa; sem envio externo.</p><p>{value.length}/600</p></div>
+              {isSharedAccount && persistentConversation.error ? <p role="alert" className="mt-3 rounded-xl border border-[#efc5c1] bg-[#fff2f1] px-3 py-2.5 text-sm font-medium text-[#8b3732]">{persistentConversation.error}</p> : null}
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px] leading-5 text-[#526a62]"><p>{isSharedAccount ? 'Conversa compartilhada com a conta da Marina.' : 'Sessão demonstrativa; sem envio externo.'}</p><p>{value.length}/600</p></div>
             </form>
           </div>
         ) : (

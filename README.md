@@ -37,7 +37,7 @@ Versão publicada: https://lume-saude-prototipo.vitormilanez.chatgpt.site
 
 ## Estado atual
 
-O projeto é um protótipo interativo com dados fictícios. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, leituras humanas, cadências, contatos manuais, diário, mensagens, confirmações de ações e auditoria de transições permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com as fontes e transições criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem autenticação, autorização, persistência durável, uploads reais, entrega real de mensagens, integrações externas ou dados clínicos reais.
+O projeto é um protótipo interativo com dados fictícios. Usuários, sessões, o vínculo de cuidado e a conversa entre Dr. Guilherme e Marina são persistidos em Cloudflare D1, com senha derivada por PBKDF2, cookie de sessão `HttpOnly` e separação de rotas por perfil. A pré-consulta, suas versões de revisão, os planos versionados, check-ins, leituras humanas, cadências, contatos manuais, diário, confirmações de ações e auditoria de transições ainda permanecem na `sessionStorage` somente durante a sessão do navegador. O dossiê longitudinal combina eventos sintéticos com as fontes e transições criadas na sessão, sempre isolado pela combinação de paciente e consulta. Ainda não existem uploads reais, notificações externas, integrações externas ou dados clínicos reais.
 
 As integrações de Google Meet, relógios, prescrições e análise de refeições são demonstrações de produto. Nenhuma delas se conecta atualmente a serviços externos. Áudio, transcrição e envio de fotos são simulados no mock; não há captura, upload ou armazenamento real desses arquivos.
 
@@ -69,7 +69,12 @@ npm ci
 npm run dev
 ~~~
 
-Acesse http://localhost:3000. A raiz encaminha para o painel médico.
+Acesse http://localhost:3000. A raiz abre a tela de login e encaminha cada conta para sua área autorizada.
+
+Contas demonstrativas:
+
+- Dr. Guilherme: usuário `dr.guilherme`, senha `Vivans@2026`;
+- Marina: usuário `marina`, senha `Vivans@2026`.
 
 Rotas principais do protótipo:
 
@@ -94,7 +99,7 @@ npm run build
 
 1. Validar as jornadas e prioridades com o médico especialista.
 2. Definir limites clínicos, consentimentos, retenção e auditoria.
-3. Implementar autenticação e persistência com separação entre clínicas.
+3. Expandir a persistência durável para os demais dados clínicos e preparar a separação entre clínicas.
 4. Integrar agenda, videoconferência, mensagens e documentos.
 5. Avaliar integrações de Apple Health, Health Connect e fabricantes de relógios.
 6. Criar uma camada de conhecimento médico com fontes rastreáveis e avaliações de qualidade.

@@ -237,7 +237,7 @@ export interface CareConversationMessage extends CareConversationMessageInput {
   sender: CareConversationSender;
   sentAt: string;
   sentAtIso: string;
-  retentionMode: 'session-only';
+  retentionMode: 'session-only' | 'durable';
 }
 
 export interface CarePlanActionConfirmation {

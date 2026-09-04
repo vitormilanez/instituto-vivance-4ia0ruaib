@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { DEFAULT_PATIENT_ID, getDemoPatient } from './demo-routes';
+import { LogoutButton } from './logout-button';
 
 export type Role = 'doctor' | 'patient';
 
@@ -18,49 +19,28 @@ export function NavigationLink({ children, ...props }: AnchorHTMLAttributes<HTML
   return <a {...props}>{children}</a>;
 }
 
+/**
+ * Compatibility badge for legacy prototype screens.
+ * Account switching now happens exclusively through the authenticated login flow.
+ */
 export function RoleSwitcher({
   role,
-  patientId,
   className,
 }: {
   role: Role;
   patientId: string;
   className?: string;
 }) {
-  const linkClass = 'flex min-h-10 items-center justify-center rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 sm:px-3.5 sm:text-sm';
-  const patientName = getDemoPatient(patientId)?.name ?? 'Paciente demo';
-
   return (
-    <nav
-      aria-label="Alternar entre área médica e área do paciente"
-      className={cn('rounded-xl border border-[#dbe4f0] bg-[#edf3fb]/82 p-1 backdrop-blur', className)}
+    <span
+      aria-label={`Perfil atual: ${role === 'doctor' ? 'Médico' : 'Paciente'}`}
+      className={cn(
+        'inline-flex min-h-10 items-center rounded-lg border border-[#dbe4f0] bg-[#edf3fb]/82 px-3.5 text-sm font-semibold text-[#405675]',
+        className,
+      )}
     >
-      <NavigationLink
-        href="/medico"
-        aria-current={role === 'doctor' ? 'page' : undefined}
-        className={cn(
-          linkClass,
-          role === 'doctor'
-            ? 'bg-[#03132d] text-white shadow-[0_5px_14px_rgba(3,19,45,0.16)]'
-            : 'text-[#405675] hover:bg-white/75 hover:text-[#071a3a]',
-        )}
-      >
-        Médico
-      </NavigationLink>
-      <NavigationLink
-        href={`/paciente/${patientId}`}
-        aria-label={role === 'doctor' ? `Abrir demonstração de ${patientName}` : undefined}
-        aria-current={role === 'patient' ? 'page' : undefined}
-        className={cn(
-          linkClass,
-          role === 'patient'
-            ? 'bg-[#03132d] text-white shadow-[0_5px_14px_rgba(3,19,45,0.16)]'
-            : 'text-[#405675] hover:bg-white/75 hover:text-[#071a3a]',
-        )}
-      >
-        Paciente
-      </NavigationLink>
-    </nav>
+      {role === 'doctor' ? 'Médico' : 'Paciente'}
+    </span>
   );
 }
 
@@ -84,10 +64,14 @@ export function RoleHeader({ role, patientId = DEFAULT_PATIENT_ID }: { role: Rol
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <RoleSwitcher role={role} patientId={patientId} className="flex items-center" />
+          <div className="hidden text-right sm:block">
+            <strong className="block text-xs text-[#17372f]">{patient?.name ?? 'Paciente'}</strong>
+            <span className="block text-[11px] text-[#60766f]">Paciente</span>
+          </div>
           <div className="hidden size-10 place-items-center rounded-full bg-[#d9eee8] text-sm font-bold text-[#0b6a5b] sm:grid">
             {role === 'doctor' ? 'GM' : patientInitials}
           </div>
+          <LogoutButton compact className="text-[#526a62] hover:bg-[#edf7f4] hover:text-[#17372f]" />
         </div>
       </div>
     </header>
