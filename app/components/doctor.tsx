@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  Brain,
   Broadcast as PhosphorBroadcast,
   CalendarBlank,
   ChatCircle,
@@ -33,6 +34,7 @@ import { PreConsultationReviewWorkspace } from './doctor-preconsultation-review'
 import { DoctorCarePlanWorkspace } from './doctor-care-plan-workspace';
 import { VivanceDoctorDashboard } from './doctor-dashboard-vivance';
 import { DoctorTeleconsultationAiWorkspace } from './doctor-teleconsultation-ai-workspace';
+import { DoctorAiControlCenter } from './doctor-ai-control-center';
 import {
   PatientAvatar,
   PatientCohort,
@@ -77,6 +79,7 @@ const sidebarNavigationIcons = {
   Pacientes: Users,
   Mensagens: ChatCircle,
   Relatórios: FileText,
+  'Central da IA': Brain,
 } as const;
 
 interface DoctorDemoUiState {
@@ -842,6 +845,7 @@ export default function DoctorWorkspace({
               }}
             />
           )}
+          {view === 'Central da IA' && <DoctorAiControlCenter />}
         </main>
       </div>
 

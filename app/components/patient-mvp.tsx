@@ -50,6 +50,7 @@ import {
   type CareDestination,
 } from './patient-mvp-sections';
 import { PatientMealAnalysisDialog, PatientQuickActions } from './patient-quick-actions';
+import { PatientExamConnection } from './patient-exam-connection';
 import { cn, NavigationLink, Status, Toast } from './shared';
 import { useSessionDemoState } from './use-session-demo-state';
 import { usePersistentConversation } from './use-persistent-conversation';
@@ -499,7 +500,7 @@ function TodayScreen({
       <ScreenIntro
         status={(
           <>
-            <Status tone="amber">Dados fictícios</Status>
+            <Status tone="blue">Conectada à equipe</Status>
             <Status tone="blue">
               {data.scenario === 'filled' ? 'Acompanhamento ativo' : 'Preparação inicial'}
             </Status>
@@ -609,6 +610,8 @@ function FilledToday({
         onChooseAppointment={onChooseAppointment}
         onSaveMeasures={onSaveMeasures}
       />
+
+      <PatientExamConnection patientId={data.patientId} />
 
       <section aria-labelledby="filled-progress-title" className="mt-8 rounded-2xl border border-[#d9e5e0] bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">

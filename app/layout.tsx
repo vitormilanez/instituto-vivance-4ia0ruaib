@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google';
 import { CareDemoProvider } from './components/care-demo-context';
+import { ClinicalIntelligenceProvider } from './components/clinical-intelligence-context';
 import './globals.css';
 
 const geistSans = Geist({
@@ -48,7 +49,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}>
-        <CareDemoProvider>{children}</CareDemoProvider>
+        <CareDemoProvider>
+          <ClinicalIntelligenceProvider>{children}</ClinicalIntelligenceProvider>
+        </CareDemoProvider>
       </body>
     </html>
   );

@@ -15,6 +15,7 @@ import {
   type ClinicalOutputType,
 } from './clinical-change-demo-data';
 import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
+import { useClinicalIntelligence } from './clinical-intelligence-context';
 import { cn, Status } from './shared';
 
 const outputTypePresentation: Record<ClinicalOutputType, { label: string; className: string }> = {
@@ -67,12 +68,58 @@ export function DoctorClinicalChangeSummary({
   onNotify?: (message: string) => void;
 }) {
   const summary = getClinicalChangeDemo(patientId);
+  const {
+    activeConfiguration,
+    governedArtifacts,
+    knowledgeSources,
+    patientContexts,
+    recordGovernedArtifact,
+  } = useClinicalIntelligence();
   const [draftText, setDraftText] = useState(summary?.draft.text ?? '');
   const [selectedPointIds, setSelectedPointIds] = useState<string[]>(
     summary?.draft.points.map((point) => point.id) ?? [],
   );
-  const [revisionNumber, setRevisionNumber] = useState(0);
-  const [isReviewSaved, setIsReviewSaved] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const patientContext = patientContexts.find((context) => context.patientId === patientId);
+  const patientAssistanceAllowed = patientContext?.authorizationStatus === 'authorized'
+    && patientContext.status !== 'paused'
+    && patientContext.status !== 'not_authorized';
+  const longitudinalModule = activeConfiguration.modules.find((module) => module.id === 'longitudinal_analysis');
+  const longitudinalSource = knowledgeSources.find((source) => source.id === longitudinalModule?.primaryKnowledgeSourceId);
+  const synthesisModule = activeConfiguration.modules.find((module) => module.id === 'clinical_synthesis');
+  const synthesisSource = knowledgeSources.find((source) => source.id === synthesisModule?.primaryKnowledgeSourceId);
+  const longitudinalGovernanceAvailable = Boolean(
+    patientAssistanceAllowed
+    && longitudinalModule?.enabled
+    && longitudinalSource?.status === 'active'
+    && longitudinalSource.applicableModuleIds.includes('longitudinal_analysis')
+    && longitudinalModule.requiredDataConnectionIds.every((connectionId) => (
+      activeConfiguration.dataConnections.some((connection) => connection.id === connectionId && connection.enabled)
+    ))
+    && longitudinalModule.allowedCapabilityIds.every((capabilityId) => (
+      activeConfiguration.capabilities.some((capability) => capability.id === capabilityId && capability.enabled)
+    )),
+  );
+  const synthesisGovernanceAvailable = Boolean(
+    patientAssistanceAllowed
+    && synthesisModule?.enabled
+    && synthesisSource?.status === 'active'
+    && synthesisSource.applicableModuleIds.includes('clinical_synthesis')
+    && synthesisModule.requiredDataConnectionIds.every((connectionId) => (
+      activeConfiguration.dataConnections.some((connection) => connection.id === connectionId && connection.enabled)
+    ))
+    && synthesisModule.allowedCapabilityIds.every((capabilityId) => (
+      activeConfiguration.capabilities.some((capability) => capability.id === capabilityId && capability.enabled)
+    )),
+  );
+  const latestLongitudinalArtifact = governedArtifacts
+    .filter((artifact) => artifact.patientId === patientId && artifact.moduleId === 'longitudinal_analysis')
+    .toSorted((left, right) => right.createdAtIso.localeCompare(left.createdAtIso))[0];
+  const latestSynthesisArtifact = governedArtifacts
+    .filter((artifact) => artifact.patientId === patientId && artifact.moduleId === 'clinical_synthesis')
+    .toSorted((left, right) => right.createdAtIso.localeCompare(left.createdAtIso))[0];
+  const revisionNumber = latestSynthesisArtifact?.version ?? 0;
+  const isReviewSaved = Boolean(latestSynthesisArtifact) && !hasUnsavedChanges;
   const sourceMap = useMemo(
     () => new Map(summary?.sources.map((source) => [source.id, source]) ?? []),
     [summary],
@@ -80,7 +127,7 @@ export function DoctorClinicalChangeSummary({
 
   if (!summary) return null;
 
-  const markChanged = () => setIsReviewSaved(false);
+  const markChanged = () => setHasUnsavedChanges(true);
   const togglePoint = (pointId: string) => {
     setSelectedPointIds((current) => (
       current.includes(pointId)
@@ -89,14 +136,28 @@ export function DoctorClinicalChangeSummary({
     ));
     markChanged();
   };
-  const canSave = draftText.trim().length > 0 && selectedPointIds.length > 0;
+  const canSave = draftText.trim().length > 0
+    && selectedPointIds.length > 0
+    && synthesisGovernanceAvailable;
 
   const saveReview = () => {
     if (!canSave) return;
-    const nextVersion = revisionNumber + 1;
-    setRevisionNumber(nextVersion);
-    setIsReviewSaved(true);
-    onNotify?.(`Resumo longitudinal revisado e salvo como versão ${nextVersion} nesta sessão demonstrativa.`);
+    const selectedSourceIds = summary?.draft.points
+      .filter((point) => selectedPointIds.includes(point.id))
+      .flatMap((point) => point.sourceIds) ?? [];
+    const artifact = recordGovernedArtifact({
+      patientId,
+      moduleId: 'clinical_synthesis',
+      status: 'reviewed',
+      sourceIds: selectedSourceIds,
+      content: JSON.stringify({ draftText, selectedPointIds }),
+    });
+    if (!artifact) {
+      onNotify?.('A síntese não foi salva porque o contexto, os dados ou a diretriz do módulo não estão disponíveis.');
+      return;
+    }
+    setHasUnsavedChanges(false);
+    onNotify?.(`Resumo longitudinal revisado e salvo como artefato v${artifact.version} sob ${artifact.governance.knowledgeReference} v${artifact.governance.knowledgeVersion}.`);
   };
 
   return (
@@ -110,7 +171,7 @@ export function DoctorClinicalChangeSummary({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Status tone="gray">Dados fictícios</Status>
+            <Status tone="blue">Dados do acompanhamento</Status>
             <Status tone={isReviewSaved ? 'green' : 'amber'}>{isReviewSaved ? `Revisado · v${revisionNumber}` : 'Revisão médica necessária'}</Status>
           </div>
         </div>
@@ -122,6 +183,22 @@ export function DoctorClinicalChangeSummary({
             <span>{summary.reviewItems.filter((item) => item.type === 'SOURCE_CONFLICT').length} conflito de fonte</span>
           </div>
           <span className="text-xs text-[#61718a]">Consulta anterior: {summary.period.previousConsultation}</span>
+        </div>
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#dbe4f0] bg-[#f7faff] p-4">
+          <ShieldCheck aria-hidden="true" size={19} className="mt-0.5 shrink-0 text-[#124da0]" />
+          <div className="text-xs leading-5 text-[#61718a]">
+            <p className="font-bold text-[#405675]">Governança da análise e da síntese</p>
+            <p className="mt-1">{latestLongitudinalArtifact
+              ? `Análise preservada: ${latestLongitudinalArtifact.governance.knowledgeReference} v${latestLongitudinalArtifact.governance.knowledgeVersion} · configuração v${latestLongitudinalArtifact.governance.configurationVersion} · impressão ${latestLongitudinalArtifact.contentFingerprint}.`
+              : longitudinalGovernanceAvailable && longitudinalSource
+                ? `${longitudinalModule?.label}: diretriz ${longitudinalSource.reference} v${longitudinalSource.version} disponível, mas este conteúdo ainda não tem execução registrada.`
+                : 'Análise longitudinal assistida bloqueada: contexto, dados ou diretriz indisponíveis.'}</p>
+            <p className="mt-1">{latestSynthesisArtifact
+              ? `Síntese preservada: ${latestSynthesisArtifact.governance.knowledgeReference} v${latestSynthesisArtifact.governance.knowledgeVersion} · configuração v${latestSynthesisArtifact.governance.configurationVersion} · impressão ${latestSynthesisArtifact.contentFingerprint}.`
+              : synthesisGovernanceAvailable && synthesisSource
+                ? `${synthesisModule?.label}: ${synthesisSource.reference} v${synthesisSource.version} · configuração v${activeConfiguration.version}.`
+                : 'Nova síntese assistida bloqueada; artefatos anteriores permanecem somente para conferência.'}</p>
+          </div>
         </div>
       </header>
 
@@ -183,7 +260,7 @@ export function DoctorClinicalChangeSummary({
 
           <div className="mt-5 hidden overflow-x-auto md:block">
             <table className="w-full min-w-[680px] border-collapse text-left text-sm">
-              <caption className="sr-only">Comparação fictícia dos exames de julho e agosto de 2026</caption>
+              <caption className="sr-only">Comparação dos exames de julho e agosto de 2026</caption>
               <thead>
                 <tr className="border-y border-[#dbe4f0] text-xs text-[#61718a]">
                   <th className="py-3 pr-4 font-semibold">Métrica</th>
@@ -250,17 +327,19 @@ export function DoctorClinicalChangeSummary({
               <OutputTypeBadge type="AI_SUMMARY" />
             </div>
             <h3 id="assisted-draft-title" className="mt-4 text-xl font-semibold text-[#071a3a]">Rascunho para a próxima conversa</h3>
-            <p className="mt-2 text-sm leading-6 text-[#61718a]">Edite o texto, escolha os pontos que entram na pauta e salve uma versão. Salvar não publica nada para a paciente.</p>
+            <p className="mt-2 text-sm leading-6 text-[#61718a]">Edite o texto, escolha os pontos que entram na pauta e salve um artefato rastreável. Salvar não publica nem envia nada automaticamente.</p>
           </div>
           <div className="self-start">
-            <Status tone={isReviewSaved ? 'green' : 'blue'}>{isReviewSaved ? `Salvo nesta sessão · v${revisionNumber}` : 'Não publicado'}</Status>
+            <Status tone={isReviewSaved ? 'green' : synthesisGovernanceAvailable ? 'blue' : 'gray'}>{isReviewSaved ? `Artefato revisado · v${revisionNumber}` : synthesisGovernanceAvailable ? 'Não publicado' : 'Nova síntese bloqueada'}</Status>
           </div>
         </div>
 
         <label htmlFor="clinical-change-draft" className="mt-5 block text-sm font-bold text-[#071a3a]">Resumo assistido editável</label>
+        {!synthesisGovernanceAvailable ? <p className="mt-2 rounded-xl border border-[#ead3a6] bg-[#fff8e9] p-3 text-xs font-semibold leading-5 text-[#775f2d]">A edição de uma nova síntese está bloqueada enquanto o contexto do paciente, os dados exigidos ou a diretriz do módulo não estiverem disponíveis.</p> : null}
         <textarea
           id="clinical-change-draft"
           value={draftText}
+          disabled={!synthesisGovernanceAvailable}
           onChange={(event) => {
             setDraftText(event.target.value);
             markChanged();
@@ -280,6 +359,7 @@ export function DoctorClinicalChangeSummary({
                   <input
                     type="checkbox"
                     checked={selected}
+                    disabled={!synthesisGovernanceAvailable}
                     onChange={() => togglePoint(point.id)}
                     className="mt-1 size-5 shrink-0 accent-[#124da0]"
                   />
@@ -307,13 +387,17 @@ export function DoctorClinicalChangeSummary({
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#03132d] px-5 text-sm font-bold text-white transition-colors hover:bg-[#082553] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#91a0b5]"
           >
             {isReviewSaved ? <CheckCircle aria-hidden="true" size={19} weight="fill" /> : <ShieldCheck aria-hidden="true" size={19} />}
-            {isReviewSaved ? `Revisão salva · v${revisionNumber}` : 'Salvar revisão demonstrativa'}
+            {isReviewSaved
+              ? `Artefato salvo · v${revisionNumber}`
+              : synthesisGovernanceAvailable
+                ? 'Salvar síntese revisada'
+                : 'Síntese assistida bloqueada'}
           </button>
         </div>
       </section>
 
       <details className="border-t border-[#dbe4f0] bg-white px-5 py-2 sm:px-6">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center text-sm font-bold text-[#405675] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Ver todas as fontes desta Slice</summary>
+        <summary className="flex min-h-12 cursor-pointer list-none items-center text-sm font-bold text-[#405675] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Ver todas as fontes desta análise</summary>
         <div className="pb-4">
           <SourceReferences sourceIds={summary.sources.map((source) => source.id)} sourceMap={sourceMap} />
         </div>

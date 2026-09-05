@@ -15,10 +15,18 @@ import {
   WarningCircle,
 } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { useCareDemo } from './care-demo-store';
+import type { CareCheckIn } from './care-demo-types';
 import { AiDraftBadge, ClinicalLayerBadge } from './clinical';
+import {
+  useClinicalIntelligence,
+  type ClinicalExamDocument,
+  type PatientAiContextStatus,
+} from './clinical-intelligence-context';
 import { DoctorAiPreparationWorkspace } from './doctor-ai-preparation-workspace';
 import { DoctorCareCycleSummary } from './doctor-care-cycle-summary';
 import { DoctorClinicalChangeSummary } from './doctor-clinical-change-summary';
+import { DoctorExamReviewPanel } from './doctor-exam-review-panel';
 import { DEFAULT_PATIENT_ID, doctorDemoCohortSummary, getDefaultEncounterId } from './demo-routes';
 import { LongitudinalDossier } from './longitudinal-dossier';
 import {
@@ -36,6 +44,14 @@ import { cn, NavigationLink as Link, Status } from './shared';
 
 type Tone = 'green' | 'amber' | 'rose' | 'blue' | 'gray';
 export type ProgramSignal = 'expected' | 'monitor' | 'review';
+
+const aiContextPresentation: Record<PatientAiContextStatus, { label: string; tone: Tone }> = {
+  ready: { label: 'IA: contexto pronto', tone: 'green' },
+  review_required: { label: 'IA: revisão pendente', tone: 'amber' },
+  insufficient_data: { label: 'IA: dados insuficientes', tone: 'gray' },
+  not_authorized: { label: 'IA: não autorizada', tone: 'gray' },
+  paused: { label: 'IA: pausada', tone: 'blue' },
+};
 
 export type PatientWorkspaceProfile = {
   id: string;
@@ -110,6 +126,68 @@ const documentFilters: Array<{ id: DocumentKind; label: string }> = [
 ];
 
 type ClinicalDocument = PatientDocument;
+
+const clinicalDocumentMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function formatClinicalDocumentDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day || !clinicalDocumentMonths[month - 1]) return value;
+  return `${day} ${clinicalDocumentMonths[month - 1]} ${year}`;
+}
+
+function parseClinicalFieldValue(value: string) {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function presentClinicalExamDocument(exam: ClinicalExamDocument): ClinicalDocument {
+  const includedFields = exam.fields.filter((field) => field.included);
+  const confirmedFields = includedFields.filter((field) => field.status === 'confirmed' || field.status === 'corrected');
+  const values = includedFields.flatMap((field) => {
+    const value = parseClinicalFieldValue(field.value);
+    return value === null ? [] : [{ marker: field.label, value, unit: field.unit }];
+  });
+  const fieldSummary = includedFields.length === 0
+    ? 'sem campos estruturados'
+    : exam.reviewStatus === 'approved'
+      ? `${confirmedFields.length} ${confirmedFields.length === 1 ? 'campo confirmado' : 'campos confirmados'}`
+      : `${includedFields.length} ${includedFields.length === 1 ? 'campo aguarda' : 'campos aguardam'} conferência`;
+
+  return {
+    id: exam.id,
+    kind: 'exam',
+    title: exam.title,
+    date: formatClinicalDocumentDate(exam.examDate),
+    author: `${exam.laboratory} · enviado por ${exam.submittedByLabel}`,
+    origin: exam.submittedBy === 'patient' ? 'Enviado pela pessoa acompanhada' : 'Registrado pela equipe médica',
+    status: exam.reviewStatus === 'approved'
+      ? `Revisado por ${exam.reviewedBy ?? exam.doctorName}`
+      : 'Aguardando conferência médica',
+    statusTone: exam.reviewStatus === 'approved' ? 'green' : 'amber',
+    version: exam.reviewStatus === 'approved'
+      ? `Revisão v${exam.reviewVersion} · ${fieldSummary} · ${exam.reviewedAt ?? exam.receivedAt}`
+      : `Recebido em ${exam.receivedAt} · ${fieldSummary}`,
+    values: values.length > 0 ? values : undefined,
+  };
+}
+
+function referencesCheckIn(...values: string[]) {
+  return values.some((value) => value.toLocaleLowerCase('pt-BR').includes('check-in'));
+}
+
+function checkInCountLabel(checkIns: CareCheckIn[]) {
+  return `${checkIns.length} ${checkIns.length === 1 ? 'recebido' : 'recebidos'}`;
+}
+
+function checkInDomainValue(checkIns: CareCheckIn[], hydrated: boolean) {
+  if (!hydrated) return 'Consultando check-ins';
+  const latestCheckIn = checkIns.at(-1);
+  if (!latestCheckIn) return 'Sem check-in recebido';
+  const sleepQuality = { poor: 'ruim', regular: 'regular', good: 'bom' }[latestCheckIn.sleepQuality];
+  return `Energia ${latestCheckIn.energy} de 5 · sono ${sleepQuality} · ${checkInCountLabel(checkIns)}`;
+}
 
 export const programSignalPresentation: Record<ProgramSignal, {
   label: string;
@@ -324,6 +402,9 @@ export function PatientLongitudinalWorkspace({
 }) {
   const [activeTab, setActiveTab] = useState<PatientTab>('overview');
   const [scenario, setScenario] = useState<DemoScenario>('content');
+  const { patientContexts } = useClinicalIntelligence();
+  const patientAiContext = patientContexts.find((context) => context.patientId === patient.id);
+  const aiContextStatus = patientAiContext ? aiContextPresentation[patientAiContext.status] : null;
 
   useEffect(() => {
     const syncTabFromHash = () => {
@@ -358,12 +439,29 @@ export function PatientLongitudinalWorkspace({
     window.history.replaceState(null, '', `#patient-${tab}`);
   };
 
+  const moveTabFocus = (currentTab: PatientTab, key: string) => {
+    const currentIndex = patientTabs.findIndex((tab) => tab.id === currentTab);
+    let nextIndex = currentIndex;
+
+    if (key === 'Home') nextIndex = 0;
+    else if (key === 'End') nextIndex = patientTabs.length - 1;
+    else if (key === 'ArrowRight') nextIndex = (currentIndex + 1) % patientTabs.length;
+    else if (key === 'ArrowLeft') nextIndex = (currentIndex - 1 + patientTabs.length) % patientTabs.length;
+    else return;
+
+    const nextTab = patientTabs[nextIndex]?.id;
+    if (!nextTab) return;
+
+    activateTab(nextTab);
+    window.requestAnimationFrame(() => document.getElementById(`patient-tab-${nextTab}`)?.focus());
+  };
+
   return (
     <div id="patient-longitudinal-workspace" className="min-w-0">
       <section className="doctor-sticky-offset -mx-4 border-b border-[#dbe4f0] bg-[#f6f9fe]/92 px-4 pb-4 backdrop-blur-xl sm:-mx-5 sm:px-5 lg:-mx-9 lg:px-9 xl:sticky xl:top-[var(--doctor-chrome-current-height)] xl:z-30">
         <div className="mx-auto max-w-[1240px] pt-2">
           <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
-            <Link href="/medico/pacientes" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[#50627f] transition-colors hover:bg-white hover:text-[#071a3a] focus-visible:outline-none">
+            <Link href="/medico/pacientes" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-bold text-[#50627f] transition-colors hover:bg-white hover:text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">
               <ArrowLeft aria-hidden="true" size={17} /> Voltar aos pacientes
             </Link>
             <label className="hidden min-h-11 items-center gap-2 rounded-xl border border-[#dbe4f0] bg-white/90 px-3 text-xs font-semibold text-[#61718a] focus-within:ring-2 focus-within:ring-[#124da0] focus-within:ring-offset-2 sm:flex">
@@ -384,23 +482,28 @@ export function PatientLongitudinalWorkspace({
                 <p className="mt-1 text-xs leading-5 text-[#61718a] sm:text-sm">{patient.age ?? 38} anos · {patient.focus} · {patient.cycle}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Status tone={patient.tone}>{patient.attention} para revisar</Status>
-                  <Status tone="gray">Dados fictícios</Status>
+                  <Status tone="blue">Vínculo ativo</Status>
+                  {aiContextStatus ? (
+                    <Status tone={aiContextStatus.tone}>
+                      {aiContextStatus.label}{patientAiContext?.appliedConfigurationVersion ? ` · v${patientAiContext.appliedConfigurationVersion}` : ''}
+                    </Status>
+                  ) : null}
                 </div>
               </div>
             </div>
             <div className="flex w-full gap-2 sm:w-auto">
-              <button type="button" onClick={runPrimaryAction} className="vivance-primary-action inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-colors focus-visible:outline-none sm:flex-none">
+              <button type="button" onClick={runPrimaryAction} className="vivance-primary-action inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 sm:flex-none">
                 <PrimaryActionIcon aria-hidden="true" size={20} /> {primaryLabel}
               </button>
               <details className="relative">
-                <summary aria-label="Abrir mais ações" className="grid size-12 cursor-pointer list-none place-items-center rounded-xl border border-[#c7d5e7] bg-white text-[#082553] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">
+                <summary aria-label="Abrir mais ações" className="grid size-12 cursor-pointer list-none place-items-center rounded-xl border border-[#c7d5e7] bg-white text-[#082553] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0]">
                   <DotsThree aria-hidden="true" size={22} weight="bold" />
                 </summary>
                 <div className="vivance-glass-menu absolute right-0 top-14 z-50 w-[min(18rem,calc(100vw-2rem))] rounded-xl p-2 text-white shadow-[0_20px_48px_rgba(3,19,45,0.32)]">
                   {[
-                    ['Solicitar informação à paciente', () => onMessage(patient.id)],
+                    ['Solicitar informação', () => onMessage(patient.id)],
                     ['Criar pedido de exame', () => onNotify('Novo pedido de exame aberto como rascunho demonstrativo.')],
-                    ['Registrar observação', () => onNotify('Campo de observação médica aberto no mock.')],
+                    ['Registrar observação', () => onNotify('Campo de observação médica aberto para preenchimento.')],
                     ['Revisar resumo assistido', () => {
                       activateTab('overview');
                       const details = document.getElementById('ai-support-details') as HTMLDetailsElement | null;
@@ -408,7 +511,7 @@ export function PatientLongitudinalWorkspace({
                       window.requestAnimationFrame(() => details?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
                     }],
                   ].map(([label, action]) => (
-                    <button key={label as string} type="button" onClick={action as () => void} className="min-h-11 w-full rounded-lg px-3 text-left text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none">{label as string}</button>
+                    <button key={label as string} type="button" onClick={action as () => void} className="min-h-11 w-full rounded-lg px-3 text-left text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#8cbaf2]">{label as string}</button>
                   ))}
                   <div className="my-2 border-t border-white/15" />
                   <label className="block px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white/60" htmlFor="demo-scenario">Cenário do protótipo</label>
@@ -444,9 +547,15 @@ export function PatientLongitudinalWorkspace({
                 role="tab"
                 aria-selected={activeTab === tab.id}
                 aria-controls={`patient-panel-${tab.id}`}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 onClick={() => activateTab(tab.id)}
+                onKeyDown={(event) => {
+                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                  event.preventDefault();
+                  moveTabFocus(tab.id, event.key);
+                }}
                 className={cn(
-                  'flex min-h-12 min-w-[132px] flex-1 cursor-pointer flex-col justify-center rounded-xl px-4 text-left transition-colors focus-visible:outline-none md:min-w-0',
+                  'flex min-h-12 min-w-[132px] flex-1 cursor-pointer flex-col justify-center rounded-xl px-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 md:min-w-0',
                   activeTab === tab.id ? 'bg-[#03132d] text-white shadow-[0_8px_18px_rgba(3,19,45,0.16)]' : 'text-[#405675] hover:bg-[#edf3fb]',
                 )}
               >
@@ -495,24 +604,72 @@ function OverviewPanel({
   const [careDetailsOpen, setCareDetailsOpen] = useState(false);
   const [aiDetailsOpen, setAiDetailsOpen] = useState(false);
   const isPendingPatient = patient.id === 'pac-demo-006';
+  const encounterId = getDefaultEncounterId(patient.id);
+  const { hydrated: careDemoHydrated, checkIns, latestCheckIn } = useCareDemo(patient.id, encounterId);
+  const { hydrated: clinicalIntelligenceHydrated, exams } = useClinicalIntelligence();
   const careDemo = getPatientCareDemo(patient.id, patient.name);
-  const metrics = careDemo.overviewMetrics.map(({ label, value, detail }) => [
-    label,
-    isPendingPatient && hasLiveCheckIn && label === 'Etapas'
-      ? '2 de 5'
-      : isPendingPatient && hasLiveCheckIn && label === 'Check-in'
-        ? 'Recebido'
-        : value,
-    detail,
-  ]);
+  const patientExams = exams.filter((exam) => exam.patientId === patient.id);
+  const approvedExamCount = patientExams.filter((exam) => exam.reviewStatus === 'approved').length;
+  const pendingExamCount = patientExams.length - approvedExamCount;
+  const hasCanonicalCheckIn = careDemoHydrated ? Boolean(latestCheckIn) : hasLiveCheckIn;
+  const metrics: Array<[string, string, string]> = careDemo.overviewMetrics.map(({ label, value, detail }) => {
+    if (label === 'Exames') {
+      return [
+        label,
+        clinicalIntelligenceHydrated
+          ? patientExams.length === 0
+            ? 'Nenhum'
+            : `${patientExams.length} ${patientExams.length === 1 ? 'arquivo' : 'arquivos'}`
+          : 'Carregando',
+        !clinicalIntelligenceHydrated
+          ? 'consultando documentos do acompanhamento'
+          : patientExams.length === 0
+            ? 'nenhum exame recebido'
+            : pendingExamCount > 0
+              ? `${pendingExamCount} ${pendingExamCount === 1 ? 'aguarda' : 'aguardam'} revisão${approvedExamCount > 0 ? ` · ${approvedExamCount} ${approvedExamCount === 1 ? 'revisado' : 'revisados'}` : ''}`
+              : `${approvedExamCount} ${approvedExamCount === 1 ? 'revisado' : 'revisados'}`,
+      ];
+    }
+
+    if (referencesCheckIn(label, detail)) {
+      const isEnergyMetric = label.toLocaleLowerCase('pt-BR').includes('energia');
+      return [
+        label,
+        !careDemoHydrated
+          ? 'Carregando'
+          : isEnergyMetric
+            ? latestCheckIn
+              ? `${latestCheckIn.energy} de 5`
+              : 'Sem dados'
+            : checkIns.length === 0
+              ? 'Nenhum'
+              : checkInCountLabel(checkIns),
+        !careDemoHydrated
+          ? 'consultando relatos do acompanhamento'
+          : latestCheckIn
+            ? `fonte original v${latestCheckIn.version} · ${latestCheckIn.submittedAt}`
+            : 'nenhum check-in recebido',
+      ];
+    }
+
+    return [
+      label,
+      isPendingPatient && hasCanonicalCheckIn && label === 'Etapas' ? '2 de 5' : value,
+      detail,
+    ];
+  });
   const metricIcons = [ChartLineDown, Moon, Footprints, CheckCircle];
   const reviewStatus = isPendingPatient
-    ? hasLiveCheckIn ? 'Revisar fonte recebida' : 'Aguardar preenchimento'
+    ? hasCanonicalCheckIn ? 'Revisar fonte recebida' : 'Aguardar preenchimento'
     : 'Revisar na consulta';
   const reviewEvidence = isPendingPatient
-    ? hasLiveCheckIn ? 'Relato inicial recebido' : 'Sem check-ins recebidos'
-    : '23 noites · 11 check-ins';
-  const nextSteps = isPendingPatient && hasLiveCheckIn
+    ? hasCanonicalCheckIn ? 'Relato inicial recebido' : 'Sem check-ins recebidos'
+    : !careDemoHydrated
+      ? 'Consultando check-ins'
+      : checkIns.length === 0
+        ? 'Sem check-ins recebidos'
+        : `${checkIns.length} ${checkIns.length === 1 ? 'check-in recebido' : 'check-ins recebidos'}`;
+  const nextSteps = isPendingPatient && hasCanonicalCheckIn
     ? patient.nextSteps.map((step) => step === 'Aguardar relato inicial' ? 'Revisar relato inicial recebido' : step)
     : patient.nextSteps;
 
@@ -548,9 +705,11 @@ function OverviewPanel({
               <p className="mt-2 text-xs leading-5 text-[#61718a]">{isPendingPatient ? 'Ainda não há dados suficientes para análise. A equipe decide se e quando solicitar o restante.' : 'É uma mudança observada no período. Não define causa, diagnóstico, urgência ou conduta.'}</p>
             </div>
           </div>
-          <button type="button" onClick={() => isPendingPatient ? onMessage(patient.id) : onNotify('Fontes do sono abertas para conferência no mock.')} className="min-h-11 rounded-xl border border-[#9bb5d4] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">{isPendingPatient ? 'Solicitar informações' : 'Conferir fontes'}</button>
+          <button type="button" onClick={() => isPendingPatient ? onMessage(patient.id) : onNotify('Fontes do sono abertas para conferência.')} className="min-h-11 rounded-xl border border-[#9bb5d4] bg-white px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">{isPendingPatient ? 'Solicitar informações' : 'Conferir fontes'}</button>
         </div>
       </section>
+
+      <DoctorExamReviewPanel patientId={patient.id} onNotify={onNotify} />
 
       {patient.id === DEFAULT_PATIENT_ID ? (
         <DoctorClinicalChangeSummary patientId={patient.id} onNotify={onNotify} />
@@ -599,12 +758,12 @@ function OverviewPanel({
             <ol className="mt-4 space-y-3">
               {nextSteps.map((step, index) => <li key={step} className="flex gap-3 text-sm leading-6 text-[#50627f]"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#edf3fb] text-xs font-bold text-[#124da0]">{index + 1}</span><span>{step}</span></li>)}
             </ol>
-            <button type="button" onClick={() => onMessage(patient.id)} className="mt-5 min-h-11 w-full rounded-xl border border-[#9bb5d4] px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none">Solicitar informação</button>
+            <button type="button" onClick={() => onMessage(patient.id)} className="mt-5 min-h-11 w-full rounded-xl border border-[#9bb5d4] px-4 text-sm font-bold text-[#124da0] transition-colors hover:bg-[#edf3fb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Solicitar informação</button>
         </aside>
       </div>
 
       <details className="vivance-panel overflow-hidden rounded-2xl" onToggle={(event) => setCareDetailsOpen(event.currentTarget.open)}>
-        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none sm:px-6">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0] sm:px-6">
           <ChartLineDown aria-hidden="true" size={20} className="text-[#124da0]" />
           Ver resumo completo do acompanhamento
         </summary>
@@ -620,7 +779,7 @@ function OverviewPanel({
         </section>
       ) : (
         <details id="ai-support-details" className="vivance-panel overflow-hidden rounded-2xl" onToggle={(event) => setAiDetailsOpen(event.currentTarget.open)}>
-          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none sm:px-6">
+          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0] sm:px-6">
             <FileText aria-hidden="true" size={20} className="text-[#124da0]" />
             Abrir apoio para preparar a consulta
           </summary>
@@ -633,7 +792,7 @@ function OverviewPanel({
       )}
 
       <details className="rounded-2xl border border-[#dbe4f0] bg-white/70 px-5 py-3">
-        <summary className="min-h-11 cursor-pointer text-sm font-bold text-[#405675] focus-visible:outline-none">Acesso, autoria e versões</summary>
+        <summary className="min-h-11 cursor-pointer rounded-lg text-sm font-bold text-[#405675] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0]">Acesso, autoria e versões</summary>
         <div className="mt-2 space-y-2 pb-2 text-xs leading-5 text-[#61718a]"><p><strong className="text-[#071a3a]">Perfil:</strong> médico responsável · simulação.</p><p><strong className="text-[#071a3a]">Paciente:</strong> vê somente versões publicadas.</p><p><strong className="text-[#071a3a]">Apoio assistido:</strong> organiza fontes, mas nunca é autor da decisão clínica.</p><p>Autorização real e registro legal dependem de infraestrutura própria e não são simulados como concluídos.</p></div>
       </details>
     </div>
@@ -659,7 +818,14 @@ function DocumentsPanel({ patient, permissionDenied, onNotify }: { patient: Pati
   const [filter, setFilter] = useState<DocumentKind>('all');
   const [selected, setSelected] = useState<string[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
-  const documents = getPatientCareDemo(patient.id, patient.name).documents;
+  const { hydrated, exams } = useClinicalIntelligence();
+  const nonExamDocuments = getPatientCareDemo(patient.id, patient.name).documents
+    .filter((document) => document.kind !== 'exam');
+  const examDocuments = exams
+    .filter((exam) => exam.patientId === patient.id)
+    .toSorted((left, right) => right.receivedAtIso.localeCompare(left.receivedAtIso))
+    .map(presentClinicalExamDocument);
+  const documents = [...examDocuments, ...nonExamDocuments];
   const filtered = filter === 'all' ? documents : documents.filter((document) => document.kind === filter);
   const comparable = documents.filter((document) => selected.includes(document.id) && document.values);
 
@@ -677,14 +843,19 @@ function DocumentsPanel({ patient, permissionDenied, onNotify }: { patient: Pati
       <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div><h2 className="text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Documentos e histórico clínico</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">Originais preservados junto das versões, resumos assistidos e decisões humanas. Um resumo nunca substitui seu documento-fonte.</p></div>
-          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => onNotify('Pedido de exame criado como rascunho demonstrativo.')} className="min-h-11 rounded-xl bg-[#071a3a] px-4 text-sm font-bold text-white">Criar pedido</button><button type="button" onClick={() => onNotify('Solicitação de documento aberta para a paciente.')} className="min-h-11 rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Solicitar documento</button></div>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => onNotify('Pedido de exame criado como rascunho demonstrativo.')} className="min-h-11 rounded-xl bg-[#071a3a] px-4 text-sm font-bold text-white">Criar pedido</button><button type="button" onClick={() => onNotify('Solicitação de documento aberta para este acompanhamento.')} className="min-h-11 rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Solicitar documento</button></div>
         </div>
         <div className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="Filtrar documentos">
           {documentFilters.map((item) => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} className={cn('min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold', filter === item.id ? 'bg-[#071a3a] text-white' : 'border border-[#dbe4f0] bg-white text-[#50627f] hover:bg-[#f6f9fe]')}>{item.label}</button>)}
         </div>
       </section>
 
-      {filtered.length === 0 ? (
+      {!hydrated && (filter === 'all' || filter === 'exam') ? (
+        <section aria-busy="true" className="rounded-2xl border border-[#dbe4f0] bg-white p-8 text-center">
+          <h3 className="text-lg font-semibold text-[#071a3a]">Consultando documentos do acompanhamento</h3>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#61718a]">Os exames só aparecem depois que o contexto deste paciente é carregado.</p>
+        </section>
+      ) : filtered.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-[#c7d5e7] bg-white p-8 text-center"><h3 className="text-lg font-semibold text-[#071a3a]">Nenhum documento neste recorte</h3><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[#61718a]">O estado vazio não é preenchido por dados de outro paciente. Solicite um documento ou altere o filtro.</p></section>
       ) : (
         <section className="overflow-hidden rounded-2xl border border-[#dbe4f0] bg-white">
@@ -701,7 +872,7 @@ function DocumentsPanel({ patient, permissionDenied, onNotify }: { patient: Pati
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
                     {document.values && <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#dbe4f0] px-3 text-sm font-bold text-[#405675]"><input type="checkbox" checked={selected.includes(document.id)} onChange={() => toggleSelected(document.id)} className="size-4 accent-[#124da0]" />Comparar</label>}
-                    {document.originalHref ? <a href={document.originalHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Abrir original</a> : <button type="button" onClick={() => onNotify('Documento interno aberto no mock.')} className="min-h-11 rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Abrir versão</button>}
+                    {document.originalHref ? <a href={document.originalHref} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Abrir original</a> : <button type="button" onClick={() => onNotify('Documento aberto para conferência.')} className="min-h-11 rounded-xl border border-[#c7d5e7] px-4 text-sm font-bold text-[#124da0]">Abrir versão</button>}
                   </div>
                 </div>
               </article>
@@ -735,8 +906,25 @@ function ExamComparison({ documents }: { documents: ClinicalDocument[] }) {
 function EvolutionPanel({ patient, error, incomplete, onNotify }: { patient: PatientWorkspaceProfile; error: boolean; incomplete: boolean; onNotify: (text: string) => void }) {
   const [metricKey, setMetricKey] = useState<EvolutionMetric>('weight');
   const [period, setPeriod] = useState('30 dias');
+  const { hydrated: careDemoHydrated, checkIns, latestCheckIn } = useCareDemo(patient.id, getDefaultEncounterId(patient.id));
   const careDemo = getPatientCareDemo(patient.id, patient.name);
   const metric = careDemo.evolution[metricKey];
+  const metricUsesCheckIns = referencesCheckIn(metric.label, metric.source, metric.completeness);
+  const domains: Array<[string, string]> = careDemo.domains.map(([label, value]) => {
+    if (label === 'Check-ins') {
+      return [
+        label,
+        !careDemoHydrated
+          ? 'Consultando registros'
+          : checkIns.length === 0
+            ? 'Nenhum recebido'
+            : checkInCountLabel(checkIns),
+      ];
+    }
+    return label === 'Bem-estar'
+      ? [label, checkInDomainValue(checkIns, careDemoHydrated)]
+      : [label, value];
+  });
   const first = metric.points[0].value;
   const last = metric.points.at(-1)?.value ?? first;
 
@@ -754,13 +942,42 @@ function EvolutionPanel({ patient, error, incomplete, onNotify }: { patient: Pat
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0 rounded-2xl border border-[#dbe4f0] bg-white p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold text-[#071a3a]">{metric.label}</h3><p className="mt-1 text-sm text-[#61718a]">{metric.source}</p></div><Status tone="gray">{period}</Status></div>
-          <EvolutionChart metric={metric} chartId={`${patient.id}-${metricKey}`} />
-          <div className="mt-4 grid gap-3 rounded-xl bg-[#f6f9fe] p-4 sm:grid-cols-2"><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Mudança observada</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{formatMetricValue(first, metric.unit)} → {formatMetricValue(last, metric.unit)}</p></div><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Meta do ciclo</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{metric.target === undefined ? 'Não registrada' : `${metric.targetLabel ?? 'Meta demonstrativa'} · ${formatMetricValue(metric.target, metric.unit)}`}</p></div><p className="sm:col-span-2 text-xs leading-5 text-[#61718a]">Eventos, registros e metas aparecem no mesmo período para dar contexto; o produto não atribui causalidade nem cria orientação clínica.</p></div>
+          {metricUsesCheckIns ? (
+            <div>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-semibold text-[#071a3a]">{metric.label}</h3>
+                  <p className="mt-1 text-sm text-[#61718a]">Check-ins deste acompanhamento</p>
+                </div>
+                <Status tone={latestCheckIn ? 'blue' : 'gray'}>{careDemoHydrated ? (latestCheckIn ? 'Fonte disponível' : 'Sem fonte') : 'Consultando'}</Status>
+              </div>
+              {!careDemoHydrated ? (
+                <div aria-busy="true" className="mt-5 rounded-xl border border-[#dbe4f0] bg-[#f7faff] p-5 text-sm text-[#61718a]">Consultando check-ins deste paciente…</div>
+              ) : latestCheckIn ? (
+                <div className="mt-5 rounded-xl border border-[#c9d8ec] bg-[#f7faff] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Registro mais recente</p>
+                  <p className="mt-2 text-xl font-semibold text-[#071a3a]">Energia {latestCheckIn.energy} de 5</p>
+                  <p className="mt-2 text-sm leading-6 text-[#405675]">Check-in v{latestCheckIn.version} · {latestCheckIn.submittedAt} · {checkInCountLabel(checkIns)} neste acompanhamento.</p>
+                  <p className="mt-3 text-xs leading-5 text-[#61718a]">Uma tendência só será apresentada quando houver registros canônicos suficientes e comparáveis. Nenhum ponto é preenchido com dados do cenário visual.</p>
+                </div>
+              ) : (
+                <div className="mt-5 rounded-xl border border-dashed border-[#c7d5e7] bg-[#f7faff] p-5">
+                  <p className="text-sm font-bold text-[#405675]">Ainda não há check-in recebido</p>
+                  <p className="mt-2 text-xs leading-5 text-[#61718a]">A evolução permanece vazia até existir uma fonte deste paciente; valores estáticos não são apresentados como registros reais.</p>
+                </div>
+              )}
+          </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold text-[#071a3a]">{metric.label}</h3><p className="mt-1 text-sm text-[#61718a]">{metric.source}</p></div><Status tone="gray">{period}</Status></div>
+              <EvolutionChart metric={metric} chartId={`${patient.id}-${metricKey}`} />
+              <div className="mt-4 grid gap-3 rounded-xl bg-[#f6f9fe] p-4 sm:grid-cols-2"><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Mudança observada</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{formatMetricValue(first, metric.unit)} → {formatMetricValue(last, metric.unit)}</p></div><div><p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#61718a]">Meta do ciclo</p><p className="mt-1 text-sm font-bold text-[#071a3a]">{metric.target === undefined ? 'Não registrada' : `${metric.targetLabel ?? 'Meta demonstrativa'} · ${formatMetricValue(metric.target, metric.unit)}`}</p></div><p className="sm:col-span-2 text-xs leading-5 text-[#61718a]">Eventos, registros e metas aparecem no mesmo período para dar contexto; o produto não atribui causalidade nem cria orientação clínica.</p></div>
+            </>
+          )}
         </section>
         <aside className="space-y-5">
-          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Qualidade dos dados</h3><p className="mt-3 text-sm font-bold text-[#405675]">{metric.completeness}</p><div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e7edf5]"><div style={{ width: `${getCompletenessPercent(metric.completeness)}%` }} className="h-full rounded-full bg-[#124da0] transition-[width] duration-300 motion-reduce:transition-none" /></div><p className="mt-3 text-xs leading-5 text-[#61718a]">Lacunas permanecem visíveis e não são preenchidas por estimativa.</p></section>
-          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Outros domínios</h3><dl className="mt-4 divide-y divide-[#e7edf5]">{careDemo.domains.map(([label, value]) => <div key={label} className="py-3 first:pt-0"><dt className="text-xs text-[#50627f]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd></div>)}</dl></section>
+          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Qualidade dos dados</h3><p className="mt-3 text-sm font-bold text-[#405675]">{metricUsesCheckIns ? (careDemoHydrated ? `${checkIns.length} ${checkIns.length === 1 ? 'fonte canônica disponível' : 'fontes canônicas disponíveis'}` : 'Consultando fontes') : metric.completeness}</p>{!metricUsesCheckIns ? <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e7edf5]"><div style={{ width: `${getCompletenessPercent(metric.completeness)}%` }} className="h-full rounded-full bg-[#124da0] transition-[width] duration-300 motion-reduce:transition-none" /></div> : null}<p className="mt-3 text-xs leading-5 text-[#61718a]">Lacunas permanecem visíveis e não são preenchidas por estimativa.</p></section>
+          <section className="rounded-2xl border border-[#dbe4f0] bg-white p-5"><h3 className="text-lg font-semibold text-[#071a3a]">Outros domínios</h3><dl className="mt-4 divide-y divide-[#e7edf5]">{domains.map(([label, value]) => <div key={label} className="py-3 first:pt-0"><dt className="text-xs text-[#50627f]">{label}</dt><dd className="mt-1 text-sm font-bold text-[#405675]">{value}</dd></div>)}</dl></section>
         </aside>
       </div>
     </div>
@@ -802,7 +1019,7 @@ function EvolutionChart({ metric, chartId }: { metric: PatientEvolutionMetric; c
         <polyline points={points} fill="none" stroke={metric.color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         {metric.points.map((point, index) => <g key={point.date}><circle cx={x(index)} cy={y(point.value)} r="5" fill="white" stroke={metric.color} strokeWidth="3" /><text x={x(index)} y={height - 20} textAnchor="middle" fill="#61718a" fontSize="11">{point.date}</text></g>)}
       </svg>
-      <details className="mt-3 rounded-xl border border-[#dbe4f0] bg-[#fbfdff] p-4"><summary className="min-h-11 cursor-pointer text-sm font-bold text-[#071a3a]">Ver dados em tabela</summary><table className="mt-3 w-full text-left text-sm"><thead><tr className="border-b border-[#dbe4f0]"><th className="py-2 text-xs text-[#50627f]">Data</th><th className="py-2 text-xs text-[#50627f]">Valor</th><th className="py-2 text-xs text-[#50627f]">Fonte</th></tr></thead><tbody>{metric.points.map((point) => <tr key={point.date} className="border-b border-[#eef3f9] last:border-0"><td className="py-2 text-[#50627f]">{point.date}</td><td className="py-2 font-bold text-[#071a3a]">{formatMetricValue(point.value, metric.unit)}</td><td className="py-2 text-xs text-[#61718a]">{point.source}</td></tr>)}</tbody></table></details>
+      <details className="mt-3 rounded-xl border border-[#dbe4f0] bg-[#fbfdff] p-4"><summary className="min-h-11 cursor-pointer rounded-lg text-sm font-bold text-[#071a3a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#124da0]">Ver dados em tabela</summary><table className="mt-3 w-full text-left text-sm"><thead><tr className="border-b border-[#dbe4f0]"><th className="py-2 text-xs text-[#50627f]">Data</th><th className="py-2 text-xs text-[#50627f]">Valor</th><th className="py-2 text-xs text-[#50627f]">Fonte</th></tr></thead><tbody>{metric.points.map((point) => <tr key={point.date} className="border-b border-[#eef3f9] last:border-0"><td className="py-2 text-[#50627f]">{point.date}</td><td className="py-2 font-bold text-[#071a3a]">{formatMetricValue(point.value, metric.unit)}</td><td className="py-2 text-xs text-[#61718a]">{point.source}</td></tr>)}</tbody></table></details>
     </div>
   );
 }

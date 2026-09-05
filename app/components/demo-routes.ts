@@ -1,4 +1,4 @@
-export type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios';
+export type DoctorView = 'Visão geral' | 'Agenda' | 'Pacientes' | 'Mensagens' | 'Relatórios' | 'Central da IA';
 export type PatientPrimaryView = 'Hoje' | 'Meu cuidado' | 'Conversas' | 'Evolução';
 export type PatientView = PatientPrimaryView | 'Plano' | 'Medicamentos' | 'Diário' | 'Mensagens' | 'Consultas';
 export type ClinicalRouteMode = 'workspace' | 'pre-consultation' | 'consultation';
@@ -18,6 +18,7 @@ export const doctorNavigation: Array<{ label: DoctorView; href: string; section?
   { label: 'Pacientes', href: '/medico/pacientes', section: 'pacientes' },
   { label: 'Mensagens', href: '/medico/mensagens', section: 'mensagens' },
   { label: 'Relatórios', href: '/medico/relatorios', section: 'relatorios' },
+  { label: 'Central da IA', href: '/medico/ia', section: 'ia' },
 ];
 
 export const patientNavigation: Array<{ label: PatientPrimaryView; section: string }> = [
@@ -62,6 +63,7 @@ export function getDoctorView(section: string): DoctorView | null {
 }
 
 export function getDoctorViewFromPathname(pathname: string): DoctorView {
+  if (pathname.startsWith('/medico/ia')) return 'Central da IA';
   if (pathname.includes('/mensagens')) return 'Mensagens';
   if (pathname.startsWith('/medico/agenda')) return 'Agenda';
   if (pathname.startsWith('/medico/relatorios')) return 'Relatórios';
