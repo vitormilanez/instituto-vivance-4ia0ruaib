@@ -41,7 +41,6 @@ interface CheckInPresentation {
   audioRef: string | null;
   gaps: string[];
   id: string;
-  isVisualSeed: boolean;
   mode: CaptureMode;
   originalContent: string;
   submittedAt: string;
@@ -54,25 +53,6 @@ const sleepLabel: Record<CareCheckIn['sleepQuality'], string> = {
   good: 'bom',
 };
 
-const marinaFilledVisualSeed: CheckInPresentation = {
-  aiAssistanceAllowed: true,
-  aiDraft:
-    'Marina relata bem-estar geral estável, redução percebida da fome e dois episódios de enjoo leve após o almoço. Informou cerca de seis horas e meia de sono. O relato deve ser conferido antes de qualquer interpretação clínica.',
-  audioDurationSeconds: 34,
-  audioRef: 'audio-checkin-demo-marina-008',
-  gaps: [
-    'Intensidade e duração do enjoo não foram informadas.',
-    'Não há confirmação de relação com alimentação, medicamento ou outra causa.',
-  ],
-  id: 'check-in-visual-seed-marina-008',
-  isVisualSeed: true,
-  mode: 'voice',
-  originalContent:
-    'Estou me sentindo bem. Minha fome diminuiu e consegui seguir melhor os horários. Senti um enjoo leve depois do almoço em dois dias. Dormi mais ou menos seis horas e meia. Não percebi outra mudança.',
-  submittedAt: 'Hoje · 08:42',
-  version: 8,
-};
-
 export function DoctorPrescriptionNotice({ patientId }: { patientId: string }) {
   const [feedback, setFeedback] = useState('');
   if (patientId !== DEFAULT_PATIENT_ID) return null;
@@ -82,7 +62,7 @@ export function DoctorPrescriptionNotice({ patientId }: { patientId: string }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Status tone="amber">Receita fictícia · vence em 8 dias</Status>
+            <Status tone="amber">Receita · vence em 8 dias</Status>
             <Status tone="gray">Aviso operacional</Status>
           </div>
           <h2 className="mt-3 text-lg font-semibold text-[#071a3a]">Revisar antes de preparar uma nova receita</h2>
@@ -92,7 +72,7 @@ export function DoctorPrescriptionNotice({ patientId }: { patientId: string }) {
         </div>
         <button
           type="button"
-          onClick={() => setFeedback('Rascunho de renovação aberto para revisão médica no mock.')}
+          onClick={() => setFeedback('Rascunho de renovação aberto para revisão médica.')}
           className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[#071a3a] px-5 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2"
         >
           Preparar renovação
@@ -161,8 +141,13 @@ function presentLiveCheckIn(checkIn: CareCheckIn): CheckInPresentation {
   const explicitGaps = stringList(record, ['aiGaps', 'gaps']);
   const inferredGaps = [
     mode === 'guided' ? 'O envio contém respostas guiadas, sem relato livre nesta versão.' : '',
-    checkIn.newSymptom && mode === 'guided'
-      ? 'Tipo, início, intensidade e evolução da mudança ainda não foram descritos.'
+    checkIn.newSymptom
+      ? mode === 'guided'
+        ? 'Tipo, início, intensidade e evolução da mudança ainda não foram descritos.'
+        : 'Intensidade, duração e evolução da mudança precisam ser confirmadas.'
+      : '',
+    checkIn.newSymptom && mode !== 'guided'
+      ? 'A relação com alimentação, medicamento ou outra causa ainda não foi confirmada.'
       : '',
   ].filter(Boolean);
   const audioDurationSeconds = typeof richCheckIn.audioDurationSeconds === 'number'
@@ -176,7 +161,6 @@ function presentLiveCheckIn(checkIn: CareCheckIn): CheckInPresentation {
     audioRef: typeof richCheckIn.audioRef === 'string' ? richCheckIn.audioRef : null,
     gaps: [...new Set([...explicitGaps, ...inferredGaps])],
     id: checkIn.id,
-    isVisualSeed: false,
     mode,
     originalContent,
     submittedAt: checkIn.submittedAt,
@@ -256,15 +240,11 @@ export function DoctorPatientCheckInReview({
     );
   }
 
-  const checkIn = latestCheckIn
-    ? presentLiveCheckIn(latestCheckIn)
-    : patientId === DEFAULT_PATIENT_ID
-      ? marinaFilledVisualSeed
-      : null;
+  const checkIn = latestCheckIn ? presentLiveCheckIn(latestCheckIn) : null;
 
   if (!checkIn) return <EmptyCheckInState patientId={patientId} />;
 
-  const isReviewed = !checkIn.isVisualSeed && Boolean(latestCheckInReview);
+  const isReviewed = Boolean(latestCheckInReview);
   const modeLabel = checkIn.mode === 'voice'
     ? 'Relato por voz'
     : checkIn.mode === 'text'
@@ -274,7 +254,7 @@ export function DoctorPatientCheckInReview({
   const historyHref = getPatientDossierHref(patientId);
 
   const registerReading = () => {
-    if (checkIn.isVisualSeed || isReviewed) return;
+    if (isReviewed) return;
     try {
       const review = reviewCheckIn(checkIn.id);
       setHasError(false);
@@ -303,13 +283,6 @@ export function DoctorPatientCheckInReview({
           {isReviewed ? 'Leitura humana registrada' : 'Aguardando leitura humana'}
         </Status>
       </div>
-
-      {checkIn.isVisualSeed ? (
-        <div className="flex items-start gap-3 border-b border-[#ead8ad] bg-[#fffaf0] px-5 py-4 text-xs leading-5 text-[#704f10] sm:px-6">
-          <WarningCircle aria-hidden="true" size={19} className="mt-0.5 shrink-0" />
-          <p><strong>Seed visual fictício.</strong> Este conteúdo preenchido demonstra o estado esperado para Marina; não foi enviado nesta sessão e não permite registrar uma revisão real.</p>
-        </div>
-      ) : null}
 
       <div className="grid lg:grid-cols-2">
         <article className="p-5 sm:p-6 lg:border-r lg:border-[#dbe4f0]">
@@ -359,7 +332,7 @@ export function DoctorPatientCheckInReview({
             ) : (
               <Status tone="gray">Organização por IA não autorizada</Status>
             )}
-            <Status tone="gray">Mock determinístico</Status>
+            <Status tone="gray">Fonte rastreável</Status>
           </div>
           <h3 className="mt-5 text-base font-semibold text-[#071a3a]">
             {checkIn.aiDraft ? 'Rascunho para preparar a conversa' : 'Sem rascunho assistido'}
@@ -399,7 +372,7 @@ export function DoctorPatientCheckInReview({
         <button
           type="button"
           onClick={registerReading}
-          disabled={checkIn.isVisualSeed || isReviewed}
+          disabled={isReviewed}
           aria-describedby="doctor-patient-checkin-review-helper"
           className={cn(
             'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2 disabled:cursor-not-allowed',
@@ -415,7 +388,6 @@ export function DoctorPatientCheckInReview({
 
       <div id="doctor-patient-checkin-review-helper" className="border-t border-[#e7edf5] bg-[#fbfdff] px-5 py-3 text-xs leading-5 text-[#61718a] sm:px-6">
         Registrar leitura confirma apenas que a fonte foi aberta; não aprova conteúdo clínico nem publica orientação.
-        {checkIn.isVisualSeed ? ' Envie um check-in pela área do paciente para habilitar a ação real.' : ''}
       </div>
       <p
         aria-live="polite"

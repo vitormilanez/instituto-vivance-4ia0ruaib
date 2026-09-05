@@ -90,6 +90,40 @@ function getInitialCarePlans(): CarePlanVersion[] {
   ];
 }
 
+function getInitialCheckIns(): CareCheckIn[] {
+  return [
+    {
+      id: 'check-in-demo-marina-008',
+      patientId: DEFAULT_PATIENT_ID,
+      encounterId: DEFAULT_ENCOUNTER_ID,
+      version: 8,
+      energy: 4,
+      sleepQuality: 'regular',
+      newSymptom: true,
+      inputMode: 'voice',
+      originalText: 'Estou me sentindo bem. Minha fome diminuiu e consegui seguir melhor os horários. Senti um enjoo leve depois do almoço em dois dias. Dormi mais ou menos seis horas e meia. Não percebi outra mudança.',
+      aiSummary: [
+        'Marina relata bem-estar geral estável e redução percebida da fome.',
+        'Refere dois episódios de enjoo leve após o almoço e cerca de seis horas e meia de sono.',
+        'O relato deve ser conferido antes de qualquer interpretação clínica.',
+      ],
+      aiAssistanceAllowed: true,
+      planExperience: 'partial',
+      audioRef: 'audio-checkin-demo-marina-008',
+      audioDurationSeconds: 34,
+      submittedAt: '04 set · 08:42',
+      submittedAtIso: '2026-09-04T08:42:00-03:00',
+    },
+  ];
+}
+
+function mergeInitialCheckIns(checkIns: CareCheckIn[]) {
+  const byId = new Map(getInitialCheckIns().map((checkIn) => [checkIn.id, checkIn]));
+  for (const checkIn of checkIns) byId.set(checkIn.id, checkIn);
+  return [...byId.values()].toSorted((left, right) =>
+    left.submittedAtIso.localeCompare(right.submittedAtIso));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -1148,13 +1182,15 @@ function getAuditEventsFromHistory(
 }
 
 const initialCarePlans = getInitialCarePlans();
+const initialCheckIns = getInitialCheckIns();
+const initialAuditEvents = getAuditEventsFromHistory([], [], initialCarePlans, initialCheckIns);
 const emptyState: CareDemoState = {
   draftsByEncounter: {},
   submissions: [],
   reviews: [],
   consultationClosures: [],
   carePlans: initialCarePlans,
-  checkIns: [],
+  checkIns: initialCheckIns,
   checkInReviews: [],
   followUpConfigurations: [],
   followUpContacts: [],
@@ -1162,7 +1198,7 @@ const emptyState: CareDemoState = {
   conversationMessages: [],
   actionConfirmations: [],
   aiPreparationReviews: [],
-  auditEvents: getAuditEventsFromHistory([], [], initialCarePlans, []),
+  auditEvents: initialAuditEvents,
 };
 
 function normalizeCurrentState(value: unknown): CareDemoState | null {
@@ -1199,12 +1235,13 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
       })
     : [];
   const carePlans = parsedCarePlans.length > 0 ? parsedCarePlans : getInitialCarePlans();
-  const checkIns = Array.isArray(value.checkIns)
+  const parsedCheckIns = Array.isArray(value.checkIns)
     ? value.checkIns.flatMap((checkIn) => {
         const normalized = normalizeCheckIn(checkIn);
         return normalized ? [normalized] : [];
       })
     : [];
+  const checkIns = mergeInitialCheckIns(parsedCheckIns);
   const checkInReviews = Array.isArray(value.checkInReviews)
     ? value.checkInReviews.flatMap((review) => {
         const normalized = normalizeCheckInReview(review);
@@ -1254,6 +1291,26 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
       })
     : [];
 
+  const restoredAuditEvents = parsedAuditEvents.length > 0
+    ? [
+        ...new Map(
+          [...initialAuditEvents, ...parsedAuditEvents].map((event) => [event.id, event]),
+        ).values(),
+      ].toSorted((left, right) => left.occurredAtIso.localeCompare(right.occurredAtIso))
+    : getAuditEventsFromHistory(
+        submissions,
+        reviews,
+        carePlans,
+        checkIns,
+        checkInReviews,
+        followUpConfigurations,
+        followUpContacts,
+        diaryEntries,
+        conversationMessages,
+        aiPreparationReviews,
+        consultationClosures,
+      );
+
   return {
     draftsByEncounter,
     submissions,
@@ -1268,21 +1325,7 @@ function normalizeCurrentState(value: unknown): CareDemoState | null {
     conversationMessages,
     actionConfirmations,
     aiPreparationReviews,
-    auditEvents: parsedAuditEvents.length > 0
-      ? parsedAuditEvents
-      : getAuditEventsFromHistory(
-          submissions,
-          reviews,
-          carePlans,
-          checkIns,
-          checkInReviews,
-          followUpConfigurations,
-          followUpContacts,
-          diaryEntries,
-          conversationMessages,
-          aiPreparationReviews,
-          consultationClosures,
-        ),
+    auditEvents: restoredAuditEvents,
   };
 }
 
@@ -1303,6 +1346,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     : [];
 
   const carePlans = getInitialCarePlans();
+  const checkIns = getInitialCheckIns();
 
   return {
     draftsByEncounter: {
@@ -1312,7 +1356,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     reviews,
     consultationClosures: [],
     carePlans,
-    checkIns: [],
+    checkIns,
     checkInReviews: [],
     followUpConfigurations: [],
     followUpContacts: [],
@@ -1320,7 +1364,7 @@ function migrateLegacyState(value: unknown): CareDemoState | null {
     conversationMessages: [],
     actionConfirmations: [],
     aiPreparationReviews: [],
-    auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, []),
+    auditEvents: getAuditEventsFromHistory(submissions, reviews, carePlans, checkIns),
   };
 }
 
@@ -1720,7 +1764,10 @@ export function CareDemoProvider({ children }: { children: ReactNode }) {
           id: `check-in-${Date.now()}`,
           patientId,
           encounterId,
-          version: checkInsFor(patientId, encounterId).length + 1,
+          version: Math.max(
+            0,
+            ...checkInsFor(patientId, encounterId).map((checkIn) => checkIn.version),
+          ) + 1,
           energy: input.energy,
           sleepQuality: input.sleepQuality,
           newSymptom: input.newSymptom,

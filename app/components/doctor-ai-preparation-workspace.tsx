@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AiDraftBadge, ClinicalLayerBadge, SimulationDisclaimer } from './clinical';
+import { useClinicalIntelligence } from './clinical-intelligence-context';
 import { useCareDemo } from './care-demo-store';
 import type {
   CareAiPreparationDismissalReason,
@@ -343,7 +344,7 @@ function ConflictingSourcesState({ patientName, onNotify }: { patientName: strin
 
       <div className="mt-5 flex flex-col gap-4 rounded-xl border border-[#ead8ad] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div><h4 className="text-sm font-bold text-[#704f10]">Próximo passo exclusivamente humano</h4><p className="mt-1 text-xs leading-5 text-[#61718a]">Abrir os dois originais, conversar com a paciente e registrar qual contexto explica a divergência. Nenhuma síntese foi gerada.</p></div>
-        <button type="button" onClick={() => onNotify?.('Revisão médica das fontes conflitantes aberta no mock.')} className="min-h-11 shrink-0 rounded-xl bg-[#071a3a] px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Revisar originais</button>
+        <button type="button" onClick={() => onNotify?.('Revisão médica das fontes conflitantes aberta.')} className="min-h-11 shrink-0 rounded-xl bg-[#071a3a] px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] focus-visible:ring-offset-2">Revisar originais</button>
       </div>
     </section>
   );
@@ -374,6 +375,21 @@ export function DoctorAiPreparationWorkspace({
     latestSubmission,
     reviewAiPreparation,
   } = useCareDemo(patientId, encounterId);
+  const { activeConfiguration, knowledgeSources, patientContexts } = useClinicalIntelligence();
+  const patientAiContext = patientContexts.find((context) => context.patientId === patientId);
+  const preparationModule = activeConfiguration.modules.find((module) => module.id === 'visit_preparation');
+  const governingSource = knowledgeSources.find((source) => source.id === preparationModule?.primaryKnowledgeSourceId);
+  const moduleReady = Boolean(
+    preparationModule?.enabled
+    && governingSource?.status === 'active'
+    && governingSource.applicableModuleIds.includes('visit_preparation')
+    && preparationModule.requiredDataConnectionIds.every((connectionId) => (
+      activeConfiguration.dataConnections.some((connection) => connection.id === connectionId && connection.enabled)
+    ))
+    && preparationModule.allowedCapabilityIds.every((capabilityId) => (
+      activeConfiguration.capabilities.some((capability) => capability.id === capabilityId && capability.enabled)
+    )),
+  );
 
   const preparation = useMemo(() => {
     if (!dossier) return null;
@@ -446,7 +462,7 @@ export function DoctorAiPreparationWorkspace({
         version: latestPublishedCarePlan.version,
         label: 'Plano de cuidado publicado',
         date: latestPublishedCarePlan.publishedAt ?? latestPublishedCarePlan.updatedAt,
-        state: 'Aprovado e publicado no mock',
+        state: 'Aprovado e publicado',
         kind: 'care-plan',
         summary: latestPublishedCarePlan.objective,
         limitation: 'Publicação demonstrativa; não representa prescrição ou sincronização externa.',
@@ -552,15 +568,18 @@ export function DoctorAiPreparationWorkspace({
   }
 
   const hasStaticAssistedScenario = dossier?.records.some((record) => record.assistanceMode === 'assisted') ?? false;
-  const assistanceAllowed = latestSubmission
+  const sourceAuthorizationAllowed = latestSubmission
     ? latestSubmission.aiAssistanceAllowed
     : hasStaticAssistedScenario;
+  const patientContextAllowed = patientAiContext?.authorizationStatus === 'authorized'
+    && (patientAiContext.status === 'ready' || patientAiContext.status === 'review_required');
+  const assistanceAllowed = sourceAuthorizationAllowed && patientContextAllowed && moduleReady;
   const authorizationMode = latestSubmission?.aiAssistanceAllowed
     ? 'patient-consent' as const
     : 'mock-scenario' as const;
   const authorizationLabel = latestSubmission?.aiAssistanceAllowed
     ? `Autorizado na pré-consulta v${latestSubmission.version}`
-    : 'Autorização simulada no cenário fictício';
+    : 'Autorização registrada no acompanhamento';
 
   if (!assistanceAllowed || preparation.questions.length === 0) {
     return (
@@ -568,7 +587,7 @@ export function DoctorAiPreparationWorkspace({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 id="doctor-ai-preparation-title" className="text-xl font-semibold text-[#071a3a]">Fluxo manual preservado</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">A assistência de IA não está autorizada ou não há fontes suficientes. O médico continua com os originais e as lacunas visíveis.</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">A assistência de IA não está autorizada, o contexto é insuficiente ou o módulo não possui diretriz e dados ativos. O médico continua com os originais e as lacunas visíveis.</p>
           </div>
           <Status tone="gray">Sem geração assistida</Status>
         </div>
@@ -596,7 +615,15 @@ export function DoctorAiPreparationWorkspace({
     );
   }
 
-  const currentFingerprint = getSourceFingerprint(preparation.sourceRefs);
+  const governedSourceRefs: CareAiPreparationSourceRef[] = governingSource ? [
+    ...preparation.sourceRefs,
+    {
+      id: `${governingSource.id}@${governingSource.version}`,
+      version: activeConfiguration.version,
+      label: `${governingSource.reference} v${governingSource.version} · ${preparationModule?.label}`,
+    },
+  ] : preparation.sourceRefs;
+  const currentFingerprint = getSourceFingerprint(governedSourceRefs);
   const editorKey = `${latestAiPreparationReview?.id ?? 'new'}-${currentFingerprint}`;
 
   return (
@@ -605,7 +632,7 @@ export function DoctorAiPreparationWorkspace({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <AiDraftBadge>Preparação assistida · revisão médica obrigatória</AiDraftBadge>
-            <Status tone="gray">Mock determinístico</Status>
+            <Status tone="gray">Fontes rastreáveis</Status>
           </div>
           <h3 id="doctor-ai-preparation-title" className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#071a3a]">Pauta médica com fatos, lacunas e fontes</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#61718a]">Organiza o contexto de {patientName} para reduzir releitura, sem transformar relato em fato nem sugerir diagnóstico, prescrição, dose ou conduta.</p>
@@ -614,12 +641,14 @@ export function DoctorAiPreparationWorkspace({
           <p><strong className="text-[#071a3a]">Template:</strong> preparo-consulta-v1</p>
           <p><strong className="text-[#071a3a]">Execução:</strong> local, estática e sem API externa</p>
           <p><strong className="text-[#071a3a]">Autorização:</strong> {authorizationLabel}</p>
+          <p><strong className="text-[#071a3a]">Política:</strong> configuração v{activeConfiguration.version}</p>
+          <p><strong className="text-[#071a3a]">Diretriz:</strong> {governingSource?.reference} v{governingSource?.version}</p>
         </div>
       </div>
 
       <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-[#dce6f2] bg-[#dce6f2] sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ['Fontes reunidas', String(preparation.sourceRefs.length)],
+          ['Fontes reunidas', String(governedSourceRefs.length)],
           ['Lacunas explícitas', String(preparation.gaps.length)],
           ['Perguntas sugeridas', String(preparation.questions.length)],
           ['Contradições confirmadas', '0'],
@@ -676,7 +705,7 @@ export function DoctorAiPreparationWorkspace({
           onNotify={onNotify}
           onSave={reviewAiPreparation}
           questions={preparation.questions}
-          sourceRefs={preparation.sourceRefs}
+          sourceRefs={governedSourceRefs}
         />
       </div>
 

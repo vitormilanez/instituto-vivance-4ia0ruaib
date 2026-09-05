@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowsLeftRight,
   Bell,
+  Brain,
   CalendarBlank,
   CaretDown,
   ChatCircle,
@@ -34,6 +35,7 @@ const navigationIcons = {
   Pacientes: Users,
   Mensagens: ChatCircle,
   Relatórios: FileText,
+  'Central da IA': Brain,
 } as const;
 
 function getPatientContext(pathname: string) {
@@ -296,7 +298,7 @@ export function DoctorChrome({ patientId = DEFAULT_PATIENT_ID }: { patientId?: s
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'pointer-events-auto flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#124da0] md:min-h-11 md:flex-row md:gap-2 md:px-3 md:text-xs',
-                  active ? 'bg-[#061b3e]/92 text-white shadow-[0_7px_18px_rgba(3,19,45,0.18)]' : 'text-[#405675] hover:bg-white/70 hover:text-[#071a3a]',
+                  active ? 'bg-[#061b3e]/92 text-white shadow-[0_7px_18px_rgba(3,19,45,0.18)]' : 'text-[#071a3a] hover:bg-white/70',
                 )}
               >
                 <Icon aria-hidden="true" size={15} weight={active ? 'fill' : 'regular'} className="shrink-0" />
